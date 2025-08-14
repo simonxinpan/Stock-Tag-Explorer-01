@@ -1,0 +1,58 @@
+name: Update Stock Data
+
+on:
+  schedule:
+    # 每天美股开盘前更新 (UTC 13:00 = EST 8:00 AM)
+    - cron: '0 13 * * 1-5'
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  update-stocks:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Check environment variables
+      run: |
+        echo "Checking environment variables..."
+        node scripts/check-env.js
+      env:
+        POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+        FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        
+    - name: Test API connections
+      run: |
+        echo "Testing API connections..."
+        node scripts/test-api.js
+      env:
+        POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+        FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        
+    - name: Update stock data
+      run: |
+        echo "Updating stock data..."
+        node scripts/update-stocks.js
+      env:
+        POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+        FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        
+    - name: Verify data update
+      run: |
+        echo "Verifying data update..."
+        node scripts/verify-data.js
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}

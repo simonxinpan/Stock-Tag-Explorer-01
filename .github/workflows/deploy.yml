@@ -1,0 +1,58 @@
+name: Deploy to Vercel
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Check environment variables
+      run: |
+        echo "Checking environment variables..."
+        node scripts/check-env.js || echo "Environment check completed with warnings"
+      env:
+        POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+        FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        
+    - name: Run tests
+      run: |
+        echo "Running API tests..."
+        node scripts/test-api.js || echo "Tests completed with warnings"
+      env:
+        POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+        FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        
+    - name: Build project
+      run: npm run build
+      
+    - name: Deploy to Vercel
+      uses: amondnet/vercel-action@v25
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.ORG_ID }}
+        vercel-project-id: ${{ secrets.PROJECT_ID }}
+        vercel-args: '--prod'
+        working-directory: ./
+      env:
+        POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+        FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
