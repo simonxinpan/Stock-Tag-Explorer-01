@@ -1,8 +1,9 @@
 # Stock-Tag-Explorer - 智能标签浏览器
 
 > **项目代号**: StockLink - Phase 1 Module C: The Neural Network  
-> **版本**: v1.0  
+> **版本**: v1.0.1  
 > **负责人**: Simon Pan  
+> **最后更新**: 2024-12-19  
 
 ## 🎯 项目愿景
 
