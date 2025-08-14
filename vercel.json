@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "name": "stock-tag-explorer",
   "builds": [
     {
       "src": "api/**/*.js",
@@ -60,7 +59,6 @@
   "env": {
     "NODE_ENV": "production"
   },
-  "regions": ["hkg1", "sin1"],
   "github": {
     "silent": true
   }
