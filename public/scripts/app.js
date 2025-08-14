@@ -98,18 +98,19 @@ class StockTagExplorer {
      */
     renderTagPlaza() {
         const tagGroups = {
-            'market-performance': { title: '股市表现类', icon: '📈' },
-            'financial-performance': { title: '财务表现类', icon: '💰' },
-            'trend-ranking': { title: '趋势排位类', icon: '📊' },
-            'industry': { title: '行业分类', icon: '🏭' },
-            'special-list': { title: '特殊名单类', icon: '⭐' }
+            'market_performance': { title: '股市表现类', icon: '📈' },
+            'financial_performance': { title: '财务表现类', icon: '💰' },
+            'trend_ranking': { title: '趋势排位类', icon: '📊' },
+            'industry_category': { title: '行业分类', icon: '🏭' },
+            'special_lists': { title: '特殊名单类', icon: '⭐' }
         };
         
         const tagGroupsContainer = document.getElementById('tag-groups');
         tagGroupsContainer.innerHTML = '';
         
         Object.entries(tagGroups).forEach(([groupId, groupInfo]) => {
-            const groupElement = this.createTagGroup(groupId, groupInfo, this.tagData[groupId]);
+            const tags = this.tagData[groupId] || [];
+            const groupElement = this.createTagGroup(groupId, groupInfo, tags);
             tagGroupsContainer.appendChild(groupElement);
         });
     }
