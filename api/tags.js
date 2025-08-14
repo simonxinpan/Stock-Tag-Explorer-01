@@ -1,138 +1,69 @@
-const { Pool } = require('pg');
-const cors = require('cors');
+// /api/tags.js (最终版，使用 DATABASE_URL)
+import { Pool } from 'pg';
 
-// 初始化数据库连接池
+// *** 核心修复：使用统一的环境变量名 DATABASE_URL ***
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  connectionString: process.env.DATABASE_URL, 
+  ssl: { rejectUnauthorized: false }
 });
 
-// CORS中间件
-const corsMiddleware = cors({
-  origin: ['http://localhost:3000', 'http://localhost:8000', 'https://stock-tag-explorer.vercel.app', 'https://stock-tag-explorer-01.vercel.app'],
-  methods: ['GET', 'POST'],
-  credentials: true
-});
-
-// 模拟标签数据（如果数据库连接失败时使用）
-const mockTags = {
-  market_performance: [
-    { id: 'high_volume', name: '52周高点', count: 23, color: 'emerald' },
-    { id: 'low_point', name: '52周低点', count: 12, color: 'emerald' },
-    { id: 'high_growth', name: '高成长', count: 45, color: 'emerald' },
-    { id: 'low_volatility', name: '低波动', count: 67, color: 'emerald' },
-    { id: 'high_dividend', name: '高分红', count: 30, color: 'emerald' }
-  ],
-  financial_performance: [
-    { id: 'high_roe', name: '高ROE', count: 50, color: 'amber' },
-    { id: 'low_debt', name: '低负债率', count: 78, color: 'amber' },
-    { id: 'high_growth_rate', name: '高增长率', count: 34, color: 'amber' },
-    { id: 'high_margin', name: '高利润率', count: 56, color: 'amber' },
-    { id: 'vix_fear', name: 'VIX恐慌指数相关', count: 8, color: 'amber' }
-  ],
-  trend_ranking: [
-    { id: 'recent_hot', name: '近期热度', count: 89, color: 'purple' },
-    { id: 'recent_trend', name: '近期趋势', count: 45, color: 'purple' },
-    { id: 'growth_potential', name: '成长潜力', count: 18, color: 'purple' },
-    { id: 'breakthrough', name: '突破新高', count: 28, color: 'purple' },
-    { id: 'data_support', name: '数据支撑', count: 15, color: 'purple' }
-  ],
-  industry_category: [
-    { id: 'technology', name: '科技股', count: 76, color: 'gray' },
-    { id: 'finance', name: '金融股', count: 65, color: 'gray' },
-    { id: 'healthcare', name: '医疗保健', count: 64, color: 'gray' },
-    { id: 'energy', name: '能源股', count: 23, color: 'gray' },
-    { id: 'consumer', name: '消费品', count: 60, color: 'gray' }
-  ],
-  special_lists: [
-    { id: 'sp500', name: '标普500', count: 500, color: 'blue' },
-    { id: 'nasdaq100', name: '纳斯达克100', count: 100, color: 'blue' },
-    { id: 'dow30', name: '道琼斯30', count: 30, color: 'blue' },
-    { id: 'esg_leaders', name: 'ESG领导者', count: 89, color: 'blue' },
-    { id: 'analyst_recommend', name: '分析师推荐', count: 120, color: 'blue' }
-  ]
-};
-
-module.exports = async function handler(req, res) {
-  // 应用CORS中间件
-  await new Promise((resolve, reject) => {
-    corsMiddleware(req, res, (result) => {
-      if (result instanceof Error) {
-        return reject(result);
-      }
-      return resolve(result);
-    });
-  });
-
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+export default async function handler(req, res) {
+  // Vercel 自动处理 CORS 预检请求
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
-  try {
-    // 尝试从数据库获取标签数据
-    let tags;
-    
-    try {
-      const client = await pool.connect();
-      
-      // 检查表是否存在
-      const tableCheck = await client.query(`
-        SELECT EXISTS (
-          SELECT FROM information_schema.tables 
-          WHERE table_schema = 'public' 
-          AND table_name = 'tags'
-        );
-      `);
-      
-      if (tableCheck.rows[0].exists) {
-        // 从数据库获取标签数据
-        const result = await client.query(`
-          SELECT 
-            category,
-            tag_id,
-            tag_name,
-            stock_count,
-            color_theme
-          FROM tags 
-          ORDER BY category, stock_count DESC
-        `);
-        
-        // 按类别组织数据
-        tags = result.rows.reduce((acc, row) => {
-          if (!acc[row.category]) {
-            acc[row.category] = [];
-          }
-          acc[row.category].push({
-            id: row.tag_id,
-            name: row.tag_name,
-            count: row.stock_count,
-            color: row.color_theme
-          });
-          return acc;
-        }, {});
-      } else {
-        // 表不存在，使用模拟数据
-        tags = mockTags;
-      }
-      
-      client.release();
-    } catch (dbError) {
-      console.warn('Database connection failed, using mock data:', dbError.message);
-      tags = mockTags;
-    }
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
 
-    res.status(200).json({
-      success: true,
-      data: tags,
-      timestamp: new Date().toISOString()
-    });
+  const { symbol, tag_name } = req.query;
+  const client = await pool.connect();
+
+  try {
+    let data;
+    if (symbol) {
+      // 场景1: 查询某只股票的所有标签
+      const { rows } = await client.query(
+        `SELECT t.name, t.type FROM tags t
+         JOIN stock_tags st ON t.id = st.tag_id
+         WHERE st.stock_ticker = $1 ORDER BY t.type, t.name`, 
+        [symbol.toUpperCase()]
+      );
+      data = rows;
+    } else if (tag_name) {
+      // 场景2: 查询拥有某个标签的所有股票
+      const { rows } = await client.query(
+        `SELECT s.ticker, s.name_zh, s.change_percent FROM stocks s
+         JOIN stock_tags st ON s.ticker = st.stock_ticker
+         JOIN tags t ON st.tag_id = t.id
+         WHERE t.name = $1 ORDER BY s.market_cap DESC NULLS LAST`, 
+        [tag_name]
+      );
+      data = rows;
+    } else {
+      // 场景3: 获取所有标签及其股票数量
+      const { rows } = await client.query(
+        `SELECT t.name, t.type, COUNT(st.stock_ticker)::int as stock_count FROM tags t
+         LEFT JOIN stock_tags st ON t.id = st.tag_id
+         GROUP BY t.id
+         HAVING COUNT(st.stock_ticker) > 0
+         ORDER BY t.type, stock_count DESC, t.name`
+      );
+      data = rows;
+    }
+    
+    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate');
+    res.status(200).json(data);
 
   } catch (error) {
-    console.error('API Error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Internal server error',
-      message: error.message
-    });
+    console.error(`API /tags Error:`, error);
+    res.status(500).json({ error: 'Database query failed.' });
+  } finally {
+    if (client) client.release();
   }
 }
