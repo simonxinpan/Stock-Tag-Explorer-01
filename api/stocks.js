@@ -10,7 +10,7 @@ const pool = new Pool({
 
 // CORS中间件
 const corsMiddleware = cors({
-  origin: ['http://localhost:3000', 'http://localhost:8000', 'https://stock-tag-explorer.vercel.app'],
+  origin: ['http://localhost:3000', 'http://localhost:8000', 'https://stock-tag-explorer.vercel.app', 'https://stock-tag-explorer-01.vercel.app'],
   methods: ['GET', 'POST'],
   credentials: true
 });

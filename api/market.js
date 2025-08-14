@@ -10,9 +10,21 @@ const pool = new Pool({
 
 // CORS中间件
 function enableCors(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:8000',
+    'https://stock-tag-explorer.vercel.app',
+    'https://stock-tag-explorer-01.vercel.app'
+  ];
+  
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   
   if (req.method === 'OPTIONS') {
     res.status(200).end();
