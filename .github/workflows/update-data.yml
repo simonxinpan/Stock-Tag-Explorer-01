@@ -14,9 +14,14 @@ jobs:
     - name: Call Vercel API to update stock data
       run: |
         echo "Updating stock data..."
+        VERCEL_URL="${{ secrets.VERCEL_URL }}"
+        if [ -z "$VERCEL_URL" ]; then
+          echo "Error: VERCEL_URL secret is not set"
+          exit 1
+        fi
         curl --fail --max-time 300 -X GET \
           -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-          "${{ secrets.VERCEL_URL }}/api/update-data"
+          "${VERCEL_URL}/api/update-data"
       env:
         VERCEL_URL: ${{ secrets.VERCEL_URL }}
         CRON_SECRET: ${{ secrets.CRON_SECRET }}
