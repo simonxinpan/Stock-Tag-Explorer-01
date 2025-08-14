@@ -60,7 +60,6 @@
   "env": {
     "NODE_ENV": "production"
   },
-  "functions": {},
   "regions": ["hkg1", "sin1"],
   "github": {
     "silent": true
