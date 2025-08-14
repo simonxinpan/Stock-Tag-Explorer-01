@@ -78,8 +78,7 @@ async function updateStockInDatabase(stockData) {
         change_amount = $3,
         change_percent = $4,
         volume = $5,
-        updated_at = NOW(),
-        data_source = $6
+        last_updated = NOW()
       WHERE symbol = $1
     `;
     
@@ -88,8 +87,7 @@ async function updateStockInDatabase(stockData) {
       stockData.price,
       stockData.change,
       stockData.changePercent,
-      stockData.volume,
-      stockData.source
+      stockData.volume
     ]);
     
     return result.rowCount > 0;
@@ -104,8 +102,8 @@ async function getStocksToUpdate() {
   try {
     const result = await client.query(`
       SELECT symbol FROM stocks 
-      WHERE updated_at < NOW() - INTERVAL '1 hour'
-      OR updated_at IS NULL
+      WHERE last_updated < NOW() - INTERVAL '1 hour'
+      OR last_updated IS NULL
       ORDER BY symbol
       LIMIT 100
     `);
