@@ -44,7 +44,7 @@ async function verifyDataUpdate() {
     
     // 检查最新更新的股票示例
     const latestUpdates = await client.query(`
-      SELECT symbol, price, change_percent, updated_at, data_source
+      SELECT ticker, price, change_percent, updated_at, data_source
       FROM stocks 
       WHERE updated_at IS NOT NULL
       ORDER BY updated_at DESC
