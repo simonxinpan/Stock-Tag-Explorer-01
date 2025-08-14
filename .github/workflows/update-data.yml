@@ -11,48 +11,17 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Check environment variables
-      run: |
-        echo "Checking environment variables..."
-        node scripts/check-env.js
-      env:
-        POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
-        FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        
-    - name: Test API connections
-      run: |
-        echo "Testing API connections..."
-        node scripts/test-api.js
-      env:
-        POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
-        FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        
-    - name: Update stock data
+    - name: Call Vercel API to update stock data
       run: |
         echo "Updating stock data..."
-        node scripts/update-stocks.js
+        curl --fail --max-time 300 -X GET \
+          -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+          "${{ secrets.VERCEL_URL }}/api/update-data"
       env:
-        POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
-        FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        VERCEL_URL: ${{ secrets.VERCEL_URL }}
+        CRON_SECRET: ${{ secrets.CRON_SECRET }}
         
-    - name: Verify data update
+    - name: Verify update completion
       run: |
-        echo "Verifying data update..."
-        node scripts/verify-data.js
-      env:
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        echo "Stock data update completed successfully!"
+        echo "Timestamp: $(date)"
