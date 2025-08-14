@@ -13,8 +13,8 @@ const createTablesSQL = `
 CREATE TABLE IF NOT EXISTS tags (
   id SERIAL PRIMARY KEY,
   tag_id VARCHAR(50) UNIQUE NOT NULL,
-  tag_name VARCHAR(100) NOT NULL,
-  category VARCHAR(50) NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  type VARCHAR(50) NOT NULL,
   color_theme VARCHAR(20) DEFAULT 'blue',
   stock_count INTEGER DEFAULT 0,
   description TEXT,
@@ -25,8 +25,8 @@ CREATE TABLE IF NOT EXISTS tags (
 -- 创建股票表
 CREATE TABLE IF NOT EXISTS stocks (
   id SERIAL PRIMARY KEY,
-  symbol VARCHAR(10) UNIQUE NOT NULL,
-  name VARCHAR(200) NOT NULL,
+  ticker VARCHAR(10) UNIQUE NOT NULL,
+  name_zh VARCHAR(200) NOT NULL,
   price DECIMAL(10,2),
   change_amount DECIMAL(10,2),
   change_percent DECIMAL(5,2),
@@ -41,19 +41,19 @@ CREATE TABLE IF NOT EXISTS stocks (
 -- 创建股票标签关联表
 CREATE TABLE IF NOT EXISTS stock_tags (
   id SERIAL PRIMARY KEY,
-  stock_symbol VARCHAR(10) NOT NULL,
+  stock_ticker VARCHAR(10) NOT NULL,
   tag_id VARCHAR(50) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (stock_symbol) REFERENCES stocks(symbol) ON DELETE CASCADE,
+  FOREIGN KEY (stock_ticker) REFERENCES stocks(ticker) ON DELETE CASCADE,
   FOREIGN KEY (tag_id) REFERENCES tags(tag_id) ON DELETE CASCADE,
-  UNIQUE(stock_symbol, tag_id)
+  UNIQUE(stock_ticker, tag_id)
 );
 
 -- 创建索引
-CREATE INDEX IF NOT EXISTS idx_stocks_symbol ON stocks(symbol);
+CREATE INDEX IF NOT EXISTS idx_stocks_ticker ON stocks(ticker);
 CREATE INDEX IF NOT EXISTS idx_stocks_sector ON stocks(sector);
-CREATE INDEX IF NOT EXISTS idx_tags_category ON tags(category);
-CREATE INDEX IF NOT EXISTS idx_stock_tags_symbol ON stock_tags(stock_symbol);
+CREATE INDEX IF NOT EXISTS idx_tags_type ON tags(type);
+CREATE INDEX IF NOT EXISTS idx_stock_tags_ticker ON stock_tags(stock_ticker);
 CREATE INDEX IF NOT EXISTS idx_stock_tags_tag_id ON stock_tags(tag_id);
 
 -- 创建更新时间触发器函数
@@ -75,7 +75,7 @@ CREATE TRIGGER update_tags_updated_at
 
 // 插入初始标签数据
 const insertTagsSQL = `
-INSERT INTO tags (tag_id, tag_name, category, color_theme, stock_count) VALUES
+INSERT INTO tags (tag_id, name, type, color_theme, stock_count) VALUES
 -- 股市表现类
 ('high_volume', '52周高点', 'market_performance', 'emerald', 23),
 ('low_point', '52周低点', 'market_performance', 'emerald', 12),
@@ -112,8 +112,8 @@ INSERT INTO tags (tag_id, tag_name, category, color_theme, stock_count) VALUES
 ('analyst_recommend', '分析师推荐', 'special_lists', 'blue', 120)
 
 ON CONFLICT (tag_id) DO UPDATE SET
-  tag_name = EXCLUDED.tag_name,
-  category = EXCLUDED.category,
+  name = EXCLUDED.name,
+  type = EXCLUDED.type,
   color_theme = EXCLUDED.color_theme,
   stock_count = EXCLUDED.stock_count,
   updated_at = CURRENT_TIMESTAMP;
@@ -121,7 +121,7 @@ ON CONFLICT (tag_id) DO UPDATE SET
 
 // 插入示例股票数据
 const insertStocksSQL = `
-INSERT INTO stocks (symbol, name, price, change_amount, change_percent, volume, market_cap, sector, industry) VALUES
+INSERT INTO stocks (ticker, name_zh, price, change_amount, change_percent, volume, market_cap, sector, industry) VALUES
 ('AAPL', '苹果公司', 195.89, 2.34, 1.21, 45234567, '3.1T', 'Technology', 'Consumer Electronics'),
 ('MSFT', '微软公司', 378.85, -1.23, -0.32, 23456789, '2.8T', 'Technology', 'Software'),
 ('GOOGL', '谷歌A类', 142.56, 3.45, 2.48, 34567890, '1.8T', 'Technology', 'Internet Services'),
@@ -136,8 +136,8 @@ INSERT INTO stocks (symbol, name, price, change_amount, change_percent, volume, 
 ('UNH', '联合健康', 524.67, -3.45, -0.65, 2345678, '493B', 'Healthcare', 'Health Insurance'),
 ('JNJ', '强生公司', 156.89, 0.78, 0.50, 6789012, '412B', 'Healthcare', 'Pharmaceuticals')
 
-ON CONFLICT (symbol) DO UPDATE SET
-  name = EXCLUDED.name,
+ON CONFLICT (ticker) DO UPDATE SET
+  name_zh = EXCLUDED.name_zh,
   price = EXCLUDED.price,
   change_amount = EXCLUDED.change_amount,
   change_percent = EXCLUDED.change_percent,
@@ -150,7 +150,7 @@ ON CONFLICT (symbol) DO UPDATE SET
 
 // 插入股票标签关联数据
 const insertStockTagsSQL = `
-INSERT INTO stock_tags (stock_symbol, tag_id) VALUES
+INSERT INTO stock_tags (stock_ticker, tag_id) VALUES
 -- 高成交量股票
 ('AAPL', 'high_volume'),
 ('MSFT', 'high_volume'),
@@ -193,7 +193,7 @@ INSERT INTO stock_tags (stock_symbol, tag_id) VALUES
 ('NVDA', 'high_growth'),
 ('GOOGL', 'high_growth')
 
-ON CONFLICT (stock_symbol, tag_id) DO NOTHING;
+ON CONFLICT (stock_ticker, tag_id) DO NOTHING;
 `;
 
 async function initializeDatabase() {
