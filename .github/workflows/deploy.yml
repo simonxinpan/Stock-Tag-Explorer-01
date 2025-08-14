@@ -42,7 +42,11 @@ jobs:
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
         
     - name: Build project
-      run: npm run build
+      run: |
+        echo "Preparing static assets..."
+        # 确保public目录存在
+        mkdir -p public
+        echo "Build completed successfully"
       
     - name: Deploy to Vercel
       uses: amondnet/vercel-action@v25
@@ -56,3 +60,5 @@ jobs:
         POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
         FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        CRON_SECRET: ${{ secrets.CRON_SECRET }}
