@@ -1,6 +1,5 @@
 const { Pool } = require('pg');
 const cors = require('cors');
-const axios = require('axios');
 
 // 初始化数据库连接池
 const pool = new Pool({
@@ -45,13 +44,14 @@ async function fetchMarketIndices() {
       // 尝试从Polygon获取数据
       if (process.env.POLYGON_API_KEY) {
         try {
-          const response = await axios.get(
+          const response = await fetch(
             `https://api.polygon.io/v2/last/trade/${symbol}?apikey=${process.env.POLYGON_API_KEY}`
           );
-          if (response.data.results) {
+          const data = await response.json();
+          if (data.results) {
             indexData = {
               symbol,
-              price: response.data.results.p,
+              price: data.results.p,
               change: 0, // 需要历史数据计算
               changePercent: 0
             };
@@ -64,15 +64,16 @@ async function fetchMarketIndices() {
       // 如果Polygon失败，尝试Finnhub
       if (!indexData && process.env.FINNHUB_API_KEY) {
         try {
-          const response = await axios.get(
+          const response = await fetch(
             `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${process.env.FINNHUB_API_KEY}`
           );
-          if (response.data.c) {
+          const data = await response.json();
+          if (data.c) {
             indexData = {
               symbol,
-              price: response.data.c,
-              change: response.data.d || 0,
-              changePercent: response.data.dp || 0
+              price: data.c,
+              change: data.d || 0,
+              changePercent: data.dp || 0
             };
           }
         } catch (error) {
