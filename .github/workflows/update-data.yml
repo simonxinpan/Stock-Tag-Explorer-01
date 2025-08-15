@@ -19,8 +19,9 @@ jobs:
           echo "Error: VERCEL_URL secret is not set"
           exit 1
         fi
-        curl --fail --max-time 300 -X GET \
+        curl --fail --max-time 300 -X POST \
           -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+          -H "Content-Type: application/json" \
           "${VERCEL_URL}/api/update-data"
       env:
         VERCEL_URL: ${{ secrets.VERCEL_URL }}
