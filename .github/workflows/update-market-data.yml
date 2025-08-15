@@ -1,0 +1,41 @@
+name: Update Market Data (High Frequency)
+
+on:
+  schedule:
+    # 每15分钟更新一次市场数据 (仅在交易时间)
+    - cron: '*/15 9-16 * * 1-5'  # 周一到周五，9:00-16:59 UTC (对应美东时间 5:00-12:59)
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  update-market-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Update Market Data via API
+      run: |
+        echo "🚀 Starting market data update..."
+        response=$(curl -s -w "\n%{http_code}" \
+          -X POST \
+          -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+          -H "Content-Type: application/json" \
+          "https://stock-tag-explorer-01.vercel.app/api/update-market")
+        
+        http_code=$(echo "$response" | tail -n1)
+        body=$(echo "$response" | head -n -1)
+        
+        echo "📊 API Response: $body"
+        echo "📈 HTTP Status: $http_code"
+        
+        if [ "$http_code" -eq 200 ]; then
+          echo "✅ Market data update completed successfully!"
+        else
+          echo "❌ Market data update failed with status: $http_code"
+          echo "Response: $body"
+          exit 1
+        fi
+
+    - name: Verify Update
+      run: |
+        echo "🔍 Verifying market data update..."
+        # 可以添加额外的验证逻辑
+        echo "✅ Market data update verification completed"

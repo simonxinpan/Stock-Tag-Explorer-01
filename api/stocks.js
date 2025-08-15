@@ -228,9 +228,9 @@ module.exports = async function handler(req, res) {
         const query = `
           SELECT DISTINCT s.*
           FROM stocks s
-          JOIN stock_tags st ON s.symbol = st.stock_symbol
+          JOIN stock_tags st ON s.ticker = st.stock_symbol
           WHERE st.tag_id IN (${placeholders})
-          ORDER BY s.symbol
+          ORDER BY s.ticker
         `;
         
         const result = await client.query(query, tagArray);

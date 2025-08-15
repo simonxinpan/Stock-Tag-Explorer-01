@@ -1,4 +1,4 @@
-// /api/update-data.js (最终高性能版 - 完全依赖 Polygon)
+// /api/update-market.js - 高频市场数据更新工人 (完全依赖 Polygon)
 import { Pool } from 'pg';
 
 // 使用统一的环境变量名
@@ -46,7 +46,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Polygon API key is not configured.' });
   }
 
-  console.log('🚀 API call received: Starting full stock data update using Polygon.io...');
+  console.log('📈 API call received: Starting market data update using Polygon.io...');
   const client = await pool.connect();
   
   try {
@@ -73,7 +73,7 @@ export default async function handler(req, res) {
             high_price = $5,
             low_price = $6,
             volume = $7,
-            last_updated = NOW()
+            updated_at = NOW()
            WHERE ticker = $8`,
           [
             marketData.c,
@@ -91,8 +91,13 @@ export default async function handler(req, res) {
     }
     await client.query('COMMIT');
     
-    console.log(`\n📈 Update complete: ${successCount} stocks successfully updated with Polygon data.`);
-    res.status(200).json({ success: true, updated: successCount, total: companies.length });
+    console.log(`\n📈 Market update complete: ${successCount} stocks successfully updated with Polygon data.`);
+    res.status(200).json({ 
+      success: true, 
+      updated: successCount, 
+      total: companies.length,
+      type: 'market_data'
+    });
 
   } catch (error) {
     await client.query('ROLLBACK');
