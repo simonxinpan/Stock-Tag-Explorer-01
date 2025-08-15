@@ -1,5 +1,4 @@
 const { Pool } = require('pg');
-const axios = require('axios');
 require('dotenv').config();
 
 // 数据库连接
@@ -16,12 +15,13 @@ async function fetchStockData(symbol) {
   if (process.env.POLYGON_API_KEY && !stockData) {
     try {
       console.log(`Fetching ${symbol} from Polygon...`);
-      const response = await axios.get(
+      const response = await fetch(
         `https://api.polygon.io/v2/aggs/ticker/${symbol}/prev?adjusted=true&apikey=${process.env.POLYGON_API_KEY}`
       );
+      const responseData = await response.json();
       
-      if (response.data.results && response.data.results.length > 0) {
-        const data = response.data.results[0];
+      if (responseData.results && responseData.results.length > 0) {
+        const data = responseData.results[0];
         const currentPrice = data.c || 0;
         const previousClose = data.o || currentPrice;
         const change = currentPrice - previousClose;
@@ -45,16 +45,17 @@ async function fetchStockData(symbol) {
   if (process.env.FINNHUB_API_KEY && !stockData) {
     try {
       console.log(`Fetching ${symbol} from Finnhub...`);
-      const response = await axios.get(
+      const response = await fetch(
         `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${process.env.FINNHUB_API_KEY}`
       );
+      const data = await response.json();
       
-      if (response.data.c) {
+      if (data.c) {
         stockData = {
           symbol,
-          price: response.data.c,
-          change: response.data.d || 0,
-          changePercent: response.data.dp || 0,
+          price: data.c,
+          change: data.d || 0,
+          changePercent: data.dp || 0,
           volume: 0, // Finnhub免费版不提供
           source: 'finnhub'
         };
