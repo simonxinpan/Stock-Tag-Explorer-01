@@ -5,15 +5,13 @@ name: Scheduled Database Update
 on:
   schedule:
     - cron: '0 8 * * *'
-  # 确保手动触发器存在
   workflow_dispatch:
 
 jobs:
   update-database:
     runs-on: ubuntu-latest
     
-    # ** 移除所有不必要的 working-directory 设置 **
-    # 因为我们的文件都在根目录，所以不需要它
+    # ** 移除了所有 defaults.run.working-directory 设置 **
 
     steps:
       - name: Checkout repository
@@ -24,8 +22,7 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          # ** 移除所有不必要的 cache-dependency-path **
-          # 让它自动在根目录寻找 package-lock.json
+          # ** 移除了 cache-dependency-path，让它自动在根目录寻找 **
 
       # 现在，所有 run 命令都会在正确的根目录中执行
       - name: Install dependencies
