@@ -5,16 +5,15 @@ name: Scheduled Database Update
 on:
   schedule:
     - cron: '0 8 * * *'
+  # 确保手动触发器存在
   workflow_dispatch:
 
 jobs:
   update-database:
     runs-on: ubuntu-latest
     
-    # *** 核心修复：使用 GitHub 上真实的仓库名 'Stock-Tag-Explorer-01' ***
-    defaults:
-      run:
-        working-directory: ./Stock-Tag-Explorer-01
+    # ** 移除所有不必要的 working-directory 设置 **
+    # 因为我们的文件都在根目录，所以不需要它
 
     steps:
       - name: Checkout repository
@@ -25,10 +24,10 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          # ** 核心修复：同样，使用真实的仓库名 **
-          cache-dependency-path: 'Stock-Tag-Explorer-01/package-lock.json'
+          # ** 移除所有不必要的 cache-dependency-path **
+          # 让它自动在根目录寻找 package-lock.json
 
-      # 现在，所有后续的 run 命令都会在正确的子目录中执行
+      # 现在，所有 run 命令都会在正确的根目录中执行
       - name: Install dependencies
         run: npm install
 
@@ -37,4 +36,4 @@ jobs:
           NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
           POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
-        run: node _scripts/update-database.jss
+        run: node _scripts/update-database.js
