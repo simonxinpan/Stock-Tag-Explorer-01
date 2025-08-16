@@ -29,6 +29,9 @@ async function main() {
         client = await pool.connect();
         console.log("✅ Database connected successfully");
         
+        // 清理并重建数据库结构
+        await cleanAndRebuildDatabase(client);
+        
         // 检查表是否存在，如果不存在则创建
         await ensureTablesExist(client);
         
@@ -49,6 +52,23 @@ async function main() {
             await pool.end();
             console.log("Database pool closed");
         }
+    }
+}
+
+async function cleanAndRebuildDatabase(client) {
+    console.log("🧹 Cleaning and preparing database...");
+    
+    try {
+        // 删除可能存在的损坏表（按依赖关系顺序）
+        await client.query('DROP TABLE IF EXISTS stock_tags CASCADE;');
+        await client.query('DROP TABLE IF EXISTS stocks CASCADE;');
+        await client.query('DROP TABLE IF EXISTS tags CASCADE;');
+        
+        console.log("✅ Old tables cleaned up");
+        
+    } catch (error) {
+        console.error("⚠️ Warning during cleanup:", error.message);
+        // 清理失败不应该阻止流程继续
     }
 }
 
@@ -75,6 +95,9 @@ async function ensureTablesExist(client) {
         await client.query(createTagsTableSQL);
         console.log("✅ Tags table created/verified");
         
+        // 检查并修复 tags 表结构
+        await verifyAndFixTagsTable(client);
+        
         // 2. 创建股票表
         const createStocksTableSQL = `
         CREATE TABLE IF NOT EXISTS stocks (
@@ -94,6 +117,9 @@ async function ensureTablesExist(client) {
         `;
         await client.query(createStocksTableSQL);
         console.log("✅ Stocks table created/verified");
+        
+        // 检查并修复 stocks 表结构
+        await verifyAndFixStocksTable(client);
         
         // 3. 创建股票标签关联表
         const createStockTagsTableSQL = `
@@ -116,6 +142,121 @@ async function ensureTablesExist(client) {
         
     } catch (error) {
         console.error("❌ Error in ensureTablesExist:", error.message);
+        throw error;
+    }
+}
+
+async function verifyAndFixTagsTable(client) {
+    console.log("🔧 Verifying tags table structure...");
+    
+    try {
+        // 检查 tags 表的列结构
+        const checkColumnsSQL = `
+        SELECT column_name, data_type 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'tags'
+        ORDER BY ordinal_position;
+        `;
+        
+        const result = await client.query(checkColumnsSQL);
+        const existingColumns = result.rows.map(row => row.column_name);
+        
+        console.log("📋 Existing columns:", existingColumns);
+        
+        // 检查必需的列是否存在
+        const requiredColumns = ['id', 'tag_id', 'tag_name', 'category', 'color_theme', 'stock_count', 'description', 'created_at', 'updated_at'];
+        const missingColumns = requiredColumns.filter(col => !existingColumns.includes(col));
+        
+        if (missingColumns.length > 0) {
+            console.log("⚠️ Missing columns detected:", missingColumns);
+            
+            // 如果缺少关键列，重建表
+            if (missingColumns.includes('tag_id') || missingColumns.includes('tag_name') || missingColumns.includes('category')) {
+                console.log("🔄 Rebuilding tags table with correct structure...");
+                await client.query('DROP TABLE IF EXISTS tags CASCADE;');
+                
+                const createTagsTableSQL = `
+                CREATE TABLE tags (
+                  id SERIAL PRIMARY KEY,
+                  tag_id VARCHAR(50) UNIQUE NOT NULL,
+                  tag_name VARCHAR(100) NOT NULL,
+                  category VARCHAR(50) NOT NULL,
+                  color_theme VARCHAR(20) DEFAULT 'blue',
+                  stock_count INTEGER DEFAULT 0,
+                  description TEXT,
+                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                `;
+                await client.query(createTagsTableSQL);
+                console.log("✅ Tags table rebuilt successfully");
+            }
+        } else {
+            console.log("✅ Tags table structure is correct");
+        }
+        
+    } catch (error) {
+        console.error("❌ Error verifying tags table:", error.message);
+        throw error;
+    }
+}
+
+async function verifyAndFixStocksTable(client) {
+    console.log("🔧 Verifying stocks table structure...");
+    
+    try {
+        // 检查 stocks 表的列结构
+        const checkColumnsSQL = `
+        SELECT column_name, data_type 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'stocks'
+        ORDER BY ordinal_position;
+        `;
+        
+        const result = await client.query(checkColumnsSQL);
+        const existingColumns = result.rows.map(row => row.column_name);
+        
+        console.log("📋 Existing stocks columns:", existingColumns);
+        
+        // 检查必需的列是否存在
+        const requiredColumns = ['id', 'symbol', 'name', 'price', 'change_amount', 'change_percent', 'volume', 'market_cap', 'sector', 'industry', 'last_updated', 'created_at'];
+        const missingColumns = requiredColumns.filter(col => !existingColumns.includes(col));
+        
+        if (missingColumns.length > 0) {
+            console.log("⚠️ Missing stocks columns detected:", missingColumns);
+            
+            // 如果缺少关键列，重建表
+            if (missingColumns.includes('symbol') || missingColumns.includes('name')) {
+                console.log("🔄 Rebuilding stocks table with correct structure...");
+                await client.query('DROP TABLE IF EXISTS stocks CASCADE;');
+                
+                const createStocksTableSQL = `
+                CREATE TABLE stocks (
+                  id SERIAL PRIMARY KEY,
+                  symbol VARCHAR(10) UNIQUE NOT NULL,
+                  name VARCHAR(200) NOT NULL,
+                  price DECIMAL(10,2),
+                  change_amount DECIMAL(10,2),
+                  change_percent DECIMAL(5,2),
+                  volume BIGINT,
+                  market_cap VARCHAR(20),
+                  sector VARCHAR(100),
+                  industry VARCHAR(100),
+                  last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                `;
+                await client.query(createStocksTableSQL);
+                console.log("✅ Stocks table rebuilt successfully");
+            }
+        } else {
+            console.log("✅ Stocks table structure is correct");
+        }
+        
+    } catch (error) {
+        console.error("❌ Error verifying stocks table:", error.message);
         throw error;
     }
 }
