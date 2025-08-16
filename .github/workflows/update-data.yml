@@ -18,4 +18,4 @@ jobs:
           NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
           POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
-        run: node _scripts/update-database.js
+        run: node _scripts/update-database.mjs
