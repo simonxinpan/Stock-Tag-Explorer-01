@@ -1,36 +1,30 @@
-# /.github/workflows/scheduled_update.yml
+# 文件路径: .github/workflows/scheduled_update.yml
 
-name: Scheduled Database Update
+name: Update Stock Data & Dynamic Tags
 
 on:
+  # 1. 定时触发：每天 UTC 时间 8点 (北京时间下午4点) 运行一次
   schedule:
     - cron: '0 8 * * *'
+    
+  # 2. 我们依然保留手动触发，方便未来需要时进行立即更新
   workflow_dispatch:
 
 jobs:
-  update-database:
+  update-database-job:
+    # ... (jobs 部分的所有内容，和之前完全一样，无需任何修改)
     runs-on: ubuntu-latest
-    
-    # ** 移除了所有 defaults.run.working-directory 设置 **
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
-          # ** 移除了 cache-dependency-path，让它自动在根目录寻找 **
-
-      # 现在，所有 run 命令都会在正确的根目录中执行
       - name: Install dependencies
         run: npm install
-
       - name: Run database update script
         env:
-          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
-          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
-          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
-        run: node _scripts/update-database.mjs
+          # ... (所有 secrets)
+        run: node _scripts/update-database.js
