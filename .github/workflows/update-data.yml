@@ -1,4 +1,5 @@
 # /.github/workflows/scheduled_update.yml
+
 name: Scheduled Database Update
 
 on:
@@ -10,28 +11,30 @@ jobs:
   update-database:
     runs-on: ubuntu-latest
     
+    # *** 核心修复：使用 GitHub 上真实的仓库名 'Stock-Tag-Explorer-01' ***
+    defaults:
+      run:
+        working-directory: ./Stock-Tag-Explorer-01
+
     steps:
-      # 第一步：把你的代码下载到 GitHub 的服务器上
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 第二步：设置 Node.js 环境
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
+          # ** 核心修复：同样，使用真实的仓库名 **
+          cache-dependency-path: 'Stock-Tag-Explorer-01/package-lock.json'
 
-      # 第三步：安装所有必要的依赖
+      # 现在，所有后续的 run 命令都会在正确的子目录中执行
       - name: Install dependencies
         run: npm install
 
-      # 第四步：【核心】直接运行我们的“数据工人”脚本
-      # 它将在 GitHub 的服务器上，连接到你云端的 Neon 数据库
       - name: Run database update script
         env:
-          # 将所有必需的密钥，从 GitHub Secrets 注入到脚本的运行环境中
           NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
           POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
-        run: node _scripts/update-database.js
+        run: node _scripts/update-database.jss
