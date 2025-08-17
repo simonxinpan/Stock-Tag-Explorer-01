@@ -74,20 +74,18 @@ async function updateStockInDatabase(stockData) {
     const query = `
       UPDATE stocks 
       SET 
-        price = $2,
+        last_price = $2,
         change_amount = $3,
         change_percent = $4,
-        volume = $5,
         last_updated = NOW()
-      WHERE symbol = $1
+      WHERE ticker = $1
     `;
     
     const result = await client.query(query, [
       stockData.symbol,
       stockData.price,
       stockData.change,
-      stockData.changePercent,
-      stockData.volume ? Math.round(stockData.volume) : null
+      stockData.changePercent
     ]);
     
     return result.rowCount > 0;
@@ -101,14 +99,14 @@ async function getStocksToUpdate() {
   const client = await pool.connect();
   try {
     const result = await client.query(`
-      SELECT symbol FROM stocks 
+      SELECT ticker FROM stocks 
       WHERE last_updated < NOW() - INTERVAL '1 hour'
       OR last_updated IS NULL
-      ORDER BY symbol
+      ORDER BY ticker
       LIMIT 100
     `);
     
-    return result.rows.map(row => row.symbol);
+    return result.rows.map(row => row.ticker);
   } finally {
     client.release();
   }

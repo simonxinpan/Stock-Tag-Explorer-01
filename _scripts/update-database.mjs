@@ -82,14 +82,9 @@ async function ensureTablesExist(client) {
         const createTagsTableSQL = `
         CREATE TABLE IF NOT EXISTS tags (
           id SERIAL PRIMARY KEY,
-          tag_id VARCHAR(50) UNIQUE NOT NULL,
-          tag_name VARCHAR(100) NOT NULL,
-          category VARCHAR(50) NOT NULL,
-          color_theme VARCHAR(20) DEFAULT 'blue',
-          stock_count INTEGER DEFAULT 0,
-          description TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          name VARCHAR(255) NOT NULL UNIQUE,
+          type VARCHAR(50) NOT NULL,
+          description TEXT
         );
         `;
         await client.query(createTagsTableSQL);
@@ -101,24 +96,22 @@ async function ensureTablesExist(client) {
         // 2. 创建股票表
         const createStocksTableSQL = `
         CREATE TABLE IF NOT EXISTS stocks (
-          id SERIAL PRIMARY KEY,
-          symbol VARCHAR(10) UNIQUE NOT NULL,
-          name VARCHAR(200) NOT NULL,
-          price DECIMAL(10,2),
-          change_amount DECIMAL(10,2),
-          change_percent DECIMAL(5,2),
-          volume BIGINT,
-          market_cap BIGINT,
-          sector VARCHAR(100),
-          industry VARCHAR(100),
-          -- 新增财务指标字段
-          roe_ttm DECIMAL(8,4),
-          pe_ttm DECIMAL(8,2),
-          pb_ratio DECIMAL(8,2),
-          debt_to_equity DECIMAL(8,4),
-          current_ratio DECIMAL(8,2),
-          last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          ticker VARCHAR(10) PRIMARY KEY,
+          name_en TEXT,
+          name_zh TEXT,
+          sector_en TEXT,
+          sector_zh TEXT,
+          market_cap NUMERIC,
+          logo TEXT,
+          last_price NUMERIC(10, 2),
+          change_amount NUMERIC(10, 2),
+          change_percent NUMERIC(8, 4),
+          last_updated TIMESTAMPTZ,
+          roe_ttm NUMERIC(10, 4),
+          pe_ttm NUMERIC(10, 2),
+          week_52_high NUMERIC(10, 2),
+          week_52_low NUMERIC(10, 2),
+          dividend_yield NUMERIC(8, 4)
         );
         `;
         await client.query(createStocksTableSQL);
@@ -130,11 +123,9 @@ async function ensureTablesExist(client) {
         // 3. 创建股票标签关联表
         const createStockTagsTableSQL = `
         CREATE TABLE IF NOT EXISTS stock_tags (
-          id SERIAL PRIMARY KEY,
-          stock_symbol VARCHAR(10) NOT NULL,
-          tag_id VARCHAR(50) NOT NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          UNIQUE(stock_symbol, tag_id)
+          stock_ticker VARCHAR(10) NOT NULL REFERENCES stocks(ticker) ON DELETE CASCADE,
+          tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+          PRIMARY KEY (stock_ticker, tag_id)
         );
         `;
         await client.query(createStockTagsTableSQL);
@@ -171,28 +162,23 @@ async function verifyAndFixTagsTable(client) {
         console.log("📋 Existing columns:", existingColumns);
         
         // 检查必需的列是否存在
-        const requiredColumns = ['id', 'tag_id', 'tag_name', 'category', 'color_theme', 'stock_count', 'description', 'created_at', 'updated_at'];
+        const requiredColumns = ['id', 'name', 'type', 'description'];
         const missingColumns = requiredColumns.filter(col => !existingColumns.includes(col));
         
         if (missingColumns.length > 0) {
             console.log("⚠️ Missing columns detected:", missingColumns);
             
             // 如果缺少关键列，重建表
-            if (missingColumns.includes('tag_id') || missingColumns.includes('tag_name') || missingColumns.includes('category')) {
+            if (missingColumns.includes('name') || missingColumns.includes('type')) {
                 console.log("🔄 Rebuilding tags table with correct structure...");
                 await client.query('DROP TABLE IF EXISTS tags CASCADE;');
                 
                 const createTagsTableSQL = `
                 CREATE TABLE tags (
                   id SERIAL PRIMARY KEY,
-                  tag_id VARCHAR(50) UNIQUE NOT NULL,
-                  tag_name VARCHAR(100) NOT NULL,
-                  category VARCHAR(50) NOT NULL,
-                  color_theme VARCHAR(20) DEFAULT 'blue',
-                  stock_count INTEGER DEFAULT 0,
-                  description TEXT,
-                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                  name VARCHAR(255) NOT NULL UNIQUE,
+                  type VARCHAR(50) NOT NULL,
+                  description TEXT
                 );
                 `;
                 await client.query(createTagsTableSQL);
@@ -227,36 +213,35 @@ async function verifyAndFixStocksTable(client) {
         console.log("📋 Existing stocks columns:", existingColumns);
         
         // 检查必需的列是否存在
-        const requiredColumns = ['id', 'symbol', 'name', 'price', 'change_amount', 'change_percent', 'volume', 'market_cap', 'sector', 'industry', 'roe_ttm', 'pe_ttm', 'pb_ratio', 'debt_to_equity', 'current_ratio', 'last_updated', 'created_at'];
+        const requiredColumns = ['ticker', 'name_en', 'name_zh', 'sector_en', 'sector_zh', 'market_cap', 'logo', 'last_price', 'change_amount', 'change_percent', 'last_updated', 'roe_ttm', 'pe_ttm', 'week_52_high', 'week_52_low', 'dividend_yield'];
         const missingColumns = requiredColumns.filter(col => !existingColumns.includes(col));
         
         if (missingColumns.length > 0) {
             console.log("⚠️ Missing stocks columns detected:", missingColumns);
             
             // 如果缺少关键列，重建表
-            if (missingColumns.includes('symbol') || missingColumns.includes('name')) {
+            if (missingColumns.includes('ticker') || missingColumns.includes('name_zh')) {
                 console.log("🔄 Rebuilding stocks table with correct structure...");
                 await client.query('DROP TABLE IF EXISTS stocks CASCADE;');
                 
                 const createStocksTableSQL = `
                 CREATE TABLE stocks (
-                  id SERIAL PRIMARY KEY,
-                  symbol VARCHAR(10) UNIQUE NOT NULL,
-                  name VARCHAR(200) NOT NULL,
-                  price DECIMAL(10,2),
-                  change_amount DECIMAL(10,2),
-                  change_percent DECIMAL(5,2),
-                  volume BIGINT,
-                  market_cap BIGINT,
-                  sector VARCHAR(100),
-                  industry VARCHAR(100),
-                  roe_ttm DECIMAL(8,4),
-                  pe_ttm DECIMAL(8,2),
-                  pb_ratio DECIMAL(8,2),
-                  debt_to_equity DECIMAL(8,4),
-                  current_ratio DECIMAL(8,2),
-                  last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                  ticker VARCHAR(10) PRIMARY KEY,
+                  name_en TEXT,
+                  name_zh TEXT,
+                  sector_en TEXT,
+                  sector_zh TEXT,
+                  market_cap NUMERIC,
+                  logo TEXT,
+                  last_price NUMERIC(10, 2),
+                  change_amount NUMERIC(10, 2),
+                  change_percent NUMERIC(8, 4),
+                  last_updated TIMESTAMPTZ,
+                  roe_ttm NUMERIC(10, 4),
+                  pe_ttm NUMERIC(10, 2),
+                  week_52_high NUMERIC(10, 2),
+                  week_52_low NUMERIC(10, 2),
+                  dividend_yield NUMERIC(8, 4)
                 );
                 `;
                 await client.query(createStocksTableSQL);
@@ -288,17 +273,17 @@ async function createIndexes(client) {
         const existingTables = result.rows.map(row => row.table_name);
         
         if (existingTables.includes('stocks')) {
-            await client.query('CREATE INDEX IF NOT EXISTS idx_stocks_symbol ON stocks(symbol);');
-            console.log("✅ Stocks symbol index created");
+            await client.query('CREATE INDEX IF NOT EXISTS idx_stocks_ticker ON stocks(ticker);');
+            console.log("✅ Stocks ticker index created");
         }
         
         if (existingTables.includes('tags')) {
-            await client.query('CREATE INDEX IF NOT EXISTS idx_tags_category ON tags(category);');
-            console.log("✅ Tags category index created");
+            await client.query('CREATE INDEX IF NOT EXISTS idx_tags_type ON tags(type);');
+            console.log("✅ Tags type index created");
         }
         
         if (existingTables.includes('stock_tags')) {
-            await client.query('CREATE INDEX IF NOT EXISTS idx_stock_tags_symbol ON stock_tags(stock_symbol);');
+            await client.query('CREATE INDEX IF NOT EXISTS idx_stock_tags_ticker ON stock_tags(stock_ticker);');
             await client.query('CREATE INDEX IF NOT EXISTS idx_stock_tags_tag_id ON stock_tags(tag_id);');
             console.log("✅ Stock_tags indexes created");
         }
@@ -313,51 +298,31 @@ async function insertBaseTags(client) {
     console.log("📝 Inserting base tags...");
     
     const insertTagsSQL = `
-    INSERT INTO tags (tag_id, tag_name, category, color_theme, stock_count) VALUES
-    -- 市值分类标签
-    ('mega_cap', '超大盘股', 'market_cap', 'blue', 0),
-    ('large_cap', '大盘股', 'market_cap', 'blue', 0),
-    ('mid_cap', '中盘股', 'market_cap', 'blue', 0),
-    ('small_cap', '小盘股', 'market_cap', 'blue', 0),
-    -- 估值标签
-    ('undervalued', '低估值', 'valuation', 'green', 0),
-    ('overvalued', '高估值', 'valuation', 'red', 0),
-    -- 盈利能力标签
-    ('high_roe', '高ROE', 'performance', 'emerald', 0),
-    ('low_roe', '低ROE', 'performance', 'gray', 0),
-    -- 财务健康标签
-    ('low_debt', '低负债', 'financial_health', 'green', 0),
-    ('high_debt', '高负债', 'financial_health', 'red', 0),
-    ('strong_liquidity', '流动性强', 'financial_health', 'green', 0),
-    ('weak_liquidity', '流动性弱', 'financial_health', 'red', 0),
-    -- 表现标签
-    ('strong_performer', '强势股', 'performance', 'emerald', 0),
-    ('weak_performer', '弱势股', 'performance', 'red', 0),
-    -- 原有标签保留
-    ('high_volume', '52周高点', 'market_performance', 'emerald', 0),
-    ('low_point', '52周低点', 'market_performance', 'emerald', 0),
-    ('high_growth', '高成长', 'market_performance', 'emerald', 0),
-    ('low_volatility', '低波动', 'market_performance', 'emerald', 0),
-    ('high_dividend', '高分红', 'market_performance', 'emerald', 0),
-    ('high_growth_rate', '高增长率', 'financial_performance', 'amber', 0),
-    ('high_margin', '高利润率', 'financial_performance', 'amber', 0),
-    ('recent_hot', '近期热度', 'trend_ranking', 'purple', 0),
-    ('recent_trend', '近期趋势', 'trend_ranking', 'purple', 0),
-    ('growth_potential', '成长潜力', 'trend_ranking', 'purple', 0),
-    ('breakthrough', '突破新高', 'trend_ranking', 'purple', 0),
-    ('technology', '科技股', 'industry_category', 'gray', 0),
-    ('finance', '金融股', 'industry_category', 'gray', 0),
-    ('healthcare', '医疗保健', 'industry_category', 'gray', 0),
-    ('energy', '能源股', 'industry_category', 'gray', 0),
-    ('consumer', '消费品', 'industry_category', 'gray', 0),
-    ('sp500', '标普500', 'special_lists', 'blue', 0),
-    ('nasdaq100', '纳斯达克100', 'special_lists', 'blue', 0),
-    ('dow30', '道琼斯30', 'special_lists', 'blue', 0)
-    ON CONFLICT (tag_id) DO UPDATE SET
-      tag_name = EXCLUDED.tag_name,
-      category = EXCLUDED.category,
-      color_theme = EXCLUDED.color_theme,
-      updated_at = CURRENT_TIMESTAMP;
+    INSERT INTO tags (name, type, description) VALUES
+    ('标普500', '特殊名单类', '标普500指数成分股'),
+    ('科技股', '行业分类', '信息技术、软件与服务、半导体等相关股票'),
+    ('金融股', '行业分类', '金融服务、银行、保险等相关股票'),
+    ('医疗保健', '行业分类', '制药、生物技术、医疗设备等相关股票'),
+    ('非必需消费品', '行业分类', '汽车、零售、酒店、非必需消费品等相关股票'),
+    ('日常消费品', '行业分类', '食品、饮料、家居用品等相关股票'),
+    ('工业股', '行业分类', '航空航天、机械、运输等相关股票'),
+    ('能源股', '行业分类', '石油、天然气、能源设备与服务等相关股票'),
+    ('公用事业', '行业分类', '电力、天然气、水务等相关股票'),
+    ('房地产', '行业分类', '房地产投资信托(REITs)及房地产管理开发股票'),
+    ('原材料', '行业分类', '基础材料行业股票'),
+    ('通讯服务', '行业分类', '电信服务、媒体与娱乐等相关股票'),
+    ('超大盘股', '市值分类', '市值超过2000亿美元的股票'),
+    ('大盘股', '市值分类', '市值在100-2000亿美元的股票'),
+    ('中盘股', '市值分类', '市值在20-100亿美元的股票'),
+    ('小盘股', '市值分类', '市值在2-20亿美元的股票'),
+    ('低估值', '估值标签', 'PE比率相对较低的股票'),
+    ('高估值', '估值标签', 'PE比率相对较高的股票'),
+    ('高ROE', '盈利能力', 'ROE超过15%的股票'),
+    ('低ROE', '盈利能力', 'ROE低于5%的股票'),
+    ('强势股', '表现标签', '近期表现强劲的股票'),
+    ('弱势股', '表现标签', '近期表现疲弱的股票'),
+    ('高分红', '分红标签', '股息收益率较高的股票')
+    ON CONFLICT (name) DO NOTHING;
     `;
     
     await client.query(insertTagsSQL);
@@ -369,31 +334,30 @@ async function updateStockData(client) {
     
     // 示例股票数据（市值以美元为单位）
     const sampleStocks = [
-        { symbol: 'AAPL', name: '苹果公司', price: 195.89, change: 2.34, changePercent: 1.21, volume: 45234567, marketCap: 3100000000000, sector: 'Technology' },
-        { symbol: 'MSFT', name: '微软公司', price: 378.85, change: -1.23, changePercent: -0.32, volume: 23456789, marketCap: 2800000000000, sector: 'Technology' },
-        { symbol: 'GOOGL', name: '谷歌A类', price: 142.56, change: 3.45, changePercent: 2.48, volume: 34567890, marketCap: 1800000000000, sector: 'Technology' },
-        { symbol: 'AMZN', name: '亚马逊', price: 155.23, change: -0.87, changePercent: -0.56, volume: 28901234, marketCap: 1600000000000, sector: 'Consumer Discretionary' },
-        { symbol: 'TSLA', name: '特斯拉', price: 248.42, change: 12.34, changePercent: 5.23, volume: 67890123, marketCap: 789000000000, sector: 'Consumer Discretionary' }
+        { ticker: 'AAPL', name_zh: '苹果公司', last_price: 195.89, change_amount: 2.34, change_percent: 1.21, market_cap: 3100000000000, sector_zh: '信息技术' },
+        { ticker: 'MSFT', name_zh: '微软公司', last_price: 378.85, change_amount: -1.23, change_percent: -0.32, market_cap: 2800000000000, sector_zh: '信息技术' },
+        { ticker: 'GOOGL', name_zh: '谷歌A类', last_price: 142.56, change_amount: 3.45, change_percent: 2.48, market_cap: 1800000000000, sector_zh: '信息技术' },
+        { ticker: 'AMZN', name_zh: '亚马逊', last_price: 155.23, change_amount: -0.87, change_percent: -0.56, market_cap: 1600000000000, sector_zh: '非必需消费品' },
+        { ticker: 'TSLA', name_zh: '特斯拉', last_price: 248.42, change_amount: 12.34, change_percent: 5.23, market_cap: 789000000000, sector_zh: '非必需消费品' }
     ];
     
     for (const stock of sampleStocks) {
         const insertStockSQL = `
-        INSERT INTO stocks (symbol, name, price, change_amount, change_percent, volume, market_cap, sector, last_updated)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
-        ON CONFLICT (symbol) DO UPDATE SET
-          name = EXCLUDED.name,
-          price = EXCLUDED.price,
+        INSERT INTO stocks (ticker, name_zh, last_price, change_amount, change_percent, market_cap, sector_zh, last_updated)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
+        ON CONFLICT (ticker) DO UPDATE SET
+          name_zh = EXCLUDED.name_zh,
+          last_price = EXCLUDED.last_price,
           change_amount = EXCLUDED.change_amount,
           change_percent = EXCLUDED.change_percent,
-          volume = EXCLUDED.volume,
           market_cap = EXCLUDED.market_cap,
-          sector = EXCLUDED.sector,
+          sector_zh = EXCLUDED.sector_zh,
           last_updated = CURRENT_TIMESTAMP;
         `;
         
         await client.query(insertStockSQL, [
-            stock.symbol, stock.name, stock.price, stock.change, 
-            stock.changePercent, stock.volume, stock.marketCap, stock.sector
+            stock.ticker, stock.name_zh, stock.last_price, stock.change_amount, 
+            stock.change_percent, stock.market_cap, stock.sector_zh
         ]);
     }
     
@@ -407,33 +371,29 @@ async function updateStockTags(client) {
     console.log("🏷️ Updating stock tags...");
     
     const tagAssignments = [
-        { symbol: 'AAPL', tagId: 'high_volume' },
-        { symbol: 'AAPL', tagId: 'technology' },
-        { symbol: 'AAPL', tagId: 'sp500' },
-        { symbol: 'MSFT', tagId: 'high_volume' },
-        { symbol: 'MSFT', tagId: 'technology' },
-        { symbol: 'MSFT', tagId: 'sp500' },
-        { symbol: 'GOOGL', tagId: 'technology' },
-        { symbol: 'GOOGL', tagId: 'high_growth' },
-        { symbol: 'AMZN', tagId: 'consumer' },
-        { symbol: 'TSLA', tagId: 'high_growth' },
-        { symbol: 'TSLA', tagId: 'recent_hot' }
+        { ticker: 'AAPL', tagId: 1 },
+        { ticker: 'AAPL', tagId: 2 },
+        { ticker: 'MSFT', tagId: 1 },
+        { ticker: 'MSFT', tagId: 2 },
+        { ticker: 'GOOGL', tagId: 2 },
+        { ticker: 'AMZN', tagId: 5 },
+        { ticker: 'TSLA', tagId: 5 }
     ];
     
     for (const assignment of tagAssignments) {
         const insertTagSQL = `
-        INSERT INTO stock_tags (stock_symbol, tag_id)
+        INSERT INTO stock_tags (stock_ticker, tag_id)
         VALUES ($1, $2)
-        ON CONFLICT (stock_symbol, tag_id) DO NOTHING;
+        ON CONFLICT (stock_ticker, tag_id) DO NOTHING;
         `;
         
-        await client.query(insertTagSQL, [assignment.symbol, assignment.tagId]);
+        await client.query(insertTagSQL, [assignment.ticker, assignment.tagId]);
     }
     
     // 更新标签计数
     const updateCountSQL = `
     UPDATE tags SET stock_count = (
-        SELECT COUNT(*) FROM stock_tags WHERE tag_id = tags.tag_id
+        SELECT COUNT(*) FROM stock_tags WHERE tag_id = tags.id
     );
     `;
     

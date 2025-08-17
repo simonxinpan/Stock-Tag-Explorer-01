@@ -73,12 +73,11 @@ async function main() {
                 
                 await client.query(
                     `UPDATE stocks SET 
-                     price = $1, 
+                     last_price = $1, 
                      change_percent = $2, 
-                     volume = $3, 
                      last_updated = NOW() 
-                     WHERE symbol = $4`,
-                    [marketData.c, changePercent, marketData.v ? Math.round(marketData.v) : null, company.symbol]
+                     WHERE ticker = $3`,
+                    [marketData.c, changePercent, company.symbol]
                 );
                 updatedCount++;
             }
