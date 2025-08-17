@@ -87,7 +87,7 @@ async function updateStockInDatabase(stockData) {
       stockData.price,
       stockData.change,
       stockData.changePercent,
-      stockData.volume
+      stockData.volume ? Math.round(stockData.volume) : null
     ]);
     
     return result.rowCount > 0;

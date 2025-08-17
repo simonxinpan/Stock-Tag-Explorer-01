@@ -78,7 +78,7 @@ async function main() {
                      volume = $3, 
                      last_updated = NOW() 
                      WHERE symbol = $4`,
-                    [marketData.c, changePercent, marketData.v, company.symbol]
+                    [marketData.c, changePercent, marketData.v ? Math.round(marketData.v) : null, company.symbol]
                 );
                 updatedCount++;
             }
