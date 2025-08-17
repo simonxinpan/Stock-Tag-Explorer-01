@@ -106,11 +106,11 @@ class StockTagExplorer {
                 name: '🚀 股市表现类',
                 type: 'performance',
                 tags: [
-                    { id: '52w-high', name: '52周最高', description: '创52周新高的股票', stock_count: 23 },
-                    { id: '52w-low', name: '52周最低', description: '创52周新低的股票', stock_count: 12 },
-                    { id: 'high-dividend', name: '高股息率', description: '股息率较高的股票', stock_count: 45 },
-                    { id: 'low-pe', name: '低市盈率', description: '市盈率较低的股票', stock_count: 67 },
-                    { id: 'high-market-cap', name: '高市值', description: '市值较大的股票', stock_count: 50 }
+                    { id: '52w-high', name: '52周最高', description: '股价接近52周最高点的股票', stock_count: 23 },
+                    { id: '52w-low', name: '52周最低', description: '股价接近52周最低点的股票', stock_count: 12 },
+                    { id: 'high-dividend', name: '高股息率', description: '股息收益率较高的股票', stock_count: 45 },
+                    { id: 'low-pe', name: '低市盈率', description: '市盈率较低的价值股', stock_count: 67 },
+                    { id: 'high-market-cap', name: '高市值', description: '市值较大的蓝筹股', stock_count: 50 }
                 ]
             },
             {
@@ -118,10 +118,10 @@ class StockTagExplorer {
                 name: '💰 财务表现类',
                 type: 'financial',
                 tags: [
-                    { id: 'high-roe', name: '高ROE', description: '净资产收益率较高的股票', stock_count: 50 },
-                    { id: 'low-debt', name: '低负债率', description: '负债率较低的股票', stock_count: 78 },
-                    { id: 'high-growth-rate', name: '高增长率', description: '增长率较高的股票', stock_count: 34 },
-                    { id: 'high-beta', name: '高贝塔系数', description: '贝塔系数较高的股票', stock_count: 88 },
+                    { id: 'high-roe', name: '高ROE', description: '净资产收益率较高的公司', stock_count: 50 },
+                    { id: 'low-debt', name: '低负债率', description: '负债率较低的稳健公司', stock_count: 78 },
+                    { id: 'high-growth-rate', name: '高增长率', description: '营收增长率较高的公司', stock_count: 34 },
+                    { id: 'high-beta', name: '高贝塔系数', description: '贝塔系数较高的高风险股票', stock_count: 88 },
                     { id: 'vix-fear-index', name: 'VIX恐慌指数相关', description: '与VIX恐慌指数相关的股票', stock_count: 5 }
                 ]
             },
@@ -130,11 +130,11 @@ class StockTagExplorer {
                 name: '📊 趋势排位类',
                 type: 'trend',
                 tags: [
-                    { id: 'recent-strong', name: '近期强势', description: '近期表现强势的股票', stock_count: 30 },
-                    { id: 'recent-weak', name: '近期弱势', description: '近期表现弱势的股票', stock_count: 25 },
-                    { id: 'volume-surge', name: '成交量放大', description: '成交量异常放大的股票', stock_count: 18 },
-                    { id: 'breakthrough', name: '突破新高', description: '突破前期高点的股票', stock_count: 23 },
-                    { id: 'support-break', name: '跌破支撑', description: '跌破重要支撑位的股票', stock_count: 15 }
+                    { id: 'recent-strong', name: '近期强势', description: '近期表现强劲的股票', stock_count: 30 },
+                    { id: 'recent-weak', name: '近期弱势', description: '近期表现疲弱的股票', stock_count: 25 },
+                    { id: 'volume-surge', name: '成交量放大', description: '成交量显著增加的股票', stock_count: 18 },
+                    { id: 'breakthrough', name: '突破新高', description: '股价突破历史新高的股票', stock_count: 23 },
+                    { id: 'support-break', name: '跌破支撑', description: '股价跌破重要支撑位的股票', stock_count: 15 }
                 ]
             },
             {
@@ -157,8 +157,8 @@ class StockTagExplorer {
                     { id: 'sp500', name: '标普500', description: '标普500指数成分股', stock_count: 502 },
                     { id: 'nasdaq100', name: '纳斯达克100', description: '纳斯达克100指数成分股', stock_count: 100 },
                     { id: 'dow30', name: '道琼斯30', description: '道琼斯30指数成分股', stock_count: 30 },
-                    { id: 'esg', name: 'ESG评级高', description: 'ESG评级较高的股票', stock_count: 89 },
-                    { id: 'analyst-recommend', name: '分析师推荐', description: '分析师推荐的股票', stock_count: 120 }
+                    { id: 'esg', name: 'ESG评级高', description: 'ESG评级较高的可持续发展股票', stock_count: 89 },
+                    { id: 'analyst-recommend', name: '分析师推荐', description: '分析师强烈推荐的股票', stock_count: 120 }
                 ]
             }
         ];
