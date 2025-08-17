@@ -7,6 +7,23 @@ const pool = new Pool({
     ssl: { rejectUnauthorized: false } 
 });
 
+// 确保必要的表存在
+async function ensureTablesExist(client) {
+    // 创建 stock_tags 表（如果不存在）
+    await client.query(`
+        CREATE TABLE IF NOT EXISTS stock_tags (
+            id SERIAL PRIMARY KEY,
+            stock_ticker VARCHAR(10) NOT NULL,
+            tag_id INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (stock_ticker) REFERENCES stocks(ticker) ON DELETE CASCADE,
+            FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE,
+            UNIQUE(stock_ticker, tag_id)
+        )
+    `);
+    console.log("✅ Ensured stock_tags table exists");
+}
+
 // 获取 Finnhub 财务指标
 async function getFinnhubMetrics(symbol, apiKey) {
     try {
@@ -121,6 +138,9 @@ async function main() {
     try {
         client = await pool.connect();
         console.log("✅ Database connected successfully");
+        
+        // 确保必要的表存在
+        await ensureTablesExist(client);
         
         // 获取所有股票
         const { rows: companies } = await client.query('SELECT ticker FROM stocks ORDER BY ticker');
