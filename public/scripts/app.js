@@ -102,21 +102,63 @@ class StockTagExplorer {
     getFallbackTagData() {
         return [
             {
-                id: 'market-performance',
-                name: '市场表现',
+                id: 'stock-performance',
+                name: '🚀 股市表现类',
+                type: 'performance',
                 tags: [
-                    { id: 'high-growth', name: '高成长股', description: '营收和利润快速增长的公司', stock_count: 45 },
-                    { id: 'dividend-stocks', name: '分红股', description: '稳定分红的优质公司', stock_count: 32 },
-                    { id: 'value-stocks', name: '价值股', description: '被低估的优质公司', stock_count: 28 }
+                    { id: '52w-high', name: '52周最高', description: '创52周新高的股票', stock_count: 23 },
+                    { id: '52w-low', name: '52周最低', description: '创52周新低的股票', stock_count: 12 },
+                    { id: 'high-dividend', name: '高股息率', description: '股息率较高的股票', stock_count: 45 },
+                    { id: 'low-pe', name: '低市盈率', description: '市盈率较低的股票', stock_count: 67 },
+                    { id: 'high-market-cap', name: '高市值', description: '市值较大的股票', stock_count: 50 }
+                ]
+            },
+            {
+                id: 'financial-performance',
+                name: '💰 财务表现类',
+                type: 'financial',
+                tags: [
+                    { id: 'high-roe', name: '高ROE', description: '净资产收益率较高的股票', stock_count: 50 },
+                    { id: 'low-debt', name: '低负债率', description: '负债率较低的股票', stock_count: 78 },
+                    { id: 'high-growth-rate', name: '高增长率', description: '增长率较高的股票', stock_count: 34 },
+                    { id: 'high-beta', name: '高贝塔系数', description: '贝塔系数较高的股票', stock_count: 88 },
+                    { id: 'vix-fear-index', name: 'VIX恐慌指数相关', description: '与VIX恐慌指数相关的股票', stock_count: 5 }
+                ]
+            },
+            {
+                id: 'trend-ranking',
+                name: '📊 趋势排位类',
+                type: 'trend',
+                tags: [
+                    { id: 'recent-strong', name: '近期强势', description: '近期表现强势的股票', stock_count: 30 },
+                    { id: 'recent-weak', name: '近期弱势', description: '近期表现弱势的股票', stock_count: 25 },
+                    { id: 'volume-surge', name: '成交量放大', description: '成交量异常放大的股票', stock_count: 18 },
+                    { id: 'breakthrough', name: '突破新高', description: '突破前期高点的股票', stock_count: 23 },
+                    { id: 'support-break', name: '跌破支撑', description: '跌破重要支撑位的股票', stock_count: 15 }
                 ]
             },
             {
                 id: 'industry',
-                name: '行业分类',
+                name: '🏭 行业分类',
+                type: 'industry',
                 tags: [
-                    { id: 'technology', name: '科技股', description: '科技创新领域的公司', stock_count: 67 },
-                    { id: 'healthcare', name: '医疗健康', description: '医疗保健行业公司', stock_count: 41 },
-                    { id: 'finance', name: '金融服务', description: '银行、保险等金融机构', stock_count: 38 }
+                    { id: 'technology', name: '科技股', description: '科技行业相关股票', stock_count: 76 },
+                    { id: 'finance', name: '金融股', description: '金融行业相关股票', stock_count: 65 },
+                    { id: 'healthcare', name: '医疗保健', description: '医疗保健行业股票', stock_count: 64 },
+                    { id: 'energy', name: '能源股', description: '能源行业相关股票', stock_count: 23 },
+                    { id: 'consumer', name: '消费品', description: '消费品行业相关股票', stock_count: 60 }
+                ]
+            },
+            {
+                id: 'special-lists',
+                name: '⭐ 特殊名单类',
+                type: 'special',
+                tags: [
+                    { id: 'sp500', name: '标普500', description: '标普500指数成分股', stock_count: 502 },
+                    { id: 'nasdaq100', name: '纳斯达克100', description: '纳斯达克100指数成分股', stock_count: 100 },
+                    { id: 'dow30', name: '道琼斯30', description: '道琼斯30指数成分股', stock_count: 30 },
+                    { id: 'esg', name: 'ESG评级高', description: 'ESG评级较高的股票', stock_count: 89 },
+                    { id: 'analyst-recommend', name: '分析师推荐', description: '分析师推荐的股票', stock_count: 120 }
                 ]
             }
         ];
@@ -154,6 +196,12 @@ class StockTagExplorer {
     createTagGroup(group) {
         const groupDiv = document.createElement('div');
         groupDiv.className = 'tag-group';
+        
+        // 设置标签组类型，用于CSS样式区分
+        if (group.type) {
+            groupDiv.setAttribute('data-type', group.type);
+        }
+        
         groupDiv.innerHTML = `
             <h3 class="tag-group-title">${group.name}</h3>
             <div class="tag-cards"></div>
