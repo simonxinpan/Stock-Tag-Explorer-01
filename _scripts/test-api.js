@@ -1,3 +1,4 @@
+const axios = require('axios');
 require('dotenv').config();
 
 // 测试API密钥
@@ -19,13 +20,12 @@ async function testPolygonAPI() {
   console.log('=== 测试Polygon API ===');
   try {
     const symbol = 'AAPL';
-    const response = await fetch(
+    const response = await axios.get(
       `https://api.polygon.io/v2/aggs/ticker/${symbol}/prev?adjusted=true&apikey=${process.env.POLYGON_API_KEY}`
     );
-    const responseData = await response.json();
     
-    if (responseData.results && responseData.results.length > 0) {
-      const data = responseData.results[0];
+    if (response.data.results && response.data.results.length > 0) {
+      const data = response.data.results[0];
       console.log(`✅ Polygon API正常 - ${symbol}: $${data.c}`);
     } else {
       console.log('❌ Polygon API返回空数据');
@@ -46,18 +46,17 @@ async function testFinnhubAPI() {
   console.log('=== 测试Finnhub API ===');
   try {
     const symbol = 'AAPL';
-    const response = await fetch(
+    const response = await axios.get(
       `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${process.env.FINNHUB_API_KEY}`
     );
-    const data = await response.json();
     
-    if (data.c) {
-      console.log(`✅ Finnhub API正常 - ${symbol}: $${data.c}`);
+    if (response.data.c) {
+      console.log(`✅ Finnhub API正常 - ${symbol}: $${response.data.c}`);
     } else {
       console.log('❌ Finnhub API返回空数据');
     }
   } catch (error) {
-    console.log('❌ Finnhub API错误:', error.message);
+    console.log('❌ Finnhub API错误:', error.response?.data || error.message);
   }
   console.log('');
 }

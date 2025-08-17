@@ -1,6 +1,5 @@
 const { Pool } = require('pg');
 const cors = require('cors');
-const axios = require('axios');
 
 // 初始化数据库连接池
 const pool = new Pool({
@@ -59,12 +58,14 @@ async function fetchFromPolygon(symbol) {
   try {
     // 使用更稳定的API端点
     const [quoteResponse, detailsResponse] = await Promise.all([
-      axios.get(`https://api.polygon.io/v2/aggs/ticker/${symbol}/prev?adjusted=true&apikey=${process.env.POLYGON_API_KEY}`),
-      axios.get(`https://api.polygon.io/v3/reference/tickers/${symbol}?apikey=${process.env.POLYGON_API_KEY}`)
+      fetch(`https://api.polygon.io/v2/aggs/ticker/${symbol}/prev?adjusted=true&apikey=${process.env.POLYGON_API_KEY}`),
+      fetch(`https://api.polygon.io/v3/reference/tickers/${symbol}?apikey=${process.env.POLYGON_API_KEY}`)
     ]);
     
-    const quote = quoteResponse.data.results?.[0];
-    const details = detailsResponse.data.results;
+    const quoteData = await quoteResponse.json();
+    const detailsData = await detailsResponse.json();
+    const quote = quoteData.results?.[0];
+    const details = detailsData.results;
     
     if (quote && details) {
       const currentPrice = quote.c || 0;
@@ -103,12 +104,12 @@ async function fetchFromFinnhub(symbol) {
   
   try {
     const [quoteResponse, profileResponse] = await Promise.all([
-      axios.get(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${process.env.FINNHUB_API_KEY}`),
-      axios.get(`https://finnhub.io/api/v1/stock/profile2?symbol=${symbol}&token=${process.env.FINNHUB_API_KEY}`)
+      fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${process.env.FINNHUB_API_KEY}`),
+      fetch(`https://finnhub.io/api/v1/stock/profile2?symbol=${symbol}&token=${process.env.FINNHUB_API_KEY}`)
     ]);
     
-    const quote = quoteResponse.data;
-    const profile = profileResponse.data;
+    const quote = await quoteResponse.json();
+    const profile = await profileResponse.json();
     
     if (quote && quote.c) {
       return {
@@ -227,9 +228,9 @@ module.exports = async function handler(req, res) {
         const query = `
           SELECT DISTINCT s.*
           FROM stocks s
-          JOIN stock_tags st ON s.symbol = st.stock_symbol
+          JOIN stock_tags st ON s.ticker = st.stock_symbol
           WHERE st.tag_id IN (${placeholders})
-          ORDER BY s.symbol
+          ORDER BY s.ticker
         `;
         
         const result = await client.query(query, tagArray);

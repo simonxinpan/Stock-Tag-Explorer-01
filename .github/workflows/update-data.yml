@@ -1,32 +1,21 @@
-name: Update Stock Data
-
+name: Update Stock Data & Dynamic Tags
 on:
+  workflow_dispatch:
   schedule:
-    # 每天美股开盘前更新 (UTC 13:00 = EST 8:00 AM)
-    - cron: '0 13 * * 1-5'
-  workflow_dispatch: # 允许手动触发
-
+    - cron: '0 8 * * *'
 jobs:
-  update-stocks:
+  update-database-job:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Call Vercel API to update stock data
-      run: |
-        echo "Updating stock data..."
-        VERCEL_URL="${{ secrets.VERCEL_URL }}"
-        if [ -z "$VERCEL_URL" ]; then
-          echo "Error: VERCEL_URL secret is not set"
-          exit 1
-        fi
-        curl --fail --max-time 300 -X GET \
-          -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-          "${VERCEL_URL}/api/update-data"
-      env:
-        VERCEL_URL: ${{ secrets.VERCEL_URL }}
-        CRON_SECRET: ${{ secrets.CRON_SECRET }}
-        
-    - name: Verify update completion
-      run: |
-        echo "Stock data update completed successfully!"
-        echo "Timestamp: $(date)"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - run: npm install
+      - name: Run database update script
+        env:
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+        run: node _scripts/update-database.mjs
