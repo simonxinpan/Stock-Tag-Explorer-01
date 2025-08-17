@@ -1,8 +1,7 @@
 {
   "name": "stock-tag-explorer",
   "version": "1.0.1",
-  "description": "...",
-  "type": "module",
+  "description": "智能标签浏览器 - StockLink平台的核心数据发现引擎",
   "main": "api/tags.js",
   "scripts": {
     "dev": "node server.js",

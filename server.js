@@ -1,19 +1,15 @@
-import { createServer } from 'http';
-import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const { createServer } = require('http');
+const { readFileSync } = require('fs');
+const { join } = require('path');
 
 const PORT = process.env.PORT || 3000;
 
 // 导入 API 处理函数
-const importAPI = async (apiPath) => {
+const importAPI = (apiPath) => {
   try {
-    // 在 Windows 上需要使用 file:// 协议
-    const fileUrl = `file:///${apiPath.replace(/\\/g, '/')}`;
-    const module = await import(fileUrl);
+    // 清除 require 缓存以支持热重载
+    delete require.cache[require.resolve(apiPath)];
+    const module = require(apiPath);
     return module.default || module;
   } catch (error) {
     console.error(`Failed to import ${apiPath}:`, error);
@@ -41,7 +37,7 @@ const server = createServer(async (req, res) => {
     const apiPath = join(__dirname, 'api', `${apiName}.js`);
     
     try {
-      const apiHandler = await importAPI(apiPath);
+      const apiHandler = importAPI(apiPath);
       if (apiHandler) {
         // 创建模拟的 Vercel 请求/响应对象
         const mockReq = {

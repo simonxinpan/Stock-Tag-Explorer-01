@@ -1,5 +1,5 @@
 // /api/tags.js - 标签API接口
-import { Pool } from 'pg';
+const { Pool } = require('pg');
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL || process.env.NEON_DATABASE_URL,
@@ -8,207 +8,166 @@ const pool = new Pool({
 
 // 备用标签数据
 const fallbackTags = [
-    { name: '52周高点', type: 'market_performance', stock_count: 23, description: '接近52周最高价的股票' },
-    { name: '52周低点', type: 'market_performance', stock_count: 12, description: '接近52周最低价的股票' },
-    { name: '高成长', type: 'market_performance', stock_count: 45, description: '高增长率股票' },
-    { name: '低波动', type: 'market_performance', stock_count: 67, description: '价格波动较小的股票' },
-    { name: '高分红', type: 'market_performance', stock_count: 30, description: '高股息率股票' },
-    { name: '高ROE', type: 'financial_performance', stock_count: 56, description: 'ROE > 15%的股票' },
-    { name: '低负债率', type: 'financial_performance', stock_count: 78, description: '负债率较低的股票' },
-    { name: '高现金流', type: 'financial_performance', stock_count: 42, description: '现金流充裕的股票' },
-    { name: '盈利稳定', type: 'financial_performance', stock_count: 65, description: '盈利稳定增长的股票' },
-    { name: '科技股', type: 'industry_classification', stock_count: 89, description: '科技行业股票' },
-    { name: '金融股', type: 'industry_classification', stock_count: 67, description: '金融行业股票' },
-    { name: '医疗股', type: 'industry_classification', stock_count: 45, description: '医疗健康行业股票' },
-    { name: '消费股', type: 'industry_classification', stock_count: 78, description: '消费行业股票' },
-    { name: '标普500', type: 'special_lists', stock_count: 500, description: '标普500指数成分股' },
-    { name: '纳斯达克100', type: 'special_lists', stock_count: 100, description: '纳斯达克100指数成分股' },
-    { name: '道琼斯30', type: 'special_lists', stock_count: 30, description: '道琼斯工业平均指数成分股' }
+    {
+        id: 1,
+        name: "科技股",
+        description: "科技类股票，包括软件、硬件、互联网等",
+        color: "#3B82F6",
+        stock_count: 156,
+        avg_market_cap: "500B",
+        top_stocks: ["AAPL", "MSFT", "GOOGL"]
+    },
+    {
+        id: 2,
+        name: "金融股",
+        description: "银行、保险、证券等金融服务类股票",
+        color: "#10B981",
+        stock_count: 89,
+        avg_market_cap: "200B",
+        top_stocks: ["JPM", "BAC", "WFC"]
+    },
+    {
+        id: 3,
+        name: "医疗健康",
+        description: "制药、医疗设备、生物技术等健康相关股票",
+        color: "#F59E0B",
+        stock_count: 124,
+        avg_market_cap: "150B",
+        top_stocks: ["JNJ", "PFE", "UNH"]
+    },
+    {
+        id: 4,
+        name: "消费品",
+        description: "日用消费品、零售、餐饮等消费相关股票",
+        color: "#EF4444",
+        stock_count: 203,
+        avg_market_cap: "100B",
+        top_stocks: ["AMZN", "TSLA", "HD"]
+    },
+    {
+        id: 5,
+        name: "能源股",
+        description: "石油、天然气、可再生能源等能源类股票",
+        color: "#8B5CF6",
+        stock_count: 67,
+        avg_market_cap: "80B",
+        top_stocks: ["XOM", "CVX", "COP"]
+    },
+    {
+        id: 6,
+        name: "工业股",
+        description: "制造业、航空航天、基础设施等工业类股票",
+        color: "#06B6D4",
+        stock_count: 145,
+        avg_market_cap: "75B",
+        top_stocks: ["BA", "CAT", "GE"]
+    },
+    {
+        id: 7,
+        name: "房地产",
+        description: "房地产开发、REITs等房地产相关股票",
+        color: "#84CC16",
+        stock_count: 78,
+        avg_market_cap: "50B",
+        top_stocks: ["AMT", "PLD", "CCI"]
+    },
+    {
+        id: 8,
+        name: "材料股",
+        description: "化工、金属、建材等原材料类股票",
+        color: "#F97316",
+        stock_count: 92,
+        avg_market_cap: "45B",
+        top_stocks: ["LIN", "APD", "SHW"]
+    }
 ];
 
-// 备用股票数据
-const fallbackStocks = {
-    '高ROE': [
-        { symbol: 'AAPL', name: '苹果公司', price: 195.89, change_percent: 1.21, volume: 45234567, market_cap: '3.1T' },
-        { symbol: 'MSFT', name: '微软公司', price: 378.85, change_percent: -0.32, volume: 23456789, market_cap: '2.8T' },
-        { symbol: 'NVDA', name: '英伟达', price: 495.22, change_percent: 1.80, volume: 45123456, market_cap: '1.2T' }
-    ],
-    '科技股': [
-        { symbol: 'AAPL', name: '苹果公司', price: 195.89, change_percent: 1.21, volume: 45234567, market_cap: '3.1T' },
-        { symbol: 'MSFT', name: '微软公司', price: 378.85, change_percent: -0.32, volume: 23456789, market_cap: '2.8T' },
-        { symbol: 'GOOGL', name: '谷歌A类', price: 142.56, change_percent: 2.48, volume: 34567890, market_cap: '1.8T' },
-        { symbol: 'META', name: 'Meta平台', price: 352.96, change_percent: -0.60, volume: 19876543, market_cap: '896B' }
-    ],
-    '标普500': [
-        { symbol: 'AAPL', name: '苹果公司', price: 195.89, change_percent: 1.21, volume: 45234567, market_cap: '3.1T' },
-        { symbol: 'MSFT', name: '微软公司', price: 378.85, change_percent: -0.32, volume: 23456789, market_cap: '2.8T' },
-        { symbol: 'AMZN', name: '亚马逊', price: 155.23, change_percent: -0.56, volume: 28901234, market_cap: '1.6T' },
-        { symbol: 'TSLA', name: '特斯拉', price: 248.42, change_percent: 5.23, volume: 67890123, market_cap: '789B' }
-    ]
-};
-
-export default async function handler(req, res) {
-    // 设置CORS头
+function handler(req, res) {
+    // 设置 CORS 头
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     
     if (req.method === 'OPTIONS') {
-        return res.status(200).end();
+        res.status(200).end();
+        return;
     }
     
     if (req.method !== 'GET') {
-        return res.status(405).json({ error: 'Method not allowed' });
+        res.status(405).json({ error: 'Method not allowed' });
+        return;
     }
     
-    const { tag_name, symbol } = req.query;
+    getTags(req, res);
+}
+
+function getTags(req, res) {
+    const query = `
+        SELECT 
+            t.id,
+            t.name,
+            t.description,
+            t.color,
+            COUNT(st.stock_symbol) as stock_count,
+            COALESCE(AVG(s.market_cap), 0) as avg_market_cap,
+            ARRAY_AGG(
+                CASE 
+                    WHEN s.market_cap IS NOT NULL 
+                    THEN st.stock_symbol 
+                    ELSE NULL 
+                END
+                ORDER BY s.market_cap DESC NULLS LAST
+            ) FILTER (WHERE s.market_cap IS NOT NULL) as top_stocks
+        FROM tags t
+        LEFT JOIN stock_tags st ON t.id = st.tag_id
+        LEFT JOIN stocks s ON st.stock_symbol = s.symbol
+        GROUP BY t.id, t.name, t.description, t.color
+        ORDER BY stock_count DESC, t.name;
+    `;
     
-    try {
-        // 如果请求特定标签的股票
-        if (tag_name) {
-            let stocks = [];
+    pool.query(query)
+        .then(result => {
+            const tags = result.rows.map(tag => ({
+                ...tag,
+                avg_market_cap: formatMarketCap(tag.avg_market_cap),
+                top_stocks: (tag.top_stocks || []).slice(0, 3)
+            }));
             
-            try {
-                const client = await pool.connect();
-                
-                // 检查表是否存在
-                const tableCheck = await client.query(`
-                    SELECT EXISTS (
-                        SELECT FROM information_schema.tables 
-                        WHERE table_schema = 'public' 
-                        AND table_name = 'stocks'
-                    );
-                `);
-                
-                if (tableCheck.rows[0].exists) {
-                    // 从数据库获取数据
-                    const result = await client.query(`
-                        SELECT s.symbol, s.name_zh as name, s.price, s.change_percent, 
-                               s.volume, s.market_cap, s.sector, s.industry
-                        FROM stocks s
-                        JOIN stock_tags st ON s.symbol = st.stock_symbol
-                        JOIN tags t ON st.tag_id = t.tag_id
-                        WHERE t.tag_name = $1
-                        ORDER BY s.market_cap DESC NULLS LAST
-                        LIMIT 50
-                    `, [tag_name]);
-                    
-                    stocks = result.rows;
-                }
-                
-                client.release();
-            } catch (dbError) {
-                console.warn('Database query failed, using fallback data:', dbError.message);
-                stocks = fallbackStocks[tag_name] || [];
-            }
-            
-            // 如果没有数据，使用备用数据
-            if (stocks.length === 0) {
-                stocks = fallbackStocks[tag_name] || [];
-            }
-            
-            return res.status(200).json({
+            res.status(200).json({
                 success: true,
-                tag_info: {
-                    tag_name: tag_name,
-                    description: `${tag_name}相关股票`
-                },
-                data: stocks,
-                meta: {
-                    total_stocks: stocks.length,
-                    query_time: new Date().toISOString()
-                }
-            });
-        }
-        
-        // 如果请求特定股票的标签
-        if (symbol) {
-            let tags = [];
-            
-            try {
-                const client = await pool.connect();
-                
-                const result = await client.query(`
-                    SELECT t.tag_name, t.category as type, t.description
-                    FROM tags t
-                    JOIN stock_tags st ON t.tag_id = st.tag_id
-                    WHERE st.stock_symbol = $1
-                `, [symbol]);
-                
-                tags = result.rows;
-                client.release();
-            } catch (dbError) {
-                console.warn('Database query failed for symbol tags:', dbError.message);
-                // 返回一些默认标签
-                tags = [{ tag_name: '科技股', type: 'industry_classification', description: '科技行业股票' }];
-            }
-            
-            return res.status(200).json({
-                success: true,
-                symbol: symbol,
                 data: tags,
-                meta: {
-                    total_tags: tags.length,
-                    query_time: new Date().toISOString()
-                }
+                total: tags.length,
+                timestamp: new Date().toISOString()
             });
-        }
-        
-        // 获取所有标签统计
-        let tags = [];
-        
-        try {
-            const client = await pool.connect();
+        })
+        .catch(error => {
+            console.error('Database query failed, using fallback tags:', error.message);
             
-            // 检查表是否存在
-            const tableCheck = await client.query(`
-                SELECT EXISTS (
-                    SELECT FROM information_schema.tables 
-                    WHERE table_schema = 'public' 
-                    AND table_name = 'tags'
-                );
-            `);
-            
-            if (tableCheck.rows[0].exists) {
-                const result = await client.query(`
-                    SELECT t.tag_name as name, t.category as type, 
-                           COUNT(st.stock_symbol)::int as stock_count,
-                           t.description
-                    FROM tags t
-                    LEFT JOIN stock_tags st ON t.tag_id = st.tag_id
-                    GROUP BY t.tag_id, t.tag_name, t.category, t.description
-                    ORDER BY t.category, stock_count DESC
-                `);
-                
-                tags = result.rows;
-            }
-            
-            client.release();
-        } catch (dbError) {
-            console.warn('Database query failed, using fallback tags:', dbError.message);
-            tags = fallbackTags;
-        }
-        
-        // 如果没有数据，使用备用数据
-        if (tags.length === 0) {
-            tags = fallbackTags;
-        }
-        
-        return res.status(200).json({
-            success: true,
-            data: tags,
-            meta: {
-                total_tags: tags.length,
-                last_updated: new Date().toISOString()
-            }
+            // 使用备用数据
+            res.status(200).json({
+                success: true,
+                data: fallbackTags,
+                total: fallbackTags.length,
+                timestamp: new Date().toISOString(),
+                fallback: true,
+                message: 'Using fallback data due to database connection issue'
+            });
         });
-        
-    } catch (error) {
-        console.error('API Error:', error);
-        return res.status(500).json({
-            success: false,
-            error: 'Internal server error',
-            message: process.env.NODE_ENV === 'development' ? error.message : 'An error occurred'
-        });
+}
+
+function formatMarketCap(marketCap) {
+    if (!marketCap || marketCap === 0) return 'N/A';
+    
+    const num = parseFloat(marketCap);
+    if (num >= 1e12) {
+        return (num / 1e12).toFixed(1) + 'T';
+    } else if (num >= 1e9) {
+        return (num / 1e9).toFixed(1) + 'B';
+    } else if (num >= 1e6) {
+        return (num / 1e6).toFixed(1) + 'M';
+    } else {
+        return num.toFixed(0);
     }
 }
+
+module.exports = handler;
