@@ -29,14 +29,12 @@ async function main() {
         client = await pool.connect();
         console.log("✅ Database connected successfully");
         
-        // 清理并重建数据库结构
-        await cleanAndRebuildDatabase(client);
-        
-        // 检查表是否存在，如果不存在则创建
+        // 检查表是否存在，如果不存在则创建（不删除现有数据）
         await ensureTablesExist(client);
         
-        // 更新股票数据
-        await updateStockData(client);
+        // 注意：不再调用 updateStockData，避免覆盖现有的502只股票数据
+        // 如需更新股票数据，请使用专门的数据更新脚本
+        console.log("✅ Database structure verified, existing stock data preserved");
         
         console.log("===== Job finished successfully. =====");
     } catch (error) {
@@ -170,8 +168,11 @@ async function verifyAndFixTagsTable(client) {
             
             // 如果缺少关键列，重建表
             if (missingColumns.includes('name') || missingColumns.includes('type')) {
-                console.log("🔄 Rebuilding tags table with correct structure...");
-                await client.query('DROP TABLE IF EXISTS tags CASCADE;');
+                console.log("⚠️ Tags table structure needs update but may contain data.");
+                console.log("⚠️ Please run manual migration script to preserve existing data.");
+                console.log("⚠️ Skipping automatic table rebuild to prevent data loss.");
+                return;
+                // await client.query('DROP TABLE IF EXISTS tags CASCADE;');
                 
                 const createTagsTableSQL = `
                 CREATE TABLE tags (
@@ -219,10 +220,13 @@ async function verifyAndFixStocksTable(client) {
         if (missingColumns.length > 0) {
             console.log("⚠️ Missing stocks columns detected:", missingColumns);
             
-            // 如果缺少关键列，重建表
+            // 如果缺少关键列，需要手动迁移数据，不自动删除表
             if (missingColumns.includes('ticker') || missingColumns.includes('name_zh')) {
-                console.log("🔄 Rebuilding stocks table with correct structure...");
-                await client.query('DROP TABLE IF EXISTS stocks CASCADE;');
+                console.log("⚠️ Stocks table structure needs update but contains data.");
+                console.log("⚠️ Please run manual migration script to preserve existing data.");
+                console.log("⚠️ Skipping automatic table rebuild to prevent data loss.");
+                return;
+                // await client.query('DROP TABLE IF EXISTS stocks CASCADE;');
                 
                 const createStocksTableSQL = `
                 CREATE TABLE stocks (
