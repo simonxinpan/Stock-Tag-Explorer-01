@@ -1,0 +1,29 @@
+name: Update Market Data (High Frequency)
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'  # 每15分钟执行一次
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  update-market-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run market data update script
+        env:
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+        run: node _scripts/update-market-data.mjs

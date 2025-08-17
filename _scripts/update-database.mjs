@@ -108,9 +108,15 @@ async function ensureTablesExist(client) {
           change_amount DECIMAL(10,2),
           change_percent DECIMAL(5,2),
           volume BIGINT,
-          market_cap VARCHAR(20),
+          market_cap BIGINT,
           sector VARCHAR(100),
           industry VARCHAR(100),
+          -- 新增财务指标字段
+          roe_ttm DECIMAL(8,4),
+          pe_ttm DECIMAL(8,2),
+          pb_ratio DECIMAL(8,2),
+          debt_to_equity DECIMAL(8,4),
+          current_ratio DECIMAL(8,2),
           last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
@@ -221,7 +227,7 @@ async function verifyAndFixStocksTable(client) {
         console.log("📋 Existing stocks columns:", existingColumns);
         
         // 检查必需的列是否存在
-        const requiredColumns = ['id', 'symbol', 'name', 'price', 'change_amount', 'change_percent', 'volume', 'market_cap', 'sector', 'industry', 'last_updated', 'created_at'];
+        const requiredColumns = ['id', 'symbol', 'name', 'price', 'change_amount', 'change_percent', 'volume', 'market_cap', 'sector', 'industry', 'roe_ttm', 'pe_ttm', 'pb_ratio', 'debt_to_equity', 'current_ratio', 'last_updated', 'created_at'];
         const missingColumns = requiredColumns.filter(col => !existingColumns.includes(col));
         
         if (missingColumns.length > 0) {
@@ -241,9 +247,14 @@ async function verifyAndFixStocksTable(client) {
                   change_amount DECIMAL(10,2),
                   change_percent DECIMAL(5,2),
                   volume BIGINT,
-                  market_cap VARCHAR(20),
+                  market_cap BIGINT,
                   sector VARCHAR(100),
                   industry VARCHAR(100),
+                  roe_ttm DECIMAL(8,4),
+                  pe_ttm DECIMAL(8,2),
+                  pb_ratio DECIMAL(8,2),
+                  debt_to_equity DECIMAL(8,4),
+                  current_ratio DECIMAL(8,2),
                   last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
@@ -303,13 +314,31 @@ async function insertBaseTags(client) {
     
     const insertTagsSQL = `
     INSERT INTO tags (tag_id, tag_name, category, color_theme, stock_count) VALUES
+    -- 市值分类标签
+    ('mega_cap', '超大盘股', 'market_cap', 'blue', 0),
+    ('large_cap', '大盘股', 'market_cap', 'blue', 0),
+    ('mid_cap', '中盘股', 'market_cap', 'blue', 0),
+    ('small_cap', '小盘股', 'market_cap', 'blue', 0),
+    -- 估值标签
+    ('undervalued', '低估值', 'valuation', 'green', 0),
+    ('overvalued', '高估值', 'valuation', 'red', 0),
+    -- 盈利能力标签
+    ('high_roe', '高ROE', 'performance', 'emerald', 0),
+    ('low_roe', '低ROE', 'performance', 'gray', 0),
+    -- 财务健康标签
+    ('low_debt', '低负债', 'financial_health', 'green', 0),
+    ('high_debt', '高负债', 'financial_health', 'red', 0),
+    ('strong_liquidity', '流动性强', 'financial_health', 'green', 0),
+    ('weak_liquidity', '流动性弱', 'financial_health', 'red', 0),
+    -- 表现标签
+    ('strong_performer', '强势股', 'performance', 'emerald', 0),
+    ('weak_performer', '弱势股', 'performance', 'red', 0),
+    -- 原有标签保留
     ('high_volume', '52周高点', 'market_performance', 'emerald', 0),
     ('low_point', '52周低点', 'market_performance', 'emerald', 0),
     ('high_growth', '高成长', 'market_performance', 'emerald', 0),
     ('low_volatility', '低波动', 'market_performance', 'emerald', 0),
     ('high_dividend', '高分红', 'market_performance', 'emerald', 0),
-    ('high_roe', '高ROE', 'financial_performance', 'amber', 0),
-    ('low_debt', '低负债率', 'financial_performance', 'amber', 0),
     ('high_growth_rate', '高增长率', 'financial_performance', 'amber', 0),
     ('high_margin', '高利润率', 'financial_performance', 'amber', 0),
     ('recent_hot', '近期热度', 'trend_ranking', 'purple', 0),
