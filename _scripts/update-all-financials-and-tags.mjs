@@ -162,7 +162,7 @@ async function main() {
                      last_updated = NOW() 
                      WHERE symbol = $7`,
                     [
-                        metrics.marketCapitalization || null,
+                        metrics.marketCapitalization ? Math.round(metrics.marketCapitalization) : null,
                         metrics.roeTTM || null,
                         metrics.peTTM || null,
                         metrics.pbAnnual || null,

@@ -8,7 +8,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div id="app">
@@ -25,25 +24,10 @@
             <div class="container">
                 <!-- 标签广场 -->
                 <section id="tag-plaza" class="tag-plaza">
-                    <div class="plaza-header">
-                        <h2>标签广场</h2>
-                        <p class="plaza-subtitle">通过智能标签，发现具有特定市场特征和财务表现的股票集群</p>
-                    </div>
-                    
-                    <div id="loading" class="loading hidden">
-                        <div class="loading-spinner"></div>
-                        <span>加载中...</span>
-                    </div>
-                    
-                    <div id="error" class="error hidden">
-                        <div class="error-icon">⚠️</div>
-                        <div class="error-message">加载失败，请刷新重试</div>
-                        <button class="retry-btn" onclick="window.location.reload()">重试</button>
-                    </div>
-                    
-                    <div id="tag-groups" class="tag-groups">
-                        <!-- 标签组将由JavaScript动态生成 -->
-                    </div>
+                    <h2>标签广场</h2>
+                    <div id="loading" class="loading">加载中...</div>
+                    <div id="error" class="error hidden">加载失败，请刷新重试</div>
+                    <div id="tag-groups" class="tag-groups hidden"></div>
                 </section>
                 
                 <!-- 股票列表 -->
@@ -52,27 +36,20 @@
                         <h3 id="stock-list-title">选中标签的股票</h3>
                         <div class="stock-list-controls">
                             <select id="sort-select" class="sort-select">
-                                <option value="name-asc">按名称排序</option>
-                                <option value="price-desc">按价格排序</option>
-                                <option value="change-desc">按涨跌幅排序</option>
-                                <option value="volume-desc">按成交量排序</option>
+                                <option value="name-asc">按名称排序 ↑</option>
+                                <option value="name-desc">按名称排序 ↓</option>
+                                <option value="price-desc">按价格排序 ↓</option>
+                                <option value="price-asc">按价格排序 ↑</option>
+                                <option value="change-desc">按涨跌幅排序 ↓</option>
+                                <option value="change-asc">按涨跌幅排序 ↑</option>
+                                <option value="volume-desc">按成交量排序 ↓</option>
+                                <option value="volume-asc">按成交量排序 ↑</option>
                             </select>
                             <button id="clear-selection" class="clear-btn">清除选择</button>
                         </div>
                     </div>
-                    
-                    <div id="stock-list-loading" class="stock-list-loading hidden">
-                        <div class="loading-spinner"></div>
-                        <span>加载股票数据中...</span>
-                    </div>
-                    
                     <div id="stock-list" class="stock-list"></div>
-                    
-                    <div id="pagination" class="pagination hidden">
-                        <button class="page-btn" data-action="prev">上一页</button>
-                        <span class="page-info">第 1 页，共 1 页</span>
-                        <button class="page-btn" data-action="next">下一页</button>
-                    </div>
+                    <div id="pagination" class="pagination hidden"></div>
                 </section>
             </div>
         </main>
@@ -81,22 +58,11 @@
         <footer class="footer">
             <div class="container">
                 <p>&copy; 2024 Stock Tag Explorer. 数据来源: Polygon.io & Finnhub</p>
-                <p class="footer-links">
-                    <a href="#">关于我们</a> | 
-                    <a href="#">隐私政策</a> | 
-                    <a href="#">使用条款</a> | 
-                    <a href="#">联系我们</a>
-                </p>
             </div>
         </footer>
-    </div>
-    
-    <!-- 浮动提示 -->
-    <div id="toast" class="toast hidden">
-        <div class="toast-content">
-            <span class="toast-icon">ℹ️</span>
-            <span class="toast-message"></span>
-        </div>
+        
+        <!-- Toast 通知 -->
+        <div id="toast" class="toast hidden"></div>
     </div>
     
     <script src="./scripts/app.js"></script>

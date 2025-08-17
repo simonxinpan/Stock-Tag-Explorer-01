@@ -14,36 +14,11 @@ const corsMiddleware = cors({
   credentials: true
 });
 
-// 实时数据获取函数
-async function fetchRealTimeStockData(symbols) {
-  const stockData = [];
-  
-  console.log(`Fetching real-time data for ${symbols.length} symbols:`, symbols);
-  
-  for (const symbol of symbols) {
-    try {
-      // 尝试从Polygon获取数据
-      let stockInfo = await fetchFromPolygon(symbol);
-      
-      // 如果Polygon失败，尝试Finnhub
-      if (!stockInfo) {
-        console.log(`Polygon failed for ${symbol}, trying Finnhub...`);
-        stockInfo = await fetchFromFinnhub(symbol);
-      }
-      
-      if (stockInfo) {
-        stockData.push(stockInfo);
-        console.log(`Successfully fetched data for ${symbol}`);
-      } else {
-        console.warn(`No data available for ${symbol}`);
-      }
-    } catch (error) {
-      console.error(`Failed to fetch data for ${symbol}:`, error.message);
-    }
-  }
-  
-  console.log(`Fetched real-time data for ${stockData.length}/${symbols.length} symbols`);
-  return stockData;
+// 简化的数据获取函数 - 避免外部API调用超时
+async function getStockData(symbols) {
+  // 直接返回空数组，依赖数据库中的数据
+  console.log(`Requested data for ${symbols.length} symbols, using database data only`);
+  return [];
 }
 
 // Polygon.io API调用
@@ -228,36 +203,28 @@ module.exports = async function handler(req, res) {
         const query = `
           SELECT DISTINCT s.*
           FROM stocks s
-          JOIN stock_tags st ON s.ticker = st.stock_symbol
+          JOIN stock_tags st ON s.symbol = st.stock_symbol
           WHERE st.tag_id IN (${placeholders})
-          ORDER BY s.ticker
+          ORDER BY s.symbol
+          LIMIT 100
         `;
         
         const result = await client.query(query, tagArray);
         const dbStocks = result.rows;
         
-        // 获取股票符号列表
-        const stockSymbols = dbStocks.map(stock => stock.symbol);
-        
-        // 获取实时数据
-        const realTimeStocks = await fetchRealTimeStockData(stockSymbols);
-        
-        // 合并数据库数据和实时数据
-        stocks = dbStocks.map(dbStock => {
-          const realTimeStock = realTimeStocks.find(rt => rt.symbol === dbStock.symbol);
-          if (realTimeStock) {
-            return {
-              ...dbStock,
-              price: realTimeStock.price,
-              change: realTimeStock.change,
-              changePercent: realTimeStock.changePercent,
-              volume: realTimeStock.volume || dbStock.volume,
-              marketCap: realTimeStock.marketCap || dbStock.market_cap,
-              lastUpdated: realTimeStock.lastUpdated
-            };
-          }
-          return dbStock;
-        });
+        // 直接使用数据库数据，避免外部API调用
+        stocks = dbStocks.map(dbStock => ({
+          symbol: dbStock.symbol || dbStock.ticker,
+          name: dbStock.name_zh || dbStock.name_en || dbStock.symbol,
+          price: dbStock.price || 0,
+          change: dbStock.change_amount || 0,
+          changePercent: dbStock.change_percent || 0,
+          volume: dbStock.volume || 0,
+          marketCap: dbStock.market_cap || 'N/A',
+          sector: dbStock.sector || 'Unknown',
+          industry: dbStock.industry || 'Unknown',
+          lastUpdated: dbStock.last_updated || new Date().toISOString()
+        }));
         
         totalCount = stocks.length;
       } else {
@@ -355,4 +322,4 @@ module.exports = async function handler(req, res) {
       message: error.message
     });
   }
-}
+};
