@@ -367,13 +367,13 @@ async function insertBaseTags(client) {
 async function updateStockData(client) {
     console.log("📊 Updating stock data...");
     
-    // 示例股票数据
+    // 示例股票数据（市值以美元为单位）
     const sampleStocks = [
-        { symbol: 'AAPL', name: '苹果公司', price: 195.89, change: 2.34, changePercent: 1.21, volume: 45234567, marketCap: '3.1T', sector: 'Technology' },
-        { symbol: 'MSFT', name: '微软公司', price: 378.85, change: -1.23, changePercent: -0.32, volume: 23456789, marketCap: '2.8T', sector: 'Technology' },
-        { symbol: 'GOOGL', name: '谷歌A类', price: 142.56, change: 3.45, changePercent: 2.48, volume: 34567890, marketCap: '1.8T', sector: 'Technology' },
-        { symbol: 'AMZN', name: '亚马逊', price: 155.23, change: -0.87, changePercent: -0.56, volume: 28901234, marketCap: '1.6T', sector: 'Consumer Discretionary' },
-        { symbol: 'TSLA', name: '特斯拉', price: 248.42, change: 12.34, changePercent: 5.23, volume: 67890123, marketCap: '789B', sector: 'Consumer Discretionary' }
+        { symbol: 'AAPL', name: '苹果公司', price: 195.89, change: 2.34, changePercent: 1.21, volume: 45234567, marketCap: 3100000000000, sector: 'Technology' },
+        { symbol: 'MSFT', name: '微软公司', price: 378.85, change: -1.23, changePercent: -0.32, volume: 23456789, marketCap: 2800000000000, sector: 'Technology' },
+        { symbol: 'GOOGL', name: '谷歌A类', price: 142.56, change: 3.45, changePercent: 2.48, volume: 34567890, marketCap: 1800000000000, sector: 'Technology' },
+        { symbol: 'AMZN', name: '亚马逊', price: 155.23, change: -0.87, changePercent: -0.56, volume: 28901234, marketCap: 1600000000000, sector: 'Consumer Discretionary' },
+        { symbol: 'TSLA', name: '特斯拉', price: 248.42, change: 12.34, changePercent: 5.23, volume: 67890123, marketCap: 789000000000, sector: 'Consumer Discretionary' }
     ];
     
     for (const stock of sampleStocks) {
