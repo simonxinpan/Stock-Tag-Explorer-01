@@ -203,9 +203,9 @@ module.exports = async function handler(req, res) {
         const query = `
           SELECT DISTINCT s.*
           FROM stocks s
-          JOIN stock_tags st ON s.symbol = st.stock_symbol
+          JOIN stock_tags st ON s.ticker = st.stock_ticker
           WHERE st.tag_id IN (${placeholders})
-          ORDER BY s.symbol
+          ORDER BY s.ticker
           LIMIT 100
         `;
         
@@ -214,15 +214,15 @@ module.exports = async function handler(req, res) {
         
         // 直接使用数据库数据，避免外部API调用
         stocks = dbStocks.map(dbStock => ({
-          symbol: dbStock.symbol || dbStock.ticker,
-          name: dbStock.name_zh || dbStock.name_en || dbStock.symbol,
-          price: dbStock.price || 0,
+          symbol: dbStock.ticker,
+          name: dbStock.name_zh || dbStock.name_en || dbStock.ticker,
+          price: dbStock.last_price || 0,
           change: dbStock.change_amount || 0,
           changePercent: dbStock.change_percent || 0,
-          volume: dbStock.volume || 0,
+          volume: 0, // volume字段已移除
           marketCap: dbStock.market_cap || 'N/A',
-          sector: dbStock.sector || 'Unknown',
-          industry: dbStock.industry || 'Unknown',
+          sector: dbStock.sector_zh || dbStock.sector_en || 'Unknown',
+          industry: 'Unknown',
           lastUpdated: dbStock.last_updated || new Date().toISOString()
         }));
         

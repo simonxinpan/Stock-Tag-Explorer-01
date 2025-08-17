@@ -107,21 +107,21 @@ function getTags(req, res) {
             t.id,
             t.name,
             t.description,
-            t.color,
-            COUNT(st.stock_symbol) as stock_count,
+            t.type,
+            COUNT(st.stock_ticker) as stock_count,
             COALESCE(AVG(s.market_cap), 0) as avg_market_cap,
             ARRAY_AGG(
                 CASE 
                     WHEN s.market_cap IS NOT NULL 
-                    THEN st.stock_symbol 
+                    THEN st.stock_ticker 
                     ELSE NULL 
                 END
                 ORDER BY s.market_cap DESC NULLS LAST
             ) FILTER (WHERE s.market_cap IS NOT NULL) as top_stocks
         FROM tags t
         LEFT JOIN stock_tags st ON t.id = st.tag_id
-        LEFT JOIN stocks s ON st.stock_symbol = s.symbol
-        GROUP BY t.id, t.name, t.description, t.color
+        LEFT JOIN stocks s ON st.stock_ticker = s.ticker
+        GROUP BY t.id, t.name, t.description, t.type
         ORDER BY stock_count DESC, t.name;
     `;
     

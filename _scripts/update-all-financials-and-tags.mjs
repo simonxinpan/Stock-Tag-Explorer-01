@@ -26,88 +26,84 @@ async function getFinnhubMetrics(symbol, apiKey) {
 }
 
 // 应用标签到股票
-async function applyTag(client, stockSymbol, tagId) {
+async function applyTag(client, stockTicker, tagName) {
     try {
+        // 根据标签名称查找标签ID
+        const { rows } = await client.query(
+            'SELECT id FROM tags WHERE name = $1',
+            [tagName]
+        );
+        
+        if (rows.length === 0) {
+            console.warn(`⚠️ Tag '${tagName}' not found`);
+            return;
+        }
+        
+        const tagId = rows[0].id;
+        
         await client.query(
-            `INSERT INTO stock_tags (stock_symbol, tag_id) 
+            `INSERT INTO stock_tags (stock_ticker, tag_id) 
              VALUES ($1, $2) 
-             ON CONFLICT (stock_symbol, tag_id) DO NOTHING`,
-            [stockSymbol, tagId]
+             ON CONFLICT (stock_ticker, tag_id) DO NOTHING`,
+            [stockTicker, tagId]
         );
     } catch (error) {
-        console.error(`❌ Error applying tag ${tagId} to ${stockSymbol}:`, error.message);
+        console.error(`❌ Error applying tag ${tagName} to ${stockTicker}:`, error.message);
     }
 }
 
 // 计算并应用动态标签
 async function calculateAndApplyTags(client, stock) {
-    const { symbol, market_cap, pe_ttm, roe_ttm, pb_ratio, debt_to_equity, current_ratio, change_percent } = stock;
+    const { ticker, market_cap, pe_ttm, roe_ttm, change_percent } = stock;
     
     // 清除该股票的所有动态标签
     await client.query(
         `DELETE FROM stock_tags 
-         WHERE stock_symbol = $1 
+         WHERE stock_ticker = $1 
          AND tag_id IN (
-             SELECT tag_id FROM tags 
-             WHERE category IN ('market_cap', 'valuation', 'performance', 'financial_health')
+             SELECT id FROM tags 
+             WHERE type IN ('market_cap', 'valuation', 'performance', 'financial_health')
          )`,
-        [symbol]
+        [ticker]
     );
     
     // 市值分类标签
     if (market_cap) {
         if (market_cap >= 200000000000) {
-            await applyTag(client, symbol, 'mega_cap');
+            await applyTag(client, ticker, '超大盘股');
         } else if (market_cap >= 10000000000) {
-            await applyTag(client, symbol, 'large_cap');
+            await applyTag(client, ticker, '大盘股');
         } else if (market_cap >= 2000000000) {
-            await applyTag(client, symbol, 'mid_cap');
+            await applyTag(client, ticker, '中盘股');
         } else {
-            await applyTag(client, symbol, 'small_cap');
+            await applyTag(client, ticker, '小盘股');
         }
     }
     
     // 估值标签
     if (pe_ttm !== null && pe_ttm !== undefined) {
         if (pe_ttm < 15) {
-            await applyTag(client, symbol, 'undervalued');
+            await applyTag(client, ticker, '低估值');
         } else if (pe_ttm > 30) {
-            await applyTag(client, symbol, 'overvalued');
+            await applyTag(client, ticker, '高估值');
         }
     }
     
     // 盈利能力标签
     if (roe_ttm !== null && roe_ttm !== undefined) {
         if (roe_ttm > 20) {
-            await applyTag(client, symbol, 'high_roe');
+            await applyTag(client, ticker, '高ROE');
         } else if (roe_ttm < 5) {
-            await applyTag(client, symbol, 'low_roe');
-        }
-    }
-    
-    // 财务健康标签
-    if (debt_to_equity !== null && debt_to_equity !== undefined) {
-        if (debt_to_equity < 0.3) {
-            await applyTag(client, symbol, 'low_debt');
-        } else if (debt_to_equity > 1.0) {
-            await applyTag(client, symbol, 'high_debt');
-        }
-    }
-    
-    if (current_ratio !== null && current_ratio !== undefined) {
-        if (current_ratio > 2.0) {
-            await applyTag(client, symbol, 'strong_liquidity');
-        } else if (current_ratio < 1.0) {
-            await applyTag(client, symbol, 'weak_liquidity');
+            await applyTag(client, ticker, '低ROE');
         }
     }
     
     // 表现标签
     if (change_percent !== null && change_percent !== undefined) {
         if (change_percent > 5) {
-            await applyTag(client, symbol, 'strong_performer');
+            await applyTag(client, ticker, '强势股');
         } else if (change_percent < -5) {
-            await applyTag(client, symbol, 'weak_performer');
+            await applyTag(client, ticker, '弱势股');
         }
     }
 }
@@ -127,7 +123,7 @@ async function main() {
         console.log("✅ Database connected successfully");
         
         // 获取所有股票
-        const { rows: companies } = await client.query('SELECT symbol FROM stocks ORDER BY symbol');
+        const { rows: companies } = await client.query('SELECT ticker FROM stocks ORDER BY ticker');
         console.log(`📋 Found ${companies.length} stocks to update`);
         
         // 开始事务
@@ -142,10 +138,10 @@ async function main() {
             // 尊重 Finnhub API 限制 (60 calls/minute)
             await new Promise(resolve => setTimeout(resolve, 1200));
             
-            console.log(`📊 Processing ${company.symbol} (${i + 1}/${companies.length})`);
+            console.log(`📊 Processing ${company.ticker} (${i + 1}/${companies.length})`);
             
             // 获取财务数据
-            const financialData = await getFinnhubMetrics(company.symbol, FINNHUB_API_KEY);
+            const financialData = await getFinnhubMetrics(company.ticker, FINNHUB_API_KEY);
             
             if (financialData && financialData.metric) {
                 const metrics = financialData.metric;
@@ -156,19 +152,13 @@ async function main() {
                      market_cap = $1, 
                      roe_ttm = $2, 
                      pe_ttm = $3, 
-                     pb_ratio = $4,
-                     debt_to_equity = $5,
-                     current_ratio = $6,
                      last_updated = NOW() 
-                     WHERE symbol = $7`,
+                     WHERE ticker = $4`,
                     [
-                        metrics.marketCapitalization ? Math.round(metrics.marketCapitalization) : null,
+                        metrics.marketCapitalization || null,
                         metrics.roeTTM || null,
                         metrics.peTTM || null,
-                        metrics.pbAnnual || null,
-                        metrics.totalDebt2TotalEquityAnnual || null,
-                        metrics.currentRatioAnnual || null,
-                        company.symbol
+                        company.ticker
                     ]
                 );
                 
@@ -176,8 +166,8 @@ async function main() {
                 
                 // 获取更新后的股票数据用于标签计算
                 const { rows: [updatedStock] } = await client.query(
-                    'SELECT * FROM stocks WHERE symbol = $1',
-                    [company.symbol]
+                    'SELECT * FROM stocks WHERE ticker = $1',
+                    [company.ticker]
                 );
                 
                 if (updatedStock) {
@@ -185,12 +175,12 @@ async function main() {
                     taggedCount++;
                 }
             } else {
-                console.warn(`⚠️ No financial data available for ${company.symbol}`);
+                console.warn(`⚠️ No financial data available for ${company.ticker}`);
                 
                 // 即使没有新的财务数据，也尝试基于现有数据计算标签
                 const { rows: [existingStock] } = await client.query(
-                    'SELECT * FROM stocks WHERE symbol = $1',
-                    [company.symbol]
+                    'SELECT * FROM stocks WHERE ticker = $1',
+                    [company.ticker]
                 );
                 
                 if (existingStock) {

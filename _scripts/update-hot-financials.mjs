@@ -41,7 +41,7 @@ async function main() {
         
         // 只选择市值最高的 50 家公司
         const { rows: companies } = await client.query(
-            'SELECT symbol FROM stocks ORDER BY market_cap DESC NULLS LAST LIMIT 50'
+            'SELECT ticker FROM stocks ORDER BY market_cap DESC NULLS LAST LIMIT 50'
         );
         console.log(`📋 Found ${companies.length} hot stocks to update`);
         
@@ -53,7 +53,7 @@ async function main() {
             // 尊重 Finnhub API 限制 (60 calls/minute)
             await new Promise(resolve => setTimeout(resolve, 1200));
             
-            const financialData = await getFinnhubMetrics(company.symbol, FINNHUB_API_KEY);
+            const financialData = await getFinnhubMetrics(company.ticker, FINNHUB_API_KEY);
             
             if (financialData && financialData.metric) {
                 const metrics = financialData.metric;
@@ -63,26 +63,20 @@ async function main() {
                      market_cap = $1, 
                      roe_ttm = $2, 
                      pe_ttm = $3, 
-                     pb_ratio = $4,
-                     debt_to_equity = $5,
-                     current_ratio = $6,
                      last_updated = NOW() 
-                     WHERE symbol = $7`,
+                     WHERE ticker = $4`,
                     [
-                        metrics.marketCapitalization ? Math.round(metrics.marketCapitalization) : null,
+                        metrics.marketCapitalization || null,
                         metrics.roeTTM || null,
                         metrics.peTTM || null,
-                        metrics.pbAnnual || null,
-                        metrics.totalDebt2TotalEquityAnnual || null,
-                        metrics.currentRatioAnnual || null,
-                        company.symbol
+                        company.ticker
                     ]
                 );
                 
                 updatedCount++;
-                console.log(`📊 Updated ${company.symbol} (${updatedCount}/${companies.length})`);
+                console.log(`📊 Updated ${company.ticker} (${updatedCount}/${companies.length})`);
             } else {
-                console.warn(`⚠️ No financial data available for ${company.symbol}`);
+                console.warn(`⚠️ No financial data available for ${company.ticker}`);
             }
         }
         
