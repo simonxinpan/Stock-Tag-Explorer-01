@@ -5,7 +5,8 @@
   "type": "module",
   "main": "api/tags.js",
   "scripts": {
-    "dev": "vercel dev",
+    "dev": "node server.js",
+    "vercel-dev": "vercel dev",
     "update-data": "node _scripts/update-database.mjs"
   },
   "dependencies": {
