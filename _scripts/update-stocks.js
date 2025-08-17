@@ -82,7 +82,7 @@ async function updateStockInDatabase(stockData) {
     `;
     
     const result = await client.query(query, [
-      stockData.symbol,
+      stockData.ticker || stockData.symbol, // 兼容新旧字段名
       stockData.price,
       stockData.change,
       stockData.changePercent

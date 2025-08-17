@@ -26,8 +26,21 @@ async function getFinnhubMetrics(symbol, apiKey) {
 }
 
 // 应用标签到股票
-async function applyTag(client, stockTicker, tagId) {
+async function applyTag(client, stockTicker, tagName) {
     try {
+        // 根据标签名称查找标签ID
+        const { rows } = await client.query(
+            'SELECT id FROM tags WHERE name = $1',
+            [tagName]
+        );
+        
+        if (rows.length === 0) {
+            console.warn(`⚠️ Tag '${tagName}' not found`);
+            return;
+        }
+        
+        const tagId = rows[0].id;
+        
         await client.query(
             `INSERT INTO stock_tags (stock_ticker, tag_id) 
              VALUES ($1, $2) 
@@ -35,7 +48,7 @@ async function applyTag(client, stockTicker, tagId) {
             [stockTicker, tagId]
         );
     } catch (error) {
-        console.error(`❌ Error applying tag ${tagId} to ${stockTicker}:`, error.message);
+        console.error(`❌ Error applying tag ${tagName} to ${stockTicker}:`, error.message);
     }
 }
 
@@ -57,40 +70,40 @@ async function calculateAndApplyTags(client, stock) {
     // 市值分类标签
     if (market_cap) {
         if (market_cap >= 200000000000) {
-            await applyTag(client, ticker, 'mega_cap');
+            await applyTag(client, ticker, '超大盘股');
         } else if (market_cap >= 10000000000) {
-            await applyTag(client, ticker, 'large_cap');
+            await applyTag(client, ticker, '大盘股');
         } else if (market_cap >= 2000000000) {
-            await applyTag(client, ticker, 'mid_cap');
+            await applyTag(client, ticker, '中盘股');
         } else {
-            await applyTag(client, ticker, 'small_cap');
+            await applyTag(client, ticker, '小盘股');
         }
     }
     
     // 估值标签
     if (pe_ttm !== null && pe_ttm !== undefined) {
         if (pe_ttm < 15) {
-            await applyTag(client, ticker, 'undervalued');
+            await applyTag(client, ticker, '低估值');
         } else if (pe_ttm > 30) {
-            await applyTag(client, ticker, 'overvalued');
+            await applyTag(client, ticker, '高估值');
         }
     }
     
     // 盈利能力标签
     if (roe_ttm !== null && roe_ttm !== undefined) {
         if (roe_ttm > 20) {
-            await applyTag(client, ticker, 'high_roe');
+            await applyTag(client, ticker, '高ROE');
         } else if (roe_ttm < 5) {
-            await applyTag(client, ticker, 'low_roe');
+            await applyTag(client, ticker, '低ROE');
         }
     }
     
     // 表现标签
     if (change_percent !== null && change_percent !== undefined) {
         if (change_percent > 5) {
-            await applyTag(client, ticker, 'strong_performer');
+            await applyTag(client, ticker, '强势股');
         } else if (change_percent < -5) {
-            await applyTag(client, ticker, 'weak_performer');
+            await applyTag(client, ticker, '弱势股');
         }
     }
 }

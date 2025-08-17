@@ -390,14 +390,7 @@ async function updateStockTags(client) {
         await client.query(insertTagSQL, [assignment.ticker, assignment.tagId]);
     }
     
-    // 更新标签计数
-    const updateCountSQL = `
-    UPDATE tags SET stock_count = (
-        SELECT COUNT(*) FROM stock_tags WHERE tag_id = tags.id
-    );
-    `;
-    
-    await client.query(updateCountSQL);
+    // 标签计数功能已移除，因为新的 tags 表结构中没有 stock_count 字段
     
     console.log("✅ Stock tags updated successfully");
 }
