@@ -49,7 +49,7 @@ async function main() {
         console.log("✅ Database connected successfully");
         
         // 获取所有股票代码
-        const { rows: companies } = await client.query('SELECT symbol FROM stocks');
+        const { rows: companies } = await client.query('SELECT ticker FROM stocks');
         console.log(`📋 Found ${companies.length} stocks to update`);
         
         // 获取 Polygon 快照数据
@@ -65,7 +65,7 @@ async function main() {
         
         let updatedCount = 0;
         for (const company of companies) {
-            const marketData = polygonSnapshot.get(company.symbol);
+            const marketData = polygonSnapshot.get(company.ticker);
             if (marketData && marketData.c > 0) {
                 // 计算涨跌幅
                 const changePercent = marketData.o > 0 ? 
@@ -77,7 +77,7 @@ async function main() {
                      change_percent = $2, 
                      last_updated = NOW() 
                      WHERE ticker = $3`,
-                    [marketData.c, changePercent, company.symbol]
+                    [marketData.c, changePercent, company.ticker]
                 );
                 updatedCount++;
             }
