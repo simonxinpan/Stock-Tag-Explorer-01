@@ -24,6 +24,6 @@ jobs:
         
       - name: Run market data update script
         env:
-          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
         run: node _scripts/update-market-data.mjs
