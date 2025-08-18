@@ -4,6 +4,15 @@ on:
   schedule:
     - cron: '*/15 * * * *'  # 每15分钟执行一次
   workflow_dispatch:  # 允许手动触发
+    inputs:
+      debug:
+        description: 'Enable debug mode'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
 
 jobs:
   update-market-data:
@@ -26,4 +35,5 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+          DEBUG: ${{ github.event.inputs.debug || 'false' }}
         run: node _scripts/update-market-data.mjs

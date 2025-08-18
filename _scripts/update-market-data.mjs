@@ -10,26 +10,54 @@ const pool = new Pool({
 // 获取 Polygon 快照数据
 async function getPolygonSnapshot(apiKey) {
     try {
+        console.log('🔄 Fetching Polygon snapshot data...');
         const response = await fetch(`https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers?apikey=${apiKey}`);
-        const data = await response.json();
         
-        const snapshot = new Map();
-        if (data.results) {
-            data.results.forEach(stock => {
-                snapshot.set(stock.ticker, {
-                    c: stock.last_trade?.price || stock.prevDay?.c || 0, // 当前价格
-                    o: stock.prevDay?.o || 0, // 开盘价
-                    h: stock.day?.h || stock.prevDay?.h || 0, // 最高价
-                    l: stock.day?.l || stock.prevDay?.l || 0, // 最低价
-                    v: stock.day?.v || stock.prevDay?.v || 0  // 成交量
-                });
-            });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
-        console.log(`📊 Polygon snapshot loaded: ${snapshot.size} stocks`);
+        const data = await response.json();
+        
+        // 检查API错误
+        if (data.error) {
+            throw new Error(`Polygon API Error: ${data.error}`);
+        }
+        
+        const snapshot = new Map();
+        let validStocks = 0;
+        let invalidStocks = 0;
+        
+        if (data.results && Array.isArray(data.results)) {
+            data.results.forEach(stock => {
+                const currentPrice = stock.last_trade?.price || stock.prevDay?.c || 0;
+                const openPrice = stock.prevDay?.o || 0;
+                
+                if (currentPrice > 0) {
+                    snapshot.set(stock.ticker, {
+                        c: currentPrice, // 当前价格
+                        o: openPrice, // 开盘价
+                        h: stock.day?.h || stock.prevDay?.h || 0, // 最高价
+                        l: stock.day?.l || stock.prevDay?.l || 0, // 最低价
+                        v: stock.day?.v || stock.prevDay?.v || 0  // 成交量
+                    });
+                    validStocks++;
+                } else {
+                    invalidStocks++;
+                    console.warn(`⚠️ Invalid price data for ${stock.ticker}: price=${currentPrice}`);
+                }
+            });
+        } else {
+            console.warn('⚠️ No results array in Polygon response');
+        }
+        
+        console.log(`📊 Polygon snapshot loaded: ${validStocks} valid stocks, ${invalidStocks} invalid`);
+        console.log(`📊 API Response summary: ${data.results?.length || 0} total stocks from API`);
+        
         return snapshot;
     } catch (error) {
         console.error('❌ Error fetching Polygon snapshot:', error.message);
+        console.error('❌ Full error details:', error);
         return new Map();
     }
 }
@@ -111,6 +139,13 @@ async function main() {
                             [marketData.c, changeAmount, changePercent, marketData.h, marketData.l, company.ticker]
                         );
                         updatedCount++;
+                        
+                        // 详细日志（仅在DEBUG模式下）
+                        if (process.env.DEBUG) {
+                            console.log(`📊 ${company.ticker}: price=${marketData.c}, change=${changeAmount.toFixed(2)} (${changePercent.toFixed(2)}%)`);
+                        }
+                    } else {
+                        console.warn(`⚠️ No market data for ${company.ticker}: hasData=${!!marketData}, price=${marketData?.c || 'N/A'}`);
                     }
                 }
                 
