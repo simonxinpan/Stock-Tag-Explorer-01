@@ -7,11 +7,14 @@ const pool = new Pool({
     ssl: { rejectUnauthorized: false } 
 });
 
-// 获取 Polygon 快照数据
-async function getPolygonSnapshot(apiKey) {
+// 延迟函数
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+// 获取单只股票的前一日数据（免费API）
+async function getSingleTickerData(ticker, apiKey) {
     try {
-        console.log('🔄 Fetching Polygon snapshot data...');
-        const response = await fetch(`https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers?apikey=${apiKey}`);
+        // 使用免费的前一日聚合数据API
+        const response = await fetch(`https://api.polygon.io/v2/aggs/ticker/${ticker}/prev?adjusted=true&apikey=${apiKey}`);
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -24,42 +27,70 @@ async function getPolygonSnapshot(apiKey) {
             throw new Error(`Polygon API Error: ${data.error}`);
         }
         
-        const snapshot = new Map();
-        let validStocks = 0;
-        let invalidStocks = 0;
-        
-        if (data.results && Array.isArray(data.results)) {
-            data.results.forEach(stock => {
-                const currentPrice = stock.last_trade?.price || stock.prevDay?.c || 0;
-                const openPrice = stock.prevDay?.o || 0;
-                
-                if (currentPrice > 0) {
-                    snapshot.set(stock.ticker, {
-                        c: currentPrice, // 当前价格
-                        o: openPrice, // 开盘价
-                        h: stock.day?.h || stock.prevDay?.h || 0, // 最高价
-                        l: stock.day?.l || stock.prevDay?.l || 0, // 最低价
-                        v: stock.day?.v || stock.prevDay?.v || 0  // 成交量
-                    });
-                    validStocks++;
-                } else {
-                    invalidStocks++;
-                    console.warn(`⚠️ Invalid price data for ${stock.ticker}: price=${currentPrice}`);
-                }
-            });
-        } else {
-            console.warn('⚠️ No results array in Polygon response');
+        if (data.results && data.results.length > 0) {
+            const result = data.results[0];
+            return {
+                c: result.c || 0, // 收盘价（当作当前价格）
+                o: result.o || 0, // 开盘价
+                h: result.h || 0, // 最高价
+                l: result.l || 0, // 最低价
+                v: result.v || 0  // 成交量
+            };
         }
         
-        console.log(`📊 Polygon snapshot loaded: ${validStocks} valid stocks, ${invalidStocks} invalid`);
-        console.log(`📊 API Response summary: ${data.results?.length || 0} total stocks from API`);
-        
-        return snapshot;
+        return null;
     } catch (error) {
-        console.error('❌ Error fetching Polygon snapshot:', error.message);
-        console.error('❌ Full error details:', error);
-        return new Map();
+        console.error(`❌ Error fetching data for ${ticker}:`, error.message);
+        return null;
     }
+}
+
+// 获取所有股票的市场数据（逐一获取）
+async function getPolygonMarketData(tickers, apiKey) {
+    console.log(`🔄 Fetching market data for ${tickers.length} stocks individually...`);
+    console.log('⚠️ Using free API with rate limiting - this will take time');
+    
+    const marketData = new Map();
+    let successCount = 0;
+    let failCount = 0;
+    
+    // 免费版限制：每分钟5次请求，所以每次请求后等待12秒
+    const DELAY_MS = 12000; // 12秒延迟
+    
+    for (let i = 0; i < tickers.length; i++) {
+        const ticker = tickers[i];
+        
+        try {
+            console.log(`📊 [${i + 1}/${tickers.length}] Fetching ${ticker}...`);
+            
+            const data = await getSingleTickerData(ticker, apiKey);
+            
+            if (data && data.c > 0) {
+                marketData.set(ticker, data);
+                successCount++;
+                
+                if (process.env.DEBUG) {
+                    console.log(`✅ ${ticker}: price=${data.c}, volume=${data.v}`);
+                }
+            } else {
+                failCount++;
+                console.warn(`⚠️ No valid data for ${ticker}`);
+            }
+            
+        } catch (error) {
+            failCount++;
+            console.error(`❌ Failed to fetch ${ticker}:`, error.message);
+        }
+        
+        // 添加延迟（除了最后一次请求）
+        if (i < tickers.length - 1) {
+            console.log(`⏳ Waiting ${DELAY_MS/1000}s to respect rate limits...`);
+            await delay(DELAY_MS);
+        }
+    }
+    
+    console.log(`📊 Market data collection completed: ${successCount} success, ${failCount} failed`);
+    return marketData;
 }
 
 async function main() {
@@ -95,10 +126,13 @@ async function main() {
         const { rows: companies } = await client.query('SELECT ticker FROM stocks');
         console.log(`📋 Found ${companies.length} stocks to update`);
         
-        // 获取 Polygon 快照数据
-        const polygonSnapshot = await getPolygonSnapshot(POLYGON_API_KEY);
+        // 提取股票代码列表
+        const tickers = companies.map(company => company.ticker);
         
-        if (polygonSnapshot.size === 0) {
+        // 获取市场数据（逐一获取）
+        const polygonMarketData = await getPolygonMarketData(tickers, POLYGON_API_KEY);
+        
+        if (polygonMarketData.size === 0) {
             console.log("⚠️ No market data available, skipping update");
             return;
         }
@@ -116,7 +150,7 @@ async function main() {
             
             try {
                 for (const company of batch) {
-                    const marketData = polygonSnapshot.get(company.ticker);
+                    const marketData = polygonMarketData.get(company.ticker);
                     if (marketData && marketData.c > 0) {
                         // 计算涨跌幅和涨跌额
                         const changePercent = marketData.o > 0 ? 
