@@ -75,38 +75,56 @@ async function main() {
             return;
         }
         
-        // 开始事务
-        await client.query('BEGIN');
-        
+        // 分批处理，避免长时间事务导致死锁
+        const BATCH_SIZE = 10; // 市场数据更新较快，可以用稍大的批次
+        const companiesArray = Array.from(companies);
         let updatedCount = 0;
-        for (const company of companies) {
-            const marketData = polygonSnapshot.get(company.ticker);
-            if (marketData && marketData.c > 0) {
-                // 计算涨跌幅和涨跌额
-                const changePercent = marketData.o > 0 ? 
-                    ((marketData.c - marketData.o) / marketData.o) * 100 : 0;
-                const changeAmount = marketData.o > 0 ? 
-                    (marketData.c - marketData.o) : 0;
+        
+        for (let i = 0; i < companiesArray.length; i += BATCH_SIZE) {
+            const batch = companiesArray.slice(i, i + BATCH_SIZE);
+            
+            // 每个批次使用独立事务
+            await client.query('BEGIN');
+            
+            try {
+                for (const company of batch) {
+                    const marketData = polygonSnapshot.get(company.ticker);
+                    if (marketData && marketData.c > 0) {
+                        // 计算涨跌幅和涨跌额
+                        const changePercent = marketData.o > 0 ? 
+                            ((marketData.c - marketData.o) / marketData.o) * 100 : 0;
+                        const changeAmount = marketData.o > 0 ? 
+                            (marketData.c - marketData.o) : 0;
+                        
+                        await client.query(
+                            `UPDATE stocks SET 
+                             last_price = $1, 
+                             change_amount = $2,
+                             change_percent = $3, 
+                             week_52_high = GREATEST(COALESCE(week_52_high, 0), $4),
+                             week_52_low = CASE 
+                                 WHEN week_52_low IS NULL OR week_52_low = 0 THEN $5
+                                 ELSE LEAST(week_52_low, $5)
+                             END,
+                             last_updated = NOW() 
+                             WHERE ticker = $6`,
+                            [marketData.c, changeAmount, changePercent, marketData.h, marketData.l, company.ticker]
+                        );
+                        updatedCount++;
+                    }
+                }
                 
-                await client.query(
-                    `UPDATE stocks SET 
-                     last_price = $1, 
-                     change_amount = $2,
-                     change_percent = $3, 
-                     week_52_high = GREATEST(COALESCE(week_52_high, 0), $4),
-                     week_52_low = CASE 
-                         WHEN week_52_low IS NULL OR week_52_low = 0 THEN $5
-                         ELSE LEAST(week_52_low, $5)
-                     END,
-                     last_updated = NOW() 
-                     WHERE ticker = $6`,
-                    [marketData.c, changeAmount, changePercent, marketData.h, marketData.l, company.ticker]
-                );
-                updatedCount++;
+                // 提交当前批次
+                await client.query('COMMIT');
+                console.log(`✅ Batch completed: Updated ${Math.min(i + BATCH_SIZE, companiesArray.length)} stocks`);
+                
+            } catch (batchError) {
+                // 回滚当前批次
+                await client.query('ROLLBACK');
+                console.error(`❌ Batch failed at stocks ${i + 1}-${Math.min(i + BATCH_SIZE, companiesArray.length)}:`, batchError.message);
+                // 继续处理下一批次
             }
         }
-        
-        await client.query('COMMIT');
         console.log(`✅ SUCCESS: Updated market data for ${updatedCount} stocks`);
         
     } catch (error) {

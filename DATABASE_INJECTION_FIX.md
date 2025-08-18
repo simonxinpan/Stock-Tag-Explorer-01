@@ -37,6 +37,20 @@ connectionString: process.env.NEON_DATABASE_URL
 connectionString: process.env.NEON_DATABASE_URL || process.env.DATABASE_URL
 ```
 
+### 1.5. 数据库死锁修复
+
+#### 已修复的脚本文件:
+- `_scripts/update-market-data.mjs` - 分批处理股票数据更新
+- `_scripts/update-all-financials-and-tags.mjs` - 分批处理财务数据和标签
+- `_scripts/update-hot-financials.mjs` - 分批处理热门股票财务数据
+- `_scripts/update-company-profiles.mjs` - 分批处理公司资料更新
+
+#### 修复内容:
+- 将长事务改为分批处理模式（每批20-50条记录）
+- 每个批次使用独立事务，避免长时间锁定数据库
+- 添加批次间延迟，减少数据库压力
+- 增强错误处理和重试机制
+
 ### 2. GitHub Actions 工作流更新
 
 #### 修改的工作流文件:

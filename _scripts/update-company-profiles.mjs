@@ -195,89 +195,99 @@ async function main() {
             return;
         }
         
-        // 开始事务
-        await client.query('BEGIN');
-        
+        // 分批处理，避免长时间事务导致死锁
+        const BATCH_SIZE = 5; // 较小的批次，因为API调用较慢
         let updatedCount = 0;
         
-        for (let i = 0; i < companies.length; i++) {
-            const company = companies[i];
+        for (let i = 0; i < companies.length; i += BATCH_SIZE) {
+            const batch = companies.slice(i, i + BATCH_SIZE);
             
-            console.log(`📊 Processing ${company.ticker} (${i + 1}/${companies.length})`);
+            // 每个批次使用独立事务
+            await client.query('BEGIN');
             
-            let profileData = null;
-            
-            // 优先使用 Finnhub API
-            if (FINNHUB_API_KEY) {
-                // 尊重 Finnhub API 限制 (60 calls/minute)
-                await new Promise(resolve => setTimeout(resolve, 1200));
-                profileData = await getFinnhubProfile(company.ticker, FINNHUB_API_KEY);
-            }
-            
-            // 如果 Finnhub 失败，尝试 Polygon API
-            if (!profileData && POLYGON_API_KEY) {
-                await new Promise(resolve => setTimeout(resolve, 200));
-                profileData = await getPolygonDetails(company.ticker, POLYGON_API_KEY);
-            }
-            
-            if (profileData) {
-                // 处理 Finnhub 数据
-                if (profileData.name || profileData.finnhubIndustry) {
-                    const name_en = profileData.name || null;
-                    const name_zh = name_en ? getChineseName(name_en, company.ticker) : company.name_zh;
-                    const sector_en = profileData.finnhubIndustry || null;
-                    const sector_zh = sector_en ? translateSector(sector_en) : company.sector_zh;
-                    const logo = profileData.logo || null;
+            try {
+                for (let j = 0; j < batch.length; j++) {
+                    const company = batch[j];
+                    const currentIndex = i + j + 1;
                     
-                    await client.query(
-                        `UPDATE stocks SET 
-                         name_en = COALESCE($1, name_en),
-                         name_zh = COALESCE($2, name_zh),
-                         sector_en = COALESCE($3, sector_en),
-                         sector_zh = COALESCE($4, sector_zh),
-                         logo = COALESCE($5, logo),
-                         last_updated = NOW() 
-                         WHERE ticker = $6`,
-                        [name_en, name_zh, sector_en, sector_zh, logo, company.ticker]
-                    );
+                    console.log(`📊 Processing ${company.ticker} (${currentIndex}/${companies.length})`);
                     
-                    updatedCount++;
-                    console.log(`✅ Updated ${company.ticker}: ${name_zh} (${sector_zh})`);
+                    let profileData = null;
+                    
+                    // 优先使用 Finnhub API
+                    if (FINNHUB_API_KEY) {
+                        // 尊重 Finnhub API 限制 (60 calls/minute)
+                        await new Promise(resolve => setTimeout(resolve, 1200));
+                        profileData = await getFinnhubProfile(company.ticker, FINNHUB_API_KEY);
+                    }
+                    
+                    // 如果 Finnhub 失败，尝试 Polygon API
+                    if (!profileData && POLYGON_API_KEY) {
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                        profileData = await getPolygonDetails(company.ticker, POLYGON_API_KEY);
+                    }
+                    
+                    if (profileData) {
+                        // 处理 Finnhub 数据
+                        if (profileData.name || profileData.finnhubIndustry) {
+                            const name_en = profileData.name || null;
+                            const name_zh = name_en ? getChineseName(name_en, company.ticker) : company.name_zh;
+                            const sector_en = profileData.finnhubIndustry || null;
+                            const sector_zh = sector_en ? translateSector(sector_en) : company.sector_zh;
+                            const logo = profileData.logo || null;
+                            
+                            await client.query(
+                                `UPDATE stocks SET 
+                                 name_en = COALESCE($1, name_en),
+                                 name_zh = COALESCE($2, name_zh),
+                                 sector_en = COALESCE($3, sector_en),
+                                 sector_zh = COALESCE($4, sector_zh),
+                                 logo = COALESCE($5, logo),
+                                 last_updated = NOW() 
+                                 WHERE ticker = $6`,
+                                [name_en, name_zh, sector_en, sector_zh, logo, company.ticker]
+                            );
+                            
+                            updatedCount++;
+                            console.log(`✅ Updated ${company.ticker}: ${name_zh} (${sector_zh})`);
+                        }
+                        // 处理 Polygon 数据
+                        else if (profileData.name || profileData.sic_description) {
+                            const name_en = profileData.name || null;
+                            const name_zh = name_en ? getChineseName(name_en, company.ticker) : company.name_zh;
+                            const sector_en = profileData.sic_description || null;
+                            const sector_zh = sector_en ? translateSector(sector_en) : company.sector_zh;
+                            
+                            await client.query(
+                                `UPDATE stocks SET 
+                                 name_en = COALESCE($1, name_en),
+                                 name_zh = COALESCE($2, name_zh),
+                                 sector_en = COALESCE($3, sector_en),
+                                 sector_zh = COALESCE($4, sector_zh),
+                                 last_updated = NOW() 
+                                 WHERE ticker = $5`,
+                                [name_en, name_zh, sector_en, sector_zh, company.ticker]
+                            );
+                            
+                            updatedCount++;
+                            console.log(`✅ Updated ${company.ticker}: ${name_zh} (${sector_zh})`);
+                        }
+                    } else {
+                        console.warn(`⚠️ No profile data available for ${company.ticker}`);
+                    }
                 }
-                // 处理 Polygon 数据
-                else if (profileData.name || profileData.sic_description) {
-                    const name_en = profileData.name || null;
-                    const name_zh = name_en ? getChineseName(name_en, company.ticker) : company.name_zh;
-                    const sector_en = profileData.sic_description || null;
-                    const sector_zh = sector_en ? translateSector(sector_en) : company.sector_zh;
-                    
-                    await client.query(
-                        `UPDATE stocks SET 
-                         name_en = COALESCE($1, name_en),
-                         name_zh = COALESCE($2, name_zh),
-                         sector_en = COALESCE($3, sector_en),
-                         sector_zh = COALESCE($4, sector_zh),
-                         last_updated = NOW() 
-                         WHERE ticker = $5`,
-                        [name_en, name_zh, sector_en, sector_zh, company.ticker]
-                    );
-                    
-                    updatedCount++;
-                    console.log(`✅ Updated ${company.ticker}: ${name_zh} (${sector_zh})`);
-                }
-            } else {
-                console.warn(`⚠️ No profile data available for ${company.ticker}`);
-            }
-            
-            // 每处理20只股票提交一次，避免长事务
-            if ((i + 1) % 20 === 0) {
+                
+                // 提交当前批次
                 await client.query('COMMIT');
-                await client.query('BEGIN');
-                console.log(`✅ Checkpoint: Processed ${i + 1} stocks`);
+                console.log(`✅ Batch completed: Processed ${Math.min(i + BATCH_SIZE, companies.length)} stocks`);
+                
+            } catch (batchError) {
+                // 回滚当前批次
+                await client.query('ROLLBACK');
+                console.error(`❌ Batch failed at stocks ${i + 1}-${Math.min(i + BATCH_SIZE, companies.length)}:`, batchError.message);
+                // 继续处理下一批次
             }
         }
-        
-        await client.query('COMMIT');
         console.log(`✅ SUCCESS: Updated profile data for ${updatedCount} stocks`);
         
     } catch (error) {
