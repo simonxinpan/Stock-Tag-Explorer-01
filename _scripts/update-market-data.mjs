@@ -137,6 +137,16 @@ async function main() {
             return;
         }
         
+        // 日志：打印最终准备写入数据库的数据总量和样本
+        console.log(`✅ API fetching complete. Preparing to update ${polygonMarketData.size} stocks in the database.`);
+        if (process.env.DEBUG && polygonMarketData.size > 0) {
+            const sampleData = Array.from(polygonMarketData.entries()).slice(0, 3);
+            console.log('📊 Sample data to be written:');
+            sampleData.forEach(([ticker, data]) => {
+                console.log(`   ${ticker}: price=${data.c}, open=${data.o}, high=${data.h}, low=${data.l}`);
+            });
+        }
+        
         // 分批处理，避免长时间事务导致死锁
         const BATCH_SIZE = 10; // 市场数据更新较快，可以用稍大的批次
         const companiesArray = Array.from(companies);
@@ -158,8 +168,8 @@ async function main() {
                         const changeAmount = marketData.o > 0 ? 
                             (marketData.c - marketData.o) : 0;
                         
-                        await client.query(
-                            `UPDATE stocks SET 
+                        // 准备SQL语句和参数
+                        const sql = `UPDATE stocks SET 
                              last_price = $1, 
                              change_amount = $2,
                              change_percent = $3, 
@@ -169,10 +179,29 @@ async function main() {
                                  ELSE LEAST(week_52_low, $5)
                              END,
                              last_updated = NOW() 
-                             WHERE ticker = $6`,
-                            [marketData.c, changeAmount, changePercent, marketData.h, marketData.l, company.ticker]
-                        );
-                        updatedCount++;
+                             WHERE ticker = $6`;
+                        const params = [marketData.c, changeAmount, changePercent, marketData.h, marketData.l, company.ticker];
+                        
+                        // 日志：打印将要执行的SQL语句和参数
+                        if (process.env.DEBUG) {
+                            console.log(`🔄 Executing SQL for ${company.ticker}:`);
+                            console.log(`   SQL: ${sql.replace(/\s+/g, ' ').trim()}`);
+                            console.log(`   Params: ${JSON.stringify(params)}`);
+                        }
+                        
+                        const result = await client.query(sql, params);
+                        
+                        // 日志：打印数据库操作的结果
+                        if (process.env.DEBUG) {
+                            console.log(`✅ Update for ${company.ticker} successful. Rows affected: ${result.rowCount}`);
+                        }
+                        
+                        // 检查是否真的更新了数据
+                        if (result.rowCount === 0) {
+                            console.warn(`⚠️ WARNING: No rows updated for ${company.ticker} - ticker might not exist in database`);
+                        } else {
+                            updatedCount++;
+                        }
                         
                         // 详细日志（仅在DEBUG模式下）
                         if (process.env.DEBUG) {
@@ -190,7 +219,13 @@ async function main() {
             } catch (batchError) {
                 // 回滚当前批次
                 await client.query('ROLLBACK');
-                console.error(`❌ Batch failed at stocks ${i + 1}-${Math.min(i + BATCH_SIZE, companiesArray.length)}:`, batchError.message);
+                console.error(`❌ Batch failed at stocks ${i + 1}-${Math.min(i + BATCH_SIZE, companiesArray.length)}:`);
+                console.error(`   Error message: ${batchError.message}`);
+                console.error(`   Error code: ${batchError.code || 'N/A'}`);
+                console.error(`   Error detail: ${batchError.detail || 'N/A'}`);
+                if (process.env.DEBUG) {
+                    console.error(`   Full error object:`, batchError);
+                }
                 // 继续处理下一批次
             }
         }
