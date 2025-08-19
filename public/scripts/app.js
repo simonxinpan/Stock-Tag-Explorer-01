@@ -314,7 +314,7 @@ class StockTagExplorer {
                 this.totalCount = result.data.pagination.count;
                 this.filteredStocks = this.stockData;
                 this.renderStockList();
-                this.renderPagination();
+                this.updatePagination();
                 
                 // 显示数据来源信息
                 this.updateDataSourceIndicator(result.source, result.realTimeCount);

@@ -228,27 +228,27 @@ module.exports = async function handler(req, res) {
         const query = `
           SELECT DISTINCT s.*
           FROM stocks s
-          JOIN stock_tags st ON s.ticker = st.ticker
+          JOIN stock_tags st ON s.symbol = st.stock_symbol
           WHERE st.tag_id IN (${placeholders})
-          ORDER BY s.ticker
+          ORDER BY s.symbol
         `;
         
         const result = await client.query(query, tagArray);
         const dbStocks = result.rows;
         
-        // 获取股票符号列表 - 使用ticker字段
-        const stockSymbols = dbStocks.map(stock => stock.ticker);
+        // 获取股票符号列表 - 使用symbol字段
+        const stockSymbols = dbStocks.map(stock => stock.symbol);
         
         // 获取实时数据
         const realTimeStocks = await fetchRealTimeStockData(stockSymbols);
         
         // 合并数据库数据和实时数据
         stocks = dbStocks.map(dbStock => {
-          const realTimeStock = realTimeStocks.find(rt => rt.symbol === dbStock.ticker);
+          const realTimeStock = realTimeStocks.find(rt => rt.symbol === dbStock.symbol);
           if (realTimeStock) {
             return {
-              symbol: dbStock.ticker,
-              name: dbStock.company_name || realTimeStock.name,
+              symbol: dbStock.symbol,
+              name: dbStock.name || realTimeStock.name,
               price: realTimeStock.price,
               change: realTimeStock.change,
               changePercent: realTimeStock.changePercent,
@@ -260,9 +260,9 @@ module.exports = async function handler(req, res) {
             };
           }
           return {
-            symbol: dbStock.ticker,
-            name: dbStock.company_name,
-            price: dbStock.last_price || 0,
+            symbol: dbStock.symbol,
+            name: dbStock.name,
+            price: dbStock.price || 0,
             change: dbStock.change_amount || 0,
             changePercent: dbStock.change_percent || 0,
             volume: dbStock.volume || 0,
