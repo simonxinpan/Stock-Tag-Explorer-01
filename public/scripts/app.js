@@ -498,10 +498,10 @@ class StockTagExplorer {
         };
         
         return `
-            <div class="stock-item" data-stock-id="${stock.id}">
+            <div class="stock-item" data-stock-symbol="${stock.symbol}" onclick="window.open('https://stock-details-final-1e1vcxew3-simon-pans-projects.vercel.app/?symbol=${stock.symbol}', '_blank')" style="cursor: pointer;">
                 <div class="stock-info">
                     <div class="stock-name">${stock.name}</div>
-                    <div class="stock-ticker">${stock.ticker}</div>
+                    <div class="stock-ticker">${stock.symbol}</div>
                     <div class="stock-meta">
                         <span class="volume">成交量: ${formatVolume(stock.volume)}</span>
                         <span class="update-time">更新: ${lastUpdated}</span>
