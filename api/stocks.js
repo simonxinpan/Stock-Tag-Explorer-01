@@ -213,7 +213,7 @@ module.exports = async function handler(req, res) {
         `;
         
         console.log('Executing query:', query);
-        console.log('Query params:', [tagIds]);
+        console.log('Query params:', tagIds);
         
         const result = await client.query(query, [tagIds]);
         const dbStocks = result.rows;
@@ -222,9 +222,9 @@ module.exports = async function handler(req, res) {
         stocks = dbStocks.map(dbStock => ({
           symbol: dbStock.ticker,
           name: dbStock.name_zh || dbStock.name_en || dbStock.ticker,
-          price: dbStock.last_price || 0,
-          change: dbStock.change_amount || 0,
-          changePercent: dbStock.change_percent || 0,
+          price: parseFloat(dbStock.last_price) || 0,
+          change: parseFloat(dbStock.change_amount) || 0,
+          changePercent: parseFloat(dbStock.change_percent) || 0,
           volume: 0, // volume字段已移除
           marketCap: dbStock.market_cap || 'N/A',
           sector: dbStock.sector_zh || dbStock.sector_en || 'Unknown',
