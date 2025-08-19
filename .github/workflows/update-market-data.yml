@@ -31,9 +31,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
         
-      - name: Run market data update script
+      - name: Run market data update (Finnhub)
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           DEBUG: ${{ github.event.inputs.debug || 'false' }}
-        run: node _scripts/update-market-data.mjs
+        run: node _scripts/update-market-data-finnhub.mjs
