@@ -200,17 +200,14 @@ module.exports = async function handler(req, res) {
         // 从数据库获取股票数据
         // 修复SQL查询，避免类型转换错误
         
-        // 将标签数组转换为整数ID（如果是数字）
-        const tagIds = tagArray.map(tag => {
-          const parsed = parseInt(tag, 10);
-          return isNaN(parsed) ? tag : parsed;
-        });
+        // 将标签数组转换为整数ID
+        const tagIds = tagArray.map(tag => parseInt(tag, 10)).filter(id => !isNaN(id));
         
         const query = `
           SELECT DISTINCT s.*
           FROM stocks s
           JOIN stock_tags st ON s.ticker = st.stock_ticker
-          WHERE st.tag_id = ANY($1::text[])
+          WHERE st.tag_id = ANY($1::int[])
           ORDER BY s.ticker
           LIMIT 100
         `;
