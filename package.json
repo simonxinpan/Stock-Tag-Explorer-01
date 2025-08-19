@@ -4,6 +4,7 @@
   "description": "智能标签浏览器 - StockLink平台的核心数据发现引擎",
   "main": "api/tags.js",
   "scripts": {
+    "start": "node server.js",
     "dev": "node server.js",
     "vercel-dev": "vercel dev",
     "update-data": "node _scripts/update-database.mjs"
