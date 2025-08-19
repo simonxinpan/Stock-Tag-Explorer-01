@@ -1,14 +1,14 @@
-name: Update All Financials & Tags (Low Frequency)
+name: Update Company Profiles (Weekly)
 
 on:
   schedule:
-    - cron: '0 8 * * *'  # 每天北京时间下午4点 (UTC+8)
+    - cron: '0 2 * * 0'  # 每周日凌晨2点执行
   workflow_dispatch:  # 允许手动触发
 
 jobs:
-  update-all:
+  update-profiles:
     runs-on: ubuntu-latest
-    timeout-minutes: 180  # 3小时超时，因为要处理所有股票
+    timeout-minutes: 120  # 2小时超时
     
     steps:
       - name: Checkout repository
@@ -23,8 +23,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
         
-      - name: Run full daily update script
+      - name: Run company profiles update script
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
-        run: node _scripts/update-all-financials-and-tags.mjs
+          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+        run: node _scripts/update-company-profiles.mjs
+        
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "Company profiles update failed!"
+          echo "Please check the logs and fix any issues."

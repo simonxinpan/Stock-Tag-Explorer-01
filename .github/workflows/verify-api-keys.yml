@@ -1,14 +1,13 @@
-name: Update All Financials & Tags (Low Frequency)
+name: Verify API Keys
 
 on:
-  schedule:
-    - cron: '0 8 * * *'  # 每天北京时间下午4点 (UTC+8)
   workflow_dispatch:  # 允许手动触发
+  schedule:
+    - cron: '0 0 * * 0'  # 每周日午夜执行一次
 
 jobs:
-  update-all:
+  verify-api-keys:
     runs-on: ubuntu-latest
-    timeout-minutes: 180  # 3小时超时，因为要处理所有股票
     
     steps:
       - name: Checkout repository
@@ -23,8 +22,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
         
-      - name: Run full daily update script
+      - name: Verify API Keys
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
-        run: node _scripts/update-all-financials-and-tags.mjs
+        run: node _scripts/verify-api-keys.mjs
