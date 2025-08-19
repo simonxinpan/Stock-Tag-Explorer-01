@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vercel dev",
     "build": "echo 'Building static assets...' && echo 'Build completed successfully'",
-    "start": "vercel dev --listen 3000",
+    "start": "node deploy.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
