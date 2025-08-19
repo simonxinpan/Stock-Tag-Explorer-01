@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>API Test</h1>
+    <button onclick="testTags()">Test Tags API</button>
+    <button onclick="testStocks()">Test Stocks API</button>
+    <button onclick="fillSectors()">Fill Sectors</button>
+    <div id="result"></div>
+
+    <script>
+        async function testTags() {
+            try {
+                const response = await fetch('/api/tags');
+                const data = await response.json();
+                document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('result').innerHTML = 'Error: ' + error.message;
+            }
+        }
+
+        async function testStocks() {
+            try {
+                const response = await fetch('/api/stocks?tags=2');
+                const data = await response.json();
+                document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('result').innerHTML = 'Error: ' + error.message;
+            }
+        }
+
+        async function fillSectors() {
+            try {
+                const response = await fetch('/api/fill-sectors', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('result').innerHTML = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

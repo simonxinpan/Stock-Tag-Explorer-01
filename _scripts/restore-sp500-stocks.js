@@ -3,7 +3,7 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 const pool = new Pool({
-  connectionString: process.env.NEON_DATABASE_URL,
+  connectionString: process.env.DATABASE_URL || process.env.NEON_DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
 
@@ -145,8 +145,8 @@ async function restoreStocks() {
 }
 
 // 检查环境变量
-if (!process.env.NEON_DATABASE_URL) {
-  console.error('❌ 错误: 缺少 NEON_DATABASE_URL 环境变量');
+if (!process.env.DATABASE_URL && !process.env.NEON_DATABASE_URL) {
+  console.error('❌ 错误: 缺少 DATABASE_URL 或 NEON_DATABASE_URL 环境变量');
   console.log('请设置数据库连接字符串后重试');
   process.exit(1);
 }
