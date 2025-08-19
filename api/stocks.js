@@ -226,11 +226,22 @@ module.exports = async function handler(req, res) {
         const placeholders = tagArray.map((_, index) => `$${index + 1}`).join(',');
         
         const query = `
-          SELECT DISTINCT s.*
+          SELECT DISTINCT 
+            s.id,
+            COALESCE(s.symbol, s.ticker) as symbol,
+            s.name,
+            s.sector,
+            s.industry,
+            s.price,
+            s.change_amount,
+            s.change_percent,
+            s.volume,
+            s.market_cap,
+            s.last_updated
           FROM stocks s
-          JOIN stock_tags st ON s.symbol = st.stock_symbol
+          JOIN stock_tags st ON COALESCE(s.symbol, s.ticker) = st.stock_symbol
           WHERE st.tag_id IN (${placeholders})
-          ORDER BY s.symbol
+          ORDER BY COALESCE(s.symbol, s.ticker)
         `;
         
         const result = await client.query(query, tagArray);

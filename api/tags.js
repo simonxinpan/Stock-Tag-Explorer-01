@@ -86,15 +86,34 @@ module.exports = async function handler(req, res) {
       
       if (tableCheck.rows[0].exists) {
         // 从数据库获取标签数据
+        // 首先检查 tags 表的字段结构
+        const columnsCheck = await client.query(`
+          SELECT column_name 
+          FROM information_schema.columns 
+          WHERE table_name = 'tags' AND table_schema = 'public'
+        `);
+        
+        const columns = columnsCheck.rows.map(row => row.column_name);
+        const hasCategory = columns.includes('category');
+        const hasSectorZh = columns.includes('sector_zh');
+        
+        // 根据实际字段构建查询
+        let categoryField = 'category';
+        if (!hasCategory && hasSectorZh) {
+          categoryField = 'sector_zh';
+        } else if (!hasCategory) {
+          categoryField = '\'other\' as category';
+        }
+        
         const result = await client.query(`
           SELECT 
-            category,
+            ${categoryField} as category,
             tag_id,
             tag_name,
             stock_count,
             color_theme
           FROM tags 
-          ORDER BY category, stock_count DESC
+          ORDER BY ${categoryField === '\'other\' as category' ? '1' : categoryField}, stock_count DESC
         `);
         
         // 按类别组织数据
