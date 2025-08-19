@@ -1,4 +1,10 @@
 {
+  "crons": [
+    {
+      "path": "/api/update-market-batch",
+      "schedule": "*/2 * * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
