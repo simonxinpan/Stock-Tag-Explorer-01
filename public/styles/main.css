@@ -750,6 +750,47 @@ body {
 }
 
 /* ===========================================
+   数据源指示器样式
+   =========================================== */
+.data-source-indicator {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 12px 20px;
+    margin: 20px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    font-size: 0.9rem;
+}
+
+.data-source-indicator .status {
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.data-source-indicator .status.realtime {
+    color: #10b981;
+}
+
+.data-source-indicator .status.database {
+    color: #3b82f6;
+}
+
+.data-source-indicator .status.mock {
+    color: #f59e0b;
+}
+
+.data-source-indicator .timestamp {
+    color: #6b7280;
+    font-size: 0.8rem;
+}
+
+/* ===========================================
    深色模式支持 (可选)
    =========================================== */
 @media (prefers-color-scheme: dark) {

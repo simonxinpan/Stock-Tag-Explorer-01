@@ -236,27 +236,41 @@ module.exports = async function handler(req, res) {
         const result = await client.query(query, tagArray);
         const dbStocks = result.rows;
         
-        // 获取股票符号列表
-        const stockSymbols = dbStocks.map(stock => stock.symbol);
+        // 获取股票符号列表 - 使用ticker字段
+        const stockSymbols = dbStocks.map(stock => stock.ticker);
         
         // 获取实时数据
         const realTimeStocks = await fetchRealTimeStockData(stockSymbols);
         
         // 合并数据库数据和实时数据
         stocks = dbStocks.map(dbStock => {
-          const realTimeStock = realTimeStocks.find(rt => rt.symbol === dbStock.symbol);
+          const realTimeStock = realTimeStocks.find(rt => rt.symbol === dbStock.ticker);
           if (realTimeStock) {
             return {
-              ...dbStock,
+              symbol: dbStock.ticker,
+              name: dbStock.company_name || realTimeStock.name,
               price: realTimeStock.price,
               change: realTimeStock.change,
               changePercent: realTimeStock.changePercent,
               volume: realTimeStock.volume || dbStock.volume,
               marketCap: realTimeStock.marketCap || dbStock.market_cap,
+              sector: dbStock.sector || realTimeStock.sector,
+              industry: dbStock.industry || realTimeStock.industry,
               lastUpdated: realTimeStock.lastUpdated
             };
           }
-          return dbStock;
+          return {
+            symbol: dbStock.ticker,
+            name: dbStock.company_name,
+            price: dbStock.last_price || 0,
+            change: dbStock.change_amount || 0,
+            changePercent: dbStock.change_percent || 0,
+            volume: dbStock.volume || 0,
+            marketCap: dbStock.market_cap || 'N/A',
+            sector: dbStock.sector || 'Unknown',
+            industry: dbStock.industry || 'Unknown',
+            lastUpdated: dbStock.last_updated || new Date().toISOString()
+          };
         });
         
         totalCount = stocks.length;
@@ -329,6 +343,24 @@ module.exports = async function handler(req, res) {
     const endIndex = startIndex + limitNum;
     const paginatedStocks = stocks.slice(startIndex, endIndex);
 
+    // 计算数据源信息
+    let dataSource = 'mock';
+    let realTimeCount = 0;
+    
+    if (stocks.length > 0 && stocks[0].lastUpdated) {
+      // 检查是否有实时数据
+      realTimeCount = stocks.filter(stock => 
+        stock.lastUpdated && 
+        new Date(stock.lastUpdated).getTime() > Date.now() - 5 * 60 * 1000 // 5分钟内的数据
+      ).length;
+      
+      if (realTimeCount > 0) {
+        dataSource = 'database_with_realtime';
+      } else {
+        dataSource = 'database';
+      }
+    }
+
     res.status(200).json({
       success: true,
       data: {
@@ -344,6 +376,8 @@ module.exports = async function handler(req, res) {
           sort
         }
       },
+      source: dataSource,
+      realTimeCount: realTimeCount,
       timestamp: new Date().toISOString()
     });
 
