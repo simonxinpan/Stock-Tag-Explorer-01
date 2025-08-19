@@ -117,11 +117,13 @@ function getTags(req, res) {
                     ELSE NULL 
                 END
                 ORDER BY s.market_cap DESC NULLS LAST
-            ) FILTER (WHERE s.market_cap IS NOT NULL) as top_stocks
+            ) FILTER (WHERE s.market_cap IS NOT NULL) as top_stocks,
+            s.sector_zh,
+            s.market_cap
         FROM tags t
         LEFT JOIN stock_tags st ON t.id = st.tag_id::integer
         LEFT JOIN stocks s ON st.stock_ticker = s.ticker
-        GROUP BY t.id, t.name, t.description, t.type
+        GROUP BY t.id, t.name, t.description, t.type, s.sector_zh, s.market_cap
         ORDER BY stock_count DESC, t.name;
     `;
     

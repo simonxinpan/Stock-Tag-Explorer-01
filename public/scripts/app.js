@@ -130,7 +130,9 @@ class StockTagExplorer {
                 description: tag.description,
                 stock_count: tag.stock_count || 0,
                 avg_market_cap: tag.avg_market_cap || 'N/A',
-                top_stocks: tag.top_stocks || []
+                top_stocks: tag.top_stocks || [],
+                sector_zh: tag.sector_zh || null,
+                market_cap: tag.market_cap || 0
             };
             
             // 根据标签类型或名称分组
@@ -143,11 +145,18 @@ class StockTagExplorer {
             } else {
                 // 如果没有类型，根据名称推断
                 const name = tag.name.toLowerCase();
-                if (name.includes('科技') || name.includes('technology')) {
+                // 行业分类判断
+                if (tag.sector_zh || name.includes('科技') || name.includes('医疗') || 
+                    name.includes('能源') || name.includes('金融') || name.includes('工业') || 
+                    name.includes('房地产') || name.includes('材料')) {
                     groupedTags['industry'].push(tagData);
-                } else if (name.includes('金融') || name.includes('finance')) {
-                    groupedTags['industry'].push(tagData);
-                } else {
+                } 
+                // 市值分类判断
+                else if (name.includes('大盘股') || name.includes('中盘股') || name.includes('小盘股')) {
+                    groupedTags['special'].push(tagData);
+                }
+                // 其他标签
+                else {
                     groupedTags['special'].push(tagData);
                 }
             }
@@ -159,7 +168,7 @@ class StockTagExplorer {
         if (groupedTags.performance.length > 0) {
             result.push({
                 id: 'stock-performance',
-                name: '🚀 股市表现类',
+                name: '股市表现',
                 type: 'performance',
                 tags: groupedTags.performance
             });
@@ -168,7 +177,7 @@ class StockTagExplorer {
         if (groupedTags.financial.length > 0) {
             result.push({
                 id: 'financial-performance',
-                name: '💰 财务表现类',
+                name: '财务表现',
                 type: 'financial',
                 tags: groupedTags.financial
             });
@@ -177,7 +186,7 @@ class StockTagExplorer {
         if (groupedTags.trend.length > 0) {
             result.push({
                 id: 'trend-ranking',
-                name: '📊 趋势排位类',
+                name: '趋势',
                 type: 'trend',
                 tags: groupedTags.trend
             });
@@ -186,7 +195,7 @@ class StockTagExplorer {
         if (groupedTags.industry.length > 0) {
             result.push({
                 id: 'industry',
-                name: '🏭 行业分类',
+                name: '行业分类',
                 type: 'industry',
                 tags: groupedTags.industry
             });
@@ -195,7 +204,7 @@ class StockTagExplorer {
         if (groupedTags.special.length > 0) {
             result.push({
                 id: 'special-lists',
-                name: '⭐ 特殊名单类',
+                name: '特殊名单',
                 type: 'special',
                 tags: groupedTags.special
             });
@@ -328,8 +337,33 @@ class StockTagExplorer {
         const card = document.createElement('div');
         card.className = 'tag-card';
         card.dataset.tagId = tag.id;
+        
+        // 处理行业分类标签 - 使用sector_zh字段
+        let displayName = tag.name;
+        if (tag.sector_zh) {
+            displayName = tag.sector_zh;
+        }
+        
+        // 处理市值分类标签
+        if (tag.name.includes('大盘股') || tag.name.includes('中盘股') || tag.name.includes('小盘股')) {
+            // 根据市值范围确定分类
+            const marketCap = parseFloat(tag.market_cap || 0);
+            if (marketCap >= 100000000000) { // 1000亿以上为大盘股
+                displayName = '大盘股';
+            } else if (marketCap >= 10000000000) { // 100亿以上为中盘股
+                displayName = '中盘股';
+            } else {
+                displayName = '小盘股';
+            }
+        }
+        
+        // 移除高分红标签
+        if (tag.name.toLowerCase().includes('高分红')) {
+            card.style.display = 'none';
+        }
+        
         card.innerHTML = `
-            <div class="tag-name">${tag.name}</div>
+            <div class="tag-name">${displayName}</div>
             <div class="tag-description">${tag.description}</div>
             <div class="tag-stats">
                 <span class="stock-count">${tag.stock_count} 只股票</span>
