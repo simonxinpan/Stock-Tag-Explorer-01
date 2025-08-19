@@ -239,7 +239,7 @@ module.exports = async function handler(req, res) {
             s.market_cap,
             s.last_updated
           FROM stocks s
-          JOIN stock_tags st ON COALESCE(s.symbol, s.ticker) = st.stock_symbol
+          JOIN stock_tags st ON COALESCE(s.symbol, s.ticker) = st.stock_ticker
           WHERE st.tag_id IN (${placeholders})
           ORDER BY COALESCE(s.symbol, s.ticker)
         `;

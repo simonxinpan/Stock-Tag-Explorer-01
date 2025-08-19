@@ -105,6 +105,14 @@ module.exports = async function handler(req, res) {
           categoryField = '\'other\' as category';
         }
         
+        // 构建ORDER BY子句
+        let orderByClause;
+        if (categoryField === '\'other\' as category') {
+          orderByClause = '1, stock_count DESC';
+        } else {
+          orderByClause = `${categoryField}, stock_count DESC`;
+        }
+        
         const result = await client.query(`
           SELECT 
             ${categoryField} as category,
@@ -113,7 +121,7 @@ module.exports = async function handler(req, res) {
             stock_count,
             color_theme
           FROM tags 
-          ORDER BY ${categoryField === '\'other\' as category' ? '1' : categoryField}, stock_count DESC
+          ORDER BY ${orderByClause}
         `);
         
         // 按类别组织数据
