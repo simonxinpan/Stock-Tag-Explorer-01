@@ -2,7 +2,7 @@ name: Update Market Data (High Frequency)
 
 on:
   schedule:
-    - cron: '*/15 * * * *'  # 每15分钟执行一次
+    - cron: '*/30 * * * *'  # 每30分钟执行一次，减少并行冲突
   workflow_dispatch:  # 允许手动触发
     inputs:
       debug:
@@ -14,9 +14,15 @@ on:
           - 'true'
           - 'false'
 
+# 防止并发执行，避免数据库冲突和API限制问题
+concurrency:
+  group: market-data-update
+  cancel-in-progress: false  # 不取消正在运行的任务，而是等待完成
+
 jobs:
   update-market-data:
     runs-on: ubuntu-latest
+    timeout-minutes: 12  # 设置超时，防止任务卡死
     
     steps:
       - name: Checkout repository
@@ -31,9 +37,31 @@ jobs:
       - name: Install dependencies
         run: npm ci
         
+      - name: Health check - Verify API and DB connectivity
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+        run: |
+          echo "🔍 Checking Finnhub API connectivity..."
+          curl -f "https://finnhub.io/api/v1/quote?symbol=AAPL&token=$FINNHUB_API_KEY" || exit 1
+          echo "✅ Finnhub API is accessible"
+          
       - name: Run market data update (Finnhub)
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           DEBUG: ${{ github.event.inputs.debug || 'false' }}
-        run: node _scripts/update-market-data-finnhub.mjs
+        run: |
+          echo "🚀 Starting Finnhub market data update..."
+          echo "📊 Expected runtime: 8-10 minutes for ~500 stocks"
+          echo "⚡ Rate limit: 1 request/second (60/minute)"
+          node _scripts/update-market-data-finnhub.mjs
+          
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: market-update-logs
+          path: |
+            /home/runner/work/Stock-Tag-Explorer-01/Stock-Tag-Explorer-01/*.log
+          retention-days: 7

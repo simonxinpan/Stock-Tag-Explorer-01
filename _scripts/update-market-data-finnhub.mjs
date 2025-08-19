@@ -10,6 +10,40 @@ const pool = new Pool({
 // 延迟函数
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+// 数据库连接重试函数
+async function connectWithRetry(pool, maxRetries = 3) {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            const client = await pool.connect();
+            console.log(`✅ Database connected successfully (attempt ${i + 1})`);
+            return client;
+        } catch (error) {
+            console.warn(`⚠️ Database connection attempt ${i + 1} failed: ${error.message}`);
+            if (i === maxRetries - 1) {
+                throw error;
+            }
+            await delay(2000 * (i + 1)); // 递增延迟
+        }
+    }
+}
+
+// 检查并刷新数据库连接
+async function ensureConnection(client, pool) {
+    try {
+        // 发送一个简单的查询来测试连接
+        await client.query('SELECT 1');
+        return client;
+    } catch (error) {
+        console.warn(`⚠️ Database connection lost, reconnecting: ${error.message}`);
+        try {
+            client.release();
+        } catch (releaseError) {
+            console.warn(`⚠️ Error releasing old connection: ${releaseError.message}`);
+        }
+        return await connectWithRetry(pool);
+    }
+}
+
 // 获取单只股票的数据（Finnhub API）
 async function getSingleTickerDataFromFinnhub(ticker, apiKey) {
     try {
@@ -44,10 +78,10 @@ async function getSingleTickerDataFromFinnhub(ticker, apiKey) {
     }
 }
 
-// 获取所有股票的市场数据（逐一获取）
-async function getFinnhubMarketData(tickers, apiKey) {
+// 获取所有股票的市场数据（逐一获取，带连接保活）
+async function getFinnhubMarketData(tickers, apiKey, client = null, pool = null) {
     console.log(`🔄 Fetching market data for ${tickers.length} stocks from Finnhub...`);
-    console.log('⚡ Using Finnhub API with rate limiting - faster than Polygon');
+    console.log('⚡ Using Finnhub API with rate limiting and connection keep-alive');
     
     const marketData = new Map();
     let successCount = 0;
@@ -55,9 +89,22 @@ async function getFinnhubMarketData(tickers, apiKey) {
     
     // Finnhub 免费版限制：每分钟60次请求，我们设置为每秒1次请求以保持安全边际
     const DELAY_MS = 1000; // 1秒延迟，比Polygon的12秒快很多
+    const CONNECTION_CHECK_INTERVAL = 50; // 每50个请求检查一次数据库连接
     
     for (let i = 0; i < tickers.length; i++) {
         const ticker = tickers[i];
+        
+        // 定期检查数据库连接（如果提供了连接参数）
+        if (client && pool && i > 0 && i % CONNECTION_CHECK_INTERVAL === 0) {
+            console.log(`🔄 [${i}/${tickers.length}] Checking database connection health...`);
+            try {
+                await client.query('SELECT 1');
+                console.log(`✅ Database connection healthy at request ${i}`);
+            } catch (connectionError) {
+                console.warn(`⚠️ Database connection issue detected at request ${i}: ${connectionError.message}`);
+                // 这里不重连，让主函数处理
+            }
+        }
         
         try {
             console.log(`📊 [${i + 1}/${tickers.length}] Fetching ${ticker}...`);
@@ -83,7 +130,9 @@ async function getFinnhubMarketData(tickers, apiKey) {
         
         // 添加延迟（除了最后一次请求）
         if (i < tickers.length - 1) {
-            console.log(`⏳ Waiting ${DELAY_MS/1000}s to respect rate limits...`);
+            if (i % 100 === 99) {
+                console.log(`⏳ [${i + 1}/${tickers.length}] Waiting ${DELAY_MS/1000}s... (Progress: ${((i + 1) / tickers.length * 100).toFixed(1)}%)`);
+            }
             await delay(DELAY_MS);
         }
     }
@@ -118,8 +167,7 @@ async function main() {
     
     let client;
     try {
-        client = await pool.connect();
-        console.log("✅ Database connected successfully");
+        client = await connectWithRetry(pool);
         
         // 获取所有股票代码
         const { rows: companies } = await client.query('SELECT ticker FROM stocks');
@@ -128,8 +176,13 @@ async function main() {
         // 提取股票代码列表
         const tickers = companies.map(company => company.ticker);
         
-        // 获取市场数据（逐一获取）
-        const finnhubMarketData = await getFinnhubMarketData(tickers, FINNHUB_API_KEY);
+        // 获取市场数据（逐一获取，传递数据库连接用于保活检查）
+        console.log("🔄 Starting API data collection phase...");
+        const finnhubMarketData = await getFinnhubMarketData(tickers, FINNHUB_API_KEY, client, pool);
+        
+        // API调用完成后，重新确保数据库连接有效
+        console.log("🔄 API collection complete, verifying database connection...");
+        client = await ensureConnection(client, pool);
         
         if (finnhubMarketData.size === 0) {
             console.log("⚠️ No market data available, skipping update");
@@ -153,6 +206,14 @@ async function main() {
         
         for (let i = 0; i < companiesArray.length; i += BATCH_SIZE) {
             const batch = companiesArray.slice(i, i + BATCH_SIZE);
+            
+            // 每个批次前检查数据库连接
+            try {
+                client = await ensureConnection(client, pool);
+            } catch (connectionError) {
+                console.error(`❌ Failed to ensure database connection for batch ${i + 1}: ${connectionError.message}`);
+                continue; // 跳过这个批次
+            }
             
             // 每个批次使用独立事务
             await client.query('BEGIN');
@@ -217,7 +278,17 @@ async function main() {
                 
             } catch (batchError) {
                 // 回滚当前批次
-                await client.query('ROLLBACK');
+                try {
+                    await client.query('ROLLBACK');
+                } catch (rollbackError) {
+                    console.warn(`⚠️ Failed to rollback transaction: ${rollbackError.message}`);
+                    // 尝试重新连接
+                    try {
+                        client = await connectWithRetry(pool);
+                    } catch (reconnectError) {
+                        console.error(`❌ Failed to reconnect after rollback error: ${reconnectError.message}`);
+                    }
+                }
                 console.error(`❌ Batch failed at stocks ${i + 1}-${Math.min(i + BATCH_SIZE, companiesArray.length)}:`);
                 console.error(`   Error message: ${batchError.message}`);
                 console.error(`   Error code: ${batchError.code || 'N/A'}`);
@@ -232,19 +303,31 @@ async function main() {
         
     } catch (error) {
         if (client) {
-            await client.query('ROLLBACK');
+            try {
+                await client.query('ROLLBACK');
+            } catch (rollbackError) {
+                console.warn(`⚠️ Failed to rollback in main catch: ${rollbackError.message}`);
+            }
         }
         console.error("❌ JOB FAILED:", error.message);
         console.error("Full error:", error);
         process.exit(1);
     } finally {
         if (client) {
-            client.release();
-            console.log("Database connection released");
+            try {
+                client.release();
+                console.log("Database connection released");
+            } catch (releaseError) {
+                console.warn(`⚠️ Error releasing connection: ${releaseError.message}`);
+            }
         }
         if (pool) {
-            await pool.end();
-            console.log("Database pool closed");
+            try {
+                await pool.end();
+                console.log("Database pool closed");
+            } catch (poolError) {
+                console.warn(`⚠️ Error closing pool: ${poolError.message}`);
+            }
         }
     }
 }
