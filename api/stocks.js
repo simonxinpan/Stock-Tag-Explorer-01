@@ -198,24 +198,27 @@ module.exports = async function handler(req, res) {
       
       if (tableCheck.rows[0].exists) {
         // 从数据库获取股票数据
-        // 简化查询逻辑，支持字符串tag_id和数字ID
-        const placeholders = tagArray.map((_, index) => `$${index + 1}`).join(',');
+        // 修复SQL查询，避免类型转换错误
+        
+        // 将标签数组转换为整数ID（如果是数字）
+        const tagIds = tagArray.map(tag => {
+          const parsed = parseInt(tag, 10);
+          return isNaN(parsed) ? tag : parsed;
+        });
         
         const query = `
           SELECT DISTINCT s.*
           FROM stocks s
           JOIN stock_tags st ON s.ticker = st.stock_ticker
-          LEFT JOIN tags t ON t.id::text = st.tag_id OR t.id = st.tag_id::integer
-          WHERE st.tag_id IN (${placeholders})
-             OR t.name IN (${placeholders})
+          WHERE st.tag_id = ANY($1::text[])
           ORDER BY s.ticker
           LIMIT 100
         `;
         
         console.log('Executing query:', query);
-        console.log('Query params:', tagArray);
+        console.log('Query params:', [tagIds]);
         
-        const result = await client.query(query, tagArray);
+        const result = await client.query(query, [tagIds]);
         const dbStocks = result.rows;
         
         // 直接使用数据库数据，避免外部API调用
