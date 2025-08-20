@@ -175,7 +175,7 @@ module.exports = async function handler(req, res) {
     let stocks = [];
     let totalCount = 0;
 
-    if (!tags) {
+    if (!tags || tags.trim() === '') {
       return res.status(400).json({
         success: false,
         error: 'Tags parameter is required'
@@ -183,6 +183,13 @@ module.exports = async function handler(req, res) {
     }
 
     const tagArray = tags.split(',').filter(tag => tag.trim());
+    
+    if (tagArray.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'At least one valid tag is required'
+      });
+    }
     
     try {
       const client = await pool.connect();

@@ -375,20 +375,36 @@ async function getTags(req, res) {
             tag.id = String(tag.id);
         });
         
+        // 如果静态标签为空，使用fallback数据中的静态标签
+        const fallbackStaticTags = {
+            '股市表现': staticTags.filter(tag => tag.type === '股市表现').length > 0 ? 
+                staticTags.filter(tag => tag.type === '股市表现') : 
+                fallbackTags['股市表现'].filter(tag => !tag.dynamic_rank),
+            '财务表现': staticTags.filter(tag => tag.type === '财务表现').length > 0 ? 
+                staticTags.filter(tag => tag.type === '财务表现') : 
+                [],
+            '特殊名单': staticTags.filter(tag => tag.type === '特殊名单' || tag.type === 'special').length > 0 ? 
+                staticTags.filter(tag => tag.type === '特殊名单' || tag.type === 'special') : 
+                fallbackTags['特殊名单'],
+            '趋势排名': staticTags.filter(tag => tag.type === '趋势排名').length > 0 ? 
+                staticTags.filter(tag => tag.type === '趋势排名') : 
+                []
+        };
+        
         const groupedTags = {
             '股市表现': [
                 ...marketCapTags,
-                ...staticTags.filter(tag => tag.type === '股市表现')
+                ...fallbackStaticTags['股市表现']
             ],
             '财务表现': [
                 ...financialTags,
-                ...staticTags.filter(tag => tag.type === '财务表现')
+                ...fallbackStaticTags['财务表现']
             ],
             '行业分类': industryTags,
-            '特殊名单': staticTags.filter(tag => tag.type === '特殊名单' || tag.type === 'special'),
+            '特殊名单': fallbackStaticTags['特殊名单'],
             '趋势排名': [
                 ...trendTags,
-                ...staticTags.filter(tag => tag.type === '趋势排名')
+                ...fallbackStaticTags['趋势排名']
             ]
         };
         

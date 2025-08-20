@@ -639,7 +639,17 @@ class StockTagExplorer {
 
         try {
             // 将Set转换为逗号分隔的字符串
-            const tagIdString = Array.from(this.activeTagIds).join(',');
+            const tagIdString = Array.from(this.activeTagIds).filter(id => id && id.trim()).join(',');
+            
+            // 再次检查是否有有效的标签ID
+            if (!tagIdString || tagIdString.trim() === '') {
+                console.warn('没有有效的标签ID，跳过API调用');
+                const stockListContainer = document.getElementById('stock-list');
+                if (stockListContainer) {
+                    stockListContainer.innerHTML = '<p class="no-data">请选择一个或多个有效标签来筛选股票。</p>';
+                }
+                return;
+            }
             
             const params = new URLSearchParams({
                 tags: tagIdString,
