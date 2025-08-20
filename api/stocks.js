@@ -229,27 +229,29 @@ module.exports = async function handler(req, res) {
             let marketCapQuery = '';
             
             if (tag === 'large_cap' || tag === 'marketcap_大盘股') {
+              // 大盘股: > 2000亿美元 (数据库存储单位为百万美元，所以是 >= 200000)
               marketCapQuery = `
                 SELECT DISTINCT s.*
                 FROM stocks s
-                WHERE CAST(s.market_cap AS BIGINT) >= 200000000000
+                WHERE s.market_cap >= 200000
                 ORDER BY s.market_cap DESC
                 LIMIT 100
               `;
             } else if (tag === 'mid_cap' || tag === 'marketcap_中盘股') {
+              // 中盘股: 100亿-2000亿美元 (数据库存储单位为百万美元，所以是 10000-200000)
               marketCapQuery = `
                 SELECT DISTINCT s.*
                 FROM stocks s
-                WHERE CAST(s.market_cap AS BIGINT) >= 10000000000 
-                  AND CAST(s.market_cap AS BIGINT) < 200000000000
+                WHERE s.market_cap >= 10000 AND s.market_cap < 200000
                 ORDER BY s.market_cap DESC
                 LIMIT 100
               `;
             } else if (tag === 'small_cap' || tag === 'marketcap_小盘股') {
+              // 小盘股: < 100亿美元 (数据库存储单位为百万美元，所以是 < 10000)
               marketCapQuery = `
                 SELECT DISTINCT s.*
                 FROM stocks s
-                WHERE CAST(s.market_cap AS BIGINT) < 10000000000 AND CAST(s.market_cap AS BIGINT) > 0
+                WHERE s.market_cap < 10000
                 ORDER BY s.market_cap DESC
                 LIMIT 100
               `;
