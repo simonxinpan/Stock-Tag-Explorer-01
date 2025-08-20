@@ -357,8 +357,7 @@ async function getTags(req, res) {
         
         const groupedTags = {
             '股市表现': [
-                ...marketCapTags,
-                ...fallbackStaticTags['股市表现']
+                ...marketCapTags
             ],
             '财务表现': [
                 ...financialTags,
