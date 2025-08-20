@@ -203,10 +203,10 @@ async function getTags(req, res) {
             SELECT 
                 COUNT(*) FILTER (WHERE market_cap >= 200000) as large_cap_count,
                 COUNT(*) FILTER (WHERE market_cap >= 10000 AND market_cap < 200000) as mid_cap_count,
-                COUNT(*) FILTER (WHERE market_cap < 10000 AND market_cap > 0) as small_cap_count,
+                COUNT(*) FILTER (WHERE market_cap < 10000) as small_cap_count,
                 ARRAY_AGG(ticker ORDER BY market_cap DESC) FILTER (WHERE market_cap >= 200000) as large_cap_stocks,
                 ARRAY_AGG(ticker ORDER BY market_cap DESC) FILTER (WHERE market_cap >= 10000 AND market_cap < 200000) as mid_cap_stocks,
-                ARRAY_AGG(ticker ORDER BY market_cap DESC) FILTER (WHERE market_cap < 10000 AND market_cap > 0) as small_cap_stocks
+                ARRAY_AGG(ticker ORDER BY market_cap DESC) FILTER (WHERE market_cap < 10000) as small_cap_stocks
             FROM stocks;
         `;
         
