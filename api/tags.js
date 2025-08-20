@@ -56,17 +56,6 @@ const fallbackTags = {
             dynamic_rank: true,
             metric: 'pe_ttm',
             percentile: 'low10'
-        },
-        {
-            id: 'rank_dividend_yield_top10',
-            name: '高股息',
-            description: '股息收益率最高的前10%股票',
-            stock_count: 50,
-            avg_market_cap: 'N/A',
-            top_stocks: ['JNJ', 'PFE', 'VZ'],
-            dynamic_rank: true,
-            metric: 'dividend_yield',
-            percentile: 'top10'
         }
     ],
     '行业分类': [
@@ -300,42 +289,6 @@ async function getTags(req, res) {
                 dynamic_rank: true,
                 metric: 'pe_ttm',
                 percentile: 'low10'
-            },
-            {
-                id: 'rank_dividend_yield_top10',
-                name: '高股息',
-                type: '财务表现',
-                description: '股息收益率最高的前10%股票',
-                stock_count: 50,
-                avg_market_cap: 'N/A',
-                top_stocks: [],
-                dynamic_rank: true,
-                metric: 'dividend_yield',
-                percentile: 'top10'
-            },
-            {
-                id: 'rank_debt_to_equity_low10',
-                name: '低负债率前10%',
-                type: '财务表现',
-                description: '负债率最低的前10%股票',
-                stock_count: 50,
-                avg_market_cap: 'N/A',
-                top_stocks: [],
-                dynamic_rank: true,
-                metric: 'debt_to_equity',
-                percentile: 'low10'
-            },
-            {
-                id: 'rank_current_ratio_top10',
-                name: '高流动比率前10%',
-                type: '财务表现',
-                description: '流动比率最高的前10%股票',
-                stock_count: 50,
-                avg_market_cap: 'N/A',
-                top_stocks: [],
-                dynamic_rank: true,
-                metric: 'current_ratio',
-                percentile: 'top10'
             }
         ];
         
