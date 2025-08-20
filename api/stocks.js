@@ -345,6 +345,82 @@ module.exports = async function handler(req, res) {
               queryResult = result.rows;
             }
           }
+          // 处理rank_前缀的动态排名标签
+          else if (tag.startsWith('rank_')) {
+            let rankQuery = '';
+            const topCount = Math.ceil(502 * 0.1); // 前10%
+            
+            if (tag === 'rank_roe_ttm_top10') {
+              rankQuery = `
+                SELECT DISTINCT s.*
+                FROM stocks s
+                WHERE s.roe IS NOT NULL AND s.roe > 0
+                ORDER BY s.roe DESC NULLS LAST
+                LIMIT ${topCount}
+              `;
+            } else if (tag === 'rank_pe_ratio_low10') {
+              rankQuery = `
+                SELECT DISTINCT s.*
+                FROM stocks s
+                WHERE s.pe_ratio IS NOT NULL AND s.pe_ratio > 0
+                ORDER BY s.pe_ratio ASC NULLS LAST
+                LIMIT ${topCount}
+              `;
+            } else if (tag === 'rank_revenue_growth_top10') {
+              rankQuery = `
+                SELECT DISTINCT s.*
+                FROM stocks s
+                WHERE s.revenue_growth IS NOT NULL
+                ORDER BY s.revenue_growth DESC NULLS LAST
+                LIMIT ${topCount}
+              `;
+            } else if (tag === 'rank_market_cap_top10') {
+              rankQuery = `
+                SELECT DISTINCT s.*
+                FROM stocks s
+                WHERE CAST(s.market_cap AS BIGINT) > 0
+                ORDER BY CAST(s.market_cap AS BIGINT) DESC NULLS LAST
+                LIMIT ${topCount}
+              `;
+            } else if (tag === 'rank_dividend_yield_top10') {
+              rankQuery = `
+                SELECT DISTINCT s.*
+                FROM stocks s
+                WHERE s.dividend_yield IS NOT NULL AND s.dividend_yield > 0
+                ORDER BY s.dividend_yield DESC NULLS LAST
+                LIMIT ${topCount}
+              `;
+            } else if (tag === 'rank_gross_margin_top10') {
+              rankQuery = `
+                SELECT DISTINCT s.*
+                FROM stocks s
+                WHERE s.gross_margin IS NOT NULL AND s.gross_margin > 0
+                ORDER BY s.gross_margin DESC NULLS LAST
+                LIMIT ${topCount}
+              `;
+            }
+            
+            if (rankQuery) {
+              console.log('Executing rank query:', rankQuery);
+              const result = await client.query(rankQuery);
+              queryResult = result.rows;
+            }
+          }
+          // 处理special_前缀的特殊名单标签
+          else if (tag.startsWith('special_')) {
+            if (tag === 'special_sp500') {
+              const sp500Query = `
+                SELECT DISTINCT s.*
+                FROM stocks s
+                WHERE s.is_sp500 = true
+                ORDER BY s.ticker
+                LIMIT 500
+              `;
+              console.log('Executing SP500 query:', sp500Query);
+              const result = await client.query(sp500Query);
+              queryResult = result.rows;
+            }
+          }
           // 处理数字ID标签（传统标签）
           else {
             const tagId = parseInt(tag, 10);

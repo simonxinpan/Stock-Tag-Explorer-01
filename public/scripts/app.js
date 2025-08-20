@@ -161,7 +161,7 @@ class StockTagExplorer {
                 name: '行业分类',
                 type: 'industry',
                 tags: dbTags['行业分类'].map(tag => ({
-                    id: tag.name,
+                    id: tag.id || tag.name,
                     name: tag.name,
                     description: tag.description || tag.name,
                     stock_count: tag.stock_count || 0,
@@ -178,7 +178,7 @@ class StockTagExplorer {
                 name: '市值分类',
                 type: 'market-cap',
                 tags: dbTags['市值分类'].map(tag => ({
-                    id: tag.name,
+                    id: tag.id || tag.name,
                     name: tag.name,
                     description: tag.description,
                     stock_count: tag.stock_count || 0,
