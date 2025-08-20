@@ -37,8 +37,8 @@ const fallbackTags = {
     '财务表现': [
         {
             id: 'rank_roe_ttm_top10',
-            name: 'ROE前10%',
-            description: '净资产收益率最高的前10%股票',
+            name: '高ROE',
+            description: '净资产收益率(ROE)最高的前10%股票',
             stock_count: 50,
             avg_market_cap: 'N/A',
             top_stocks: ['AAPL', 'MSFT', 'GOOGL'],
@@ -47,14 +47,14 @@ const fallbackTags = {
             percentile: 'top10'
         },
         {
-            id: 'rank_pe_ratio_low10',
-            name: '低PE前10%',
-            description: '市盈率最低的前10%股票',
+            id: 'rank_pe_ttm_low10',
+            name: '低PE',
+            description: '市盈率(PE)最低的前10%股票',
             stock_count: 50,
             avg_market_cap: 'N/A',
             top_stocks: ['META', 'TSLA', 'NFLX'],
             dynamic_rank: true,
-            metric: 'pe_ratio',
+            metric: 'pe_ttm',
             percentile: 'low10'
         }
     ],
@@ -203,10 +203,10 @@ async function getTags(req, res) {
             SELECT 
                 COUNT(*) FILTER (WHERE market_cap >= 200000) as large_cap_count,
                 COUNT(*) FILTER (WHERE market_cap >= 10000 AND market_cap < 200000) as mid_cap_count,
-                COUNT(*) FILTER (WHERE market_cap < 10000 AND market_cap > 0) as small_cap_count,
+                COUNT(*) FILTER (WHERE market_cap < 10000) as small_cap_count,
                 ARRAY_AGG(ticker ORDER BY market_cap DESC) FILTER (WHERE market_cap >= 200000) as large_cap_stocks,
                 ARRAY_AGG(ticker ORDER BY market_cap DESC) FILTER (WHERE market_cap >= 10000 AND market_cap < 200000) as mid_cap_stocks,
-                ARRAY_AGG(ticker ORDER BY market_cap DESC) FILTER (WHERE market_cap < 10000 AND market_cap > 0) as small_cap_stocks
+                ARRAY_AGG(ticker ORDER BY market_cap DESC) FILTER (WHERE market_cap < 10000) as small_cap_stocks
             FROM stocks;
         `;
         
@@ -268,9 +268,9 @@ async function getTags(req, res) {
         const financialTags = [
             {
                 id: 'rank_roe_ttm_top10',
-                name: 'ROE前10%',
+                name: '高ROE',
                 type: '财务表现',
-                description: '净资产收益率最高的前10%股票',
+                description: '净资产收益率(ROE)最高的前10%股票',
                 stock_count: 50,
                 avg_market_cap: 'N/A',
                 top_stocks: [],
@@ -279,52 +279,16 @@ async function getTags(req, res) {
                 percentile: 'top10'
             },
             {
-                id: 'rank_pe_ratio_low10',
-                name: '低PE前10%',
+                id: 'rank_pe_ttm_low10',
+                name: '低PE',
                 type: '财务表现',
-                description: '市盈率最低的前10%股票',
+                description: '市盈率(PE)最低的前10%股票',
                 stock_count: 50,
                 avg_market_cap: 'N/A',
                 top_stocks: [],
                 dynamic_rank: true,
-                metric: 'pe_ratio',
+                metric: 'pe_ttm',
                 percentile: 'low10'
-            },
-            {
-                id: 'rank_dividend_yield_top10',
-                name: '高股息前10%',
-                type: '财务表现',
-                description: '股息收益率最高的前10%股票',
-                stock_count: 50,
-                avg_market_cap: 'N/A',
-                top_stocks: [],
-                dynamic_rank: true,
-                metric: 'dividend_yield',
-                percentile: 'top10'
-            },
-            {
-                id: 'rank_debt_to_equity_low10',
-                name: '低负债率前10%',
-                type: '财务表现',
-                description: '负债率最低的前10%股票',
-                stock_count: 50,
-                avg_market_cap: 'N/A',
-                top_stocks: [],
-                dynamic_rank: true,
-                metric: 'debt_to_equity',
-                percentile: 'low10'
-            },
-            {
-                id: 'rank_current_ratio_top10',
-                name: '高流动比率前10%',
-                type: '财务表现',
-                description: '流动比率最高的前10%股票',
-                stock_count: 50,
-                avg_market_cap: 'N/A',
-                top_stocks: [],
-                dynamic_rank: true,
-                metric: 'current_ratio',
-                percentile: 'top10'
             }
         ];
         
@@ -393,8 +357,7 @@ async function getTags(req, res) {
         
         const groupedTags = {
             '股市表现': [
-                ...marketCapTags,
-                ...fallbackStaticTags['股市表现']
+                ...marketCapTags
             ],
             '财务表现': [
                 ...financialTags,

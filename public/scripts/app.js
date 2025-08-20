@@ -920,14 +920,14 @@ class StockTagExplorer {
      * 跳转到个股详情页
      */
     navigateToStockDetail(symbol) {
-        // 构建个股详情页URL - 使用用户指定的详情页
+        // 构建详情页URL
         const detailUrl = `https://stock-details-final-1e1vcxew3-simon-pans-projects.vercel.app/?symbol=${symbol}`;
         
         // 在新标签页中打开
         window.open(detailUrl, '_blank');
         
-        // 显示提示信息
-        this.showToast(`正在打开 ${symbol} 的详情页面`, 'info');
+        // 显示提示
+        this.showToast(`正在打开 ${symbol} 的详情页...`, 'info');
     }
 
     /**
