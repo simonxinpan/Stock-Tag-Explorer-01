@@ -197,29 +197,93 @@ module.exports = async function handler(req, res) {
       `);
       
       if (tableCheck.rows[0].exists) {
-        // 从数据库获取股票数据
-        // 修复SQL查询，避免类型转换错误
+        let dbStocks = [];
         
-        // 将标签数组转换为整数ID
-        const tagIds = tagArray.map(tag => parseInt(tag, 10)).filter(id => !isNaN(id));
+        // 处理不同类型的标签查询
+        for (const tag of tagArray) {
+          let queryResult = [];
+          
+          // 处理行业分类标签 (sector_开头)
+          if (tag.startsWith('sector_')) {
+            const sectorName = tag.replace('sector_', '');
+            const sectorQuery = `
+              SELECT DISTINCT s.*
+              FROM stocks s
+              WHERE s.sector_zh = $1 OR s.sector_en = $1
+              ORDER BY s.ticker
+              LIMIT 100
+            `;
+            console.log('Executing sector query:', sectorQuery, 'with param:', sectorName);
+            const result = await client.query(sectorQuery, [sectorName]);
+            queryResult = result.rows;
+          }
+          // 处理市值分类标签 (marketcap_开头)
+          else if (tag.startsWith('marketcap_')) {
+            const capType = tag.replace('marketcap_', '');
+            let marketCapQuery = '';
+            
+            if (capType === '大盘股') {
+              marketCapQuery = `
+                SELECT DISTINCT s.*
+                FROM stocks s
+                WHERE CAST(s.market_cap AS BIGINT) >= 200000000000
+                ORDER BY s.ticker
+                LIMIT 100
+              `;
+            } else if (capType === '中盘股') {
+              marketCapQuery = `
+                SELECT DISTINCT s.*
+                FROM stocks s
+                WHERE CAST(s.market_cap AS BIGINT) >= 10000000000 
+                  AND CAST(s.market_cap AS BIGINT) < 200000000000
+                ORDER BY s.ticker
+                LIMIT 100
+              `;
+            } else if (capType === '小盘股') {
+              marketCapQuery = `
+                SELECT DISTINCT s.*
+                FROM stocks s
+                WHERE CAST(s.market_cap AS BIGINT) < 10000000000
+                ORDER BY s.ticker
+                LIMIT 100
+              `;
+            }
+            
+            if (marketCapQuery) {
+              console.log('Executing market cap query:', marketCapQuery);
+              const result = await client.query(marketCapQuery);
+              queryResult = result.rows;
+            }
+          }
+          // 处理数字ID标签（传统标签）
+          else {
+            const tagId = parseInt(tag, 10);
+            if (!isNaN(tagId)) {
+              const idQuery = `
+                SELECT DISTINCT s.*
+                FROM stocks s
+                JOIN stock_tags st ON s.ticker = st.stock_ticker
+                WHERE st.tag_id = $1
+                ORDER BY s.ticker
+                LIMIT 100
+              `;
+              console.log('Executing ID query:', idQuery, 'with param:', tagId);
+              const result = await client.query(idQuery, [tagId]);
+              queryResult = result.rows;
+            }
+          }
+          
+          // 合并结果
+          dbStocks = dbStocks.concat(queryResult);
+        }
         
-        const query = `
-          SELECT DISTINCT s.*
-          FROM stocks s
-          JOIN stock_tags st ON s.ticker = st.stock_ticker
-          WHERE st.tag_id = ANY($1::int[])
-          ORDER BY s.ticker
-          LIMIT 100
-        `;
-        
-        console.log('Executing query:', query);
-        console.log('Query params:', [tagIds]);
-        
-        const result = await client.query(query, [tagIds]);
-        const dbStocks = result.rows;
+        // 去重
+        const uniqueStocks = dbStocks.filter((stock, index, self) => 
+          index === self.findIndex(s => s.ticker === stock.ticker)
+        );
         
         // 直接使用数据库数据，避免外部API调用
-        stocks = dbStocks.map(dbStock => ({
+        stocks = uniqueStocks.map(dbStock => ({
           symbol: dbStock.ticker,
           name: dbStock.name_zh || dbStock.name_en || dbStock.ticker,
           price: parseFloat(dbStock.last_price) || 0,
@@ -257,8 +321,16 @@ module.exports = async function handler(req, res) {
       const allStocks = new Set();
       
       tagArray.forEach(tag => {
-        if (mockStocks[tag]) {
-          mockStocks[tag].forEach(stock => {
+        // 处理新的标签格式
+        let mockKey = tag;
+        if (tag.startsWith('sector_')) {
+          mockKey = 'technology'; // 默认使用technology作为行业示例
+        } else if (tag.startsWith('marketcap_')) {
+          mockKey = 'sp500'; // 默认使用sp500作为市值示例
+        }
+        
+        if (mockStocks[mockKey]) {
+          mockStocks[mockKey].forEach(stock => {
             allStocks.add(JSON.stringify(stock));
           });
         }

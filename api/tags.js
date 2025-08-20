@@ -172,6 +172,7 @@ async function getTags(req, res) {
         // 处理行业标签
         const industryTags = industryResult.rows.map(tag => ({
             ...tag,
+            id: `sector_${tag.name}`, // 添加唯一ID
             avg_market_cap: formatMarketCap(tag.avg_market_cap),
             top_stocks: (tag.top_stocks || []).slice(0, 3)
         }));
@@ -180,6 +181,7 @@ async function getTags(req, res) {
         const marketCapData = marketCapResult.rows[0];
         const marketCapTags = [
             {
+                id: 'marketcap_大盘股', // 添加唯一ID
                 name: '大盘股',
                 type: '市值分类',
                 description: '市值超过2000亿美元的股票',
@@ -188,6 +190,7 @@ async function getTags(req, res) {
                 top_stocks: (marketCapData.large_cap_stocks || []).slice(0, 3)
             },
             {
+                id: 'marketcap_中盘股', // 添加唯一ID
                 name: '中盘股',
                 type: '市值分类',
                 description: '市值在100亿-2000亿美元之间的股票',
@@ -196,6 +199,7 @@ async function getTags(req, res) {
                 top_stocks: (marketCapData.mid_cap_stocks || []).slice(0, 3)
             },
             {
+                id: 'marketcap_小盘股', // 添加唯一ID
                 name: '小盘股',
                 type: '市值分类',
                 description: '市值低于100亿美元的股票',

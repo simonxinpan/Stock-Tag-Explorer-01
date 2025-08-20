@@ -7,6 +7,7 @@ class StockTagExplorer {
     constructor() {
         this.apiBaseUrl = window.location.origin;
         this.selectedTag = null;
+        this.activeTagIds = new Set(); // 用于存储选中的标签ID
         this.currentPage = 1;
         this.pageSize = 20;
         this.totalPages = 1;
@@ -347,42 +348,28 @@ class StockTagExplorer {
     createTagCard(tag) {
         const card = document.createElement('div');
         card.className = 'tag-card';
-        card.dataset.tagId = tag.id;
         
-        // 处理行业分类标签 - 使用sector_zh字段
+        // 确保使用正确的标签ID
+        card.dataset.id = tag.id || tag.name; // 使用data-id而不是data-tag-id
+        
+        // 简化显示名称逻辑
         let displayName = tag.name;
-        if (tag.sector_zh) {
-            displayName = tag.sector_zh;
-        }
-        
-        // 处理市值分类标签
-        if (tag.name.includes('大盘股') || tag.name.includes('中盘股') || tag.name.includes('小盘股')) {
-            // 根据市值范围确定分类
-            const marketCap = parseFloat(tag.market_cap || 0);
-            if (marketCap >= 100000000000) { // 1000亿以上为大盘股
-                displayName = '大盘股';
-            } else if (marketCap >= 10000000000) { // 100亿以上为中盘股
-                displayName = '中盘股';
-            } else {
-                displayName = '小盘股';
-            }
-        }
         
         // 移除高分红标签
-        if (tag.name.toLowerCase().includes('高分红')) {
+        if (tag.name && tag.name.toLowerCase().includes('高分红')) {
             card.style.display = 'none';
         }
         
         card.innerHTML = `
             <div class="tag-name">${displayName}</div>
-            <div class="tag-description">${tag.description}</div>
+            <div class="tag-description">${tag.description || ''}</div>
             <div class="tag-stats">
-                <span class="stock-count">${tag.stock_count} 只股票</span>
+                <span class="stock-count">${tag.stock_count || 0} 只股票</span>
                 <span class="last-updated">实时更新</span>
             </div>
         `;
 
-        card.addEventListener('click', () => this.handleTagClick(tag));
+        card.addEventListener('click', (event) => this.handleTagClick(event));
         return card;
     }
 
@@ -413,30 +400,45 @@ class StockTagExplorer {
      * 处理标签点击
      */
     async handleTagClick(tag) {
-        // 更新选中状态
-        document.querySelectorAll('.tag-card').forEach(card => {
-            card.classList.remove('selected');
-        });
-        
         const clickedCard = document.querySelector(`[data-tag-id="${tag.id}"]`);
-        if (clickedCard) {
+        if (!clickedCard) return;
+
+        // 获取真实的标签ID - 对于动态标签使用特殊处理
+        let realTagId = this.getRealTagId(tag);
+        
+        // 切换选中状态
+        if (this.activeTagIds.has(realTagId)) {
+            this.activeTagIds.delete(realTagId);
+            clickedCard.classList.remove('selected');
+        } else {
+            this.activeTagIds.add(realTagId);
             clickedCard.classList.add('selected');
         }
 
+        // 设置选中的标签用于API调用
         this.selectedTag = tag;
         this.currentPage = 1;
         
-        // 显示股票列表区域
-        this.showStockList();
-        
-        // 更新标题
-        const title = document.getElementById('stock-list-title');
-        if (title) {
-            title.textContent = `${tag.name} - ${tag.stock_count} 只股票`;
+        // 如果有选中的标签，显示股票列表
+        if (this.activeTagIds.size > 0) {
+            this.showStockList();
+            
+            // 更新标题
+            const title = document.getElementById('stock-list-title');
+            if (title) {
+                if (this.activeTagIds.size === 1) {
+                    title.textContent = `${tag.name} - ${tag.stock_count} 只股票`;
+                } else {
+                    title.textContent = `已选择 ${this.activeTagIds.size} 个标签的股票`;
+                }
+            }
+            
+            // 加载股票数据
+            await this.loadStockData();
+        } else {
+            // 如果没有选中的标签，隐藏股票列表
+            this.hideStockList();
         }
-
-        // 加载股票数据
-        await this.loadStockData();
     }
 
     /**
@@ -461,6 +463,26 @@ class StockTagExplorer {
     }
 
     /**
+     * 获取真实的标签ID
+     */
+    getRealTagId(tag) {
+        // 对于行业分类，使用sector_zh作为查询参数
+        if (tag.type === '行业分类' && tag.sector_zh) {
+            return tag.sector_zh;
+        }
+        
+        // 对于市值分类，使用特定的标识符
+        if (tag.type === '市值分类') {
+            if (tag.name.includes('大盘股')) return 'large_cap';
+            if (tag.name.includes('中盘股')) return 'mid_cap';
+            if (tag.name.includes('小盘股')) return 'small_cap';
+        }
+        
+        // 对于其他标签，使用原始ID
+        return tag.id || tag.name;
+    }
+
+    /**
      * 清除选择
      */
     clearSelection() {
@@ -469,6 +491,7 @@ class StockTagExplorer {
         });
         
         this.selectedTag = null;
+        this.activeTagIds.clear();
         this.hideStockList();
     }
 
@@ -476,22 +499,37 @@ class StockTagExplorer {
      * 加载股票数据
      */
     async loadStockData() {
-        if (!this.selectedTag) return;
+        // 如果没有选中的标签，清空股票列表
+        if (this.activeTagIds.size === 0) {
+            const stockListContainer = document.getElementById('stock-list');
+            if (stockListContainer) {
+                stockListContainer.innerHTML = '<p class="no-data">请选择一个或多个标签来筛选股票。</p>';
+            }
+            return;
+        }
 
         try {
+            // 将Set转换为逗号分隔的字符串
+            const tagIdString = Array.from(this.activeTagIds).join(',');
+            
             const params = new URLSearchParams({
-                tags: this.selectedTag.id,
+                tags: tagIdString,
                 page: this.currentPage,
                 limit: this.pageSize,
                 sort: this.currentSort
             });
 
-            const response = await fetch(`${this.apiBaseUrl}/api/stocks?${params}`);
+            const apiUrl = `${this.apiBaseUrl}/api/stocks?${params}`;
+            console.log('API请求URL:', apiUrl); // 调试日志
+            
+            const response = await fetch(apiUrl);
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
             const data = await response.json();
+            console.log('API响应数据:', data); // 调试日志
+            
             if (data.success && data.data) {
                 this.stockData = data.data.stocks || [];
                 this.totalPages = data.data.pagination?.total || 1;
@@ -506,6 +544,8 @@ class StockTagExplorer {
             // 显示成功连接到真实数据的提示
             if (this.stockData.length > 0) {
                 this.showToast('已连接到真实数据库数据', 'success');
+            } else {
+                this.showToast('未找到符合条件的股票', 'info');
             }
             
         } catch (error) {
@@ -731,8 +771,8 @@ class StockTagExplorer {
      * 跳转到个股详情页
      */
     navigateToStockDetail(symbol) {
-        // 构建个股详情页URL
-        const detailUrl = `https://finance.yahoo.com/quote/${symbol}`;
+        // 构建个股详情页URL - 使用用户指定的详情页
+        const detailUrl = `https://stock-details-final-1e1vcxew3-simon-pans-projects.vercel.app/?symbol=${symbol}`;
         
         // 在新标签页中打开
         window.open(detailUrl, '_blank');
