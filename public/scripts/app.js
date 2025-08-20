@@ -7,6 +7,7 @@ class StockTagExplorer {
     constructor() {
         this.apiBaseUrl = window.location.origin;
         this.selectedTag = null;
+        this.activeTagIds = new Set(); // 用于存储选中的标签ID
         this.currentPage = 1;
         this.pageSize = 20;
         this.totalPages = 1;
@@ -85,14 +86,17 @@ class StockTagExplorer {
             
             const data = await response.json();
             if (data.success && data.data) {
-                // 将数据库标签数据转换为前端期望的格式
-                this.tagData = this.convertDatabaseTagsToFrontendFormat(data.data);
-                this.renderTagPlaza();
-                
-                // 显示成功连接到真实数据的提示
-                if (!data.fallback) {
+                // 检查是否是备用数据（数组格式）还是分组数据（对象格式）
+                if (data.fallback || Array.isArray(data.data)) {
+                    // 备用数据，使用本地备用数据
+                    this.tagData = this.getFallbackTagData();
+                    this.showToast('连接数据库失败，使用离线数据', 'warning');
+                } else {
+                    // 真实数据库数据，转换格式
+                    this.tagData = this.convertDatabaseTagsToFrontendFormat(data.data);
                     this.showToast('已连接到真实数据库标签', 'success');
                 }
+                this.renderTagPlaza();
             } else {
                 throw new Error('Invalid API response format');
             }
@@ -113,91 +117,108 @@ class StockTagExplorer {
      * 将数据库标签数据转换为前端期望的格式
      */
     convertDatabaseTagsToFrontendFormat(dbTags) {
-        // 按类型分组标签
-        const groupedTags = {
-            'performance': [],
-            'financial': [],
-            'trend': [],
-            'industry': [],
-            'special': []
-        };
-        
-        // 将数据库标签分配到相应组
-        dbTags.forEach(tag => {
-            const tagData = {
-                id: tag.id,
-                name: tag.name,
-                description: tag.description,
-                stock_count: tag.stock_count || 0,
-                avg_market_cap: tag.avg_market_cap || 'N/A',
-                top_stocks: tag.top_stocks || []
-            };
-            
-            // 根据标签类型或名称分组
-            if (tag.type) {
-                if (groupedTags[tag.type]) {
-                    groupedTags[tag.type].push(tagData);
-                } else {
-                    groupedTags['special'].push(tagData);
-                }
-            } else {
-                // 如果没有类型，根据名称推断
-                const name = tag.name.toLowerCase();
-                if (name.includes('科技') || name.includes('technology')) {
-                    groupedTags['industry'].push(tagData);
-                } else if (name.includes('金融') || name.includes('finance')) {
-                    groupedTags['industry'].push(tagData);
-                } else {
-                    groupedTags['special'].push(tagData);
-                }
-            }
-        });
-        
-        // 转换为前端期望的格式
+        // API现在返回已分组的数据
         const result = [];
         
-        if (groupedTags.performance.length > 0) {
+        // 处理股市表现
+        if (dbTags['股市表现'] && dbTags['股市表现'].length > 0) {
             result.push({
                 id: 'stock-performance',
-                name: '🚀 股市表现类',
+                name: '股市表现',
                 type: 'performance',
-                tags: groupedTags.performance
+                tags: dbTags['股市表现'].map(tag => ({
+                    id: tag.id || tag.name,
+                    name: tag.name,
+                    description: tag.description,
+                    stock_count: tag.stock_count || 0,
+                    avg_market_cap: tag.avg_market_cap || 'N/A',
+                    top_stocks: tag.top_stocks || []
+                }))
             });
         }
         
-        if (groupedTags.financial.length > 0) {
+        // 处理财务表现
+        if (dbTags['财务表现'] && dbTags['财务表现'].length > 0) {
             result.push({
                 id: 'financial-performance',
-                name: '💰 财务表现类',
+                name: '财务表现',
                 type: 'financial',
-                tags: groupedTags.financial
+                tags: dbTags['财务表现'].map(tag => ({
+                    id: tag.id || tag.name,
+                    name: tag.name,
+                    description: tag.description,
+                    stock_count: tag.stock_count || 0,
+                    avg_market_cap: tag.avg_market_cap || 'N/A',
+                    top_stocks: tag.top_stocks || []
+                }))
             });
         }
         
-        if (groupedTags.trend.length > 0) {
-            result.push({
-                id: 'trend-ranking',
-                name: '📊 趋势排位类',
-                type: 'trend',
-                tags: groupedTags.trend
-            });
-        }
-        
-        if (groupedTags.industry.length > 0) {
+        // 处理行业分类
+        if (dbTags['行业分类'] && dbTags['行业分类'].length > 0) {
             result.push({
                 id: 'industry',
-                name: '🏭 行业分类',
+                name: '行业分类',
                 type: 'industry',
-                tags: groupedTags.industry
+                tags: dbTags['行业分类'].map(tag => ({
+                    id: tag.id || tag.name,
+                    name: tag.name,
+                    description: tag.description || tag.name,
+                    stock_count: tag.stock_count || 0,
+                    avg_market_cap: tag.avg_market_cap || 'N/A',
+                    top_stocks: tag.top_stocks || []
+                }))
             });
         }
         
-        if (groupedTags.special.length > 0) {
+        // 处理市值分类
+        if (dbTags['市值分类'] && dbTags['市值分类'].length > 0) {
             result.push({
-                id: 'special-lists',
-                name: '⭐ 特殊名单类',
+                id: 'market-cap',
+                name: '市值分类',
+                type: 'market-cap',
+                tags: dbTags['市值分类'].map(tag => ({
+                    id: tag.id || tag.name,
+                    name: tag.name,
+                    description: tag.description,
+                    stock_count: tag.stock_count || 0,
+                    avg_market_cap: tag.avg_market_cap || 'N/A',
+                    top_stocks: tag.top_stocks || []
+                }))
+            });
+        }
+        
+        // 处理特殊名单
+        if (dbTags['特殊名单'] && dbTags['特殊名单'].length > 0) {
+            result.push({
+                id: 'special',
+                name: '特殊名单',
                 type: 'special',
-                tags: groupedTags.special
+                tags: dbTags['特殊名单'].map(tag => ({
+                    id: tag.id || tag.name,
+                    name: tag.name,
+                    description: tag.description,
+                    stock_count: tag.stock_count || 0,
+                    avg_market_cap: tag.avg_market_cap || 'N/A',
+                    top_stocks: tag.top_stocks || []
+                }))
+            });
+        }
+        
+        // 处理趋势
+        if (dbTags['趋势'] && dbTags['趋势'].length > 0) {
+            result.push({
+                id: 'trend-ranking',
+                name: '趋势',
+                type: 'trend',
+                tags: dbTags['趋势'].map(tag => ({
+                    id: tag.id || tag.name,
+                    name: tag.name,
+                    description: tag.description,
+                    stock_count: tag.stock_count || 0,
+                    avg_market_cap: tag.avg_market_cap || 'N/A',
+                    top_stocks: tag.top_stocks || []
+                }))
             });
         }
         
@@ -327,17 +348,31 @@ class StockTagExplorer {
     createTagCard(tag) {
         const card = document.createElement('div');
         card.className = 'tag-card';
-        card.dataset.tagId = tag.id;
+        
+        // 设置所有必要的 data 属性
+        card.dataset.id = tag.id || tag.name;
+        card.dataset.name = tag.name;
+        card.dataset.type = tag.type || '';
+        card.dataset.stockCount = tag.stock_count || 0;
+        
+        // 简化显示名称逻辑
+        let displayName = tag.name;
+        
+        // 移除高分红标签
+        if (tag.name && tag.name.toLowerCase().includes('高分红')) {
+            card.style.display = 'none';
+        }
+        
         card.innerHTML = `
-            <div class="tag-name">${tag.name}</div>
-            <div class="tag-description">${tag.description}</div>
+            <div class="tag-name">${displayName}</div>
+            <div class="tag-description">${tag.description || ''}</div>
             <div class="tag-stats">
-                <span class="stock-count">${tag.stock_count} 只股票</span>
+                <span class="stock-count">${tag.stock_count || 0} 只股票</span>
                 <span class="last-updated">实时更新</span>
             </div>
         `;
 
-        card.addEventListener('click', () => this.handleTagClick(tag));
+        // 不再单独绑定事件，使用事件委托
         return card;
     }
 
@@ -345,6 +380,31 @@ class StockTagExplorer {
      * 绑定事件
      */
     bindEvents() {
+        // 标签点击事件委托
+        const tagPlaza = document.getElementById('tag-plaza');
+        if (tagPlaza) {
+            tagPlaza.addEventListener('click', (e) => {
+                const tagCard = e.target.closest('.tag-card');
+                if (tagCard) {
+                    const tagId = tagCard.dataset.id;
+                    const tagName = tagCard.dataset.name;
+                    const tagType = tagCard.dataset.type;
+                    const stockCount = parseInt(tagCard.dataset.stockCount) || 0;
+                    
+                    // 构建标签对象
+                    const tag = {
+                        id: tagId,
+                        name: tagName,
+                        type: tagType,
+                        stock_count: stockCount
+                    };
+                    
+                    console.log('点击标签卡片:', tag);
+                    this.handleTagClick(tag);
+                }
+            });
+        }
+
         // 排序选择
         const sortSelect = document.getElementById('sort-select');
         if (sortSelect) {
@@ -368,30 +428,79 @@ class StockTagExplorer {
      * 处理标签点击
      */
     async handleTagClick(tag) {
-        // 更新选中状态
-        document.querySelectorAll('.tag-card').forEach(card => {
-            card.classList.remove('selected');
-        });
+        console.log('标签点击事件:', tag);
         
-        const clickedCard = document.querySelector(`[data-tag-id="${tag.id}"]`);
-        if (clickedCard) {
-            clickedCard.classList.add('selected');
+        const clickedCard = document.querySelector(`[data-id="${tag.id || tag.name}"]`);
+        if (!clickedCard) {
+            console.error('未找到对应的标签卡片:', tag.id || tag.name);
+            return;
         }
 
+        // 获取真实的标签ID
+        let realTagId = String(tag.id || tag.name);
+        
+        // 切换选中状态
+        if (this.activeTagIds.has(realTagId)) {
+            this.activeTagIds.delete(realTagId);
+            clickedCard.classList.remove('selected');
+            console.log('取消选择标签:', realTagId);
+        } else {
+            this.activeTagIds.add(realTagId);
+            clickedCard.classList.add('selected');
+            console.log('选择标签:', realTagId);
+        }
+
+        // 设置选中的标签用于API调用
         this.selectedTag = tag;
         this.currentPage = 1;
         
-        // 显示股票列表区域
-        this.showStockList();
+        console.log('当前选中的标签IDs:', Array.from(this.activeTagIds));
         
-        // 更新标题
-        const title = document.getElementById('stock-list-title');
-        if (title) {
-            title.textContent = `${tag.name} - ${tag.stock_count} 只股票`;
+        // 如果有选中的标签，显示股票列表
+        if (this.activeTagIds.size > 0) {
+            this.showStockList();
+            
+            // 更新标题
+            const title = document.getElementById('stock-list-title');
+            if (title) {
+                if (this.activeTagIds.size === 1) {
+                    title.textContent = `${tag.name} - ${tag.stock_count || 0} 只股票`;
+                } else {
+                    title.textContent = `已选择 ${this.activeTagIds.size} 个标签的股票`;
+                }
+            }
+            
+            // 检查是否是动态排名标签
+            // 通过标签ID或名称判断是否为动态排名标签
+            const isDynamicRank = tag.dynamic_rank || 
+                                tag.id.includes('rank_') || 
+                                tag.name.includes('前10%') || 
+                                tag.name.includes('后10%');
+            
+            if (isDynamicRank && tag.metric && tag.percentile) {
+                console.log('调用动态排名API:', tag.metric, tag.percentile);
+                // 调用动态排名API
+                await this.loadDynamicRankStocks(tag);
+            } else if (isDynamicRank) {
+                // 如果是动态排名标签但缺少metric和percentile，从ID中推断
+                const inferredTag = this.inferDynamicRankParams(tag);
+                if (inferredTag.metric && inferredTag.percentile) {
+                    console.log('推断动态排名参数:', inferredTag.metric, inferredTag.percentile);
+                    await this.loadDynamicRankStocks(inferredTag);
+                } else {
+                    console.log('调用普通标签API');
+                    await this.loadStockData();
+                }
+            } else {
+                console.log('调用普通标签API');
+                // 调用普通标签API
+                await this.loadStockData();
+            }
+        } else {
+            // 如果没有选中的标签，隐藏股票列表
+            console.log('没有选中标签，隐藏股票列表');
+            this.hideStockList();
         }
-
-        // 加载股票数据
-        await this.loadStockData();
     }
 
     /**
@@ -416,6 +525,93 @@ class StockTagExplorer {
     }
 
     /**
+     * 加载动态排名股票数据
+     */
+    async loadDynamicRankStocks(tag) {
+        try {
+            const params = new URLSearchParams({
+                metric: tag.metric,
+                percentile: tag.percentile,
+                page: this.currentPage,
+                limit: this.pageSize
+            });
+
+            const apiUrl = `${this.apiBaseUrl}/api/stocks-by-rank?${params}`;
+            console.log('动态排名API请求URL:', apiUrl);
+            
+            const response = await fetch(apiUrl);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            console.log('动态排名API响应数据:', data);
+            
+            if (data.success && data.data) {
+                this.stockData = data.data.stocks || [];
+                this.totalPages = data.data.pagination?.total || 1;
+                this.totalCount = data.data.pagination?.count || 0;
+            } else {
+                throw new Error('Invalid API response format');
+            }
+            
+            this.renderStockList();
+            this.renderPagination();
+            
+            if (this.stockData.length > 0) {
+                this.showToast(`已加载${tag.name}数据`, 'success');
+            } else {
+                this.showToast('未找到符合条件的股票', 'info');
+            }
+            
+        } catch (error) {
+            console.error('加载动态排名股票数据失败:', error);
+            // 使用模拟数据
+            const mockData = this.generateMockStockData();
+            this.stockData = mockData.stocks;
+            this.totalPages = mockData.totalPages;
+            this.totalCount = mockData.totalCount;
+            
+            this.renderStockList();
+            this.renderPagination();
+            this.showToast('连接数据库失败，使用模拟数据', 'warning');
+        }
+    }
+
+    /**
+     * 推断动态排名标签的参数
+     */
+    inferDynamicRankParams(tag) {
+        const result = { ...tag };
+        
+        // 根据标签名称推断metric和percentile
+        if (tag.name.includes('ROE前10%')) {
+            result.metric = 'roe_ttm';
+            result.percentile = 'top10';
+        } else if (tag.name.includes('低PE前10%')) {
+            result.metric = 'pe_ratio';
+            result.percentile = 'low10';
+        } else if (tag.name.includes('高股息前10%')) {
+            result.metric = 'dividend_yield';
+            result.percentile = 'top10';
+        } else if (tag.name.includes('低负债率前10%')) {
+            result.metric = 'debt_to_equity';
+            result.percentile = 'low10';
+        } else if (tag.name.includes('高流动比率前10%')) {
+            result.metric = 'current_ratio';
+            result.percentile = 'top10';
+        } else if (tag.name.includes('营收增长前10%')) {
+            result.metric = 'revenue_growth';
+            result.percentile = 'top10';
+        } else if (tag.name.includes('市值前10%')) {
+            result.metric = 'market_cap';
+            result.percentile = 'top10';
+        }
+        
+        return result;
+    }
+
+    /**
      * 清除选择
      */
     clearSelection() {
@@ -424,6 +620,7 @@ class StockTagExplorer {
         });
         
         this.selectedTag = null;
+        this.activeTagIds.clear();
         this.hideStockList();
     }
 
@@ -431,22 +628,47 @@ class StockTagExplorer {
      * 加载股票数据
      */
     async loadStockData() {
-        if (!this.selectedTag) return;
+        // 如果没有选中的标签，清空股票列表
+        if (this.activeTagIds.size === 0) {
+            const stockListContainer = document.getElementById('stock-list');
+            if (stockListContainer) {
+                stockListContainer.innerHTML = '<p class="no-data">请选择一个或多个标签来筛选股票。</p>';
+            }
+            return;
+        }
 
         try {
+            // 将Set转换为逗号分隔的字符串
+            const tagIdString = Array.from(this.activeTagIds).filter(id => id && id.trim()).join(',');
+            
+            // 再次检查是否有有效的标签ID
+            if (!tagIdString || tagIdString.trim() === '') {
+                console.warn('没有有效的标签ID，跳过API调用');
+                const stockListContainer = document.getElementById('stock-list');
+                if (stockListContainer) {
+                    stockListContainer.innerHTML = '<p class="no-data">请选择一个或多个有效标签来筛选股票。</p>';
+                }
+                return;
+            }
+            
             const params = new URLSearchParams({
-                tags: this.selectedTag.id,
+                tags: tagIdString,
                 page: this.currentPage,
                 limit: this.pageSize,
                 sort: this.currentSort
             });
 
-            const response = await fetch(`${this.apiBaseUrl}/api/stocks?${params}`);
+            const apiUrl = `${this.apiBaseUrl}/api/stocks?${params}`;
+            console.log('API请求URL:', apiUrl); // 调试日志
+            
+            const response = await fetch(apiUrl);
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
             const data = await response.json();
+            console.log('API响应数据:', data); // 调试日志
+            
             if (data.success && data.data) {
                 this.stockData = data.data.stocks || [];
                 this.totalPages = data.data.pagination?.total || 1;
@@ -461,6 +683,8 @@ class StockTagExplorer {
             // 显示成功连接到真实数据的提示
             if (this.stockData.length > 0) {
                 this.showToast('已连接到真实数据库数据', 'success');
+            } else {
+                this.showToast('未找到符合条件的股票', 'info');
             }
             
         } catch (error) {
@@ -548,37 +772,53 @@ class StockTagExplorer {
         const item = document.createElement('div');
         item.className = 'stock-item';
         
-        const changeClass = stock.change > 0 ? 'positive' : stock.change < 0 ? 'negative' : 'neutral';
-        const changeSymbol = stock.change > 0 ? '+' : '';
+        // 处理数据格式兼容性
+        const symbol = stock.symbol || stock.ticker;
+        const name = stock.name || stock.company_name || symbol;
+        const price = stock.price || stock.current_price || 0;
+        const change = stock.change || stock.price_change || 0;
+        const changePercent = stock.changePercent || stock.change_percent || 0;
+        const volume = stock.volume || stock.trading_volume || 0;
+        const marketCap = stock.marketCap || stock.market_cap || 0;
+        const lastUpdated = stock.lastUpdated || stock.last_updated || new Date().toISOString();
+        
+        const changeClass = change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral';
+        const changeSymbol = change > 0 ? '+' : '';
         
         item.innerHTML = `
             <div class="stock-header">
                 <div class="stock-info">
-                    <div class="stock-name">${stock.name}</div>
-                    <div class="stock-symbol">${stock.symbol}</div>
+                    <div class="stock-name">${name}</div>
+                    <div class="stock-symbol">${symbol}</div>
                 </div>
                 <div class="stock-price">
-                    <div class="current-price">$${stock.price.toFixed(2)}</div>
+                    <div class="current-price">$${price.toFixed(2)}</div>
                     <div class="price-change ${changeClass}">
-                        ${changeSymbol}${stock.change.toFixed(2)} (${changeSymbol}${stock.changePercent.toFixed(2)}%)
+                        ${changeSymbol}${change.toFixed(2)} (${changeSymbol}${changePercent.toFixed(2)}%)
                     </div>
                 </div>
             </div>
             <div class="stock-details">
                 <div class="detail-item">
                     <div class="detail-label">成交量</div>
-                    <div class="detail-value">${this.formatVolume(stock.volume)}</div>
+                    <div class="detail-value">${this.formatVolume(volume)}</div>
                 </div>
                 <div class="detail-item">
                     <div class="detail-label">市值</div>
-                    <div class="detail-value">${this.formatMarketCap(stock.marketCap)}</div>
+                    <div class="detail-value">${this.formatMarketCap(marketCap)}</div>
                 </div>
                 <div class="detail-item">
                     <div class="detail-label">更新时间</div>
-                    <div class="detail-value">${this.formatTime(stock.lastUpdated)}</div>
+                    <div class="detail-value">${this.formatTime(lastUpdated)}</div>
                 </div>
             </div>
         `;
+        
+        // 添加点击事件，跳转到个股详情页
+        item.style.cursor = 'pointer';
+        item.addEventListener('click', () => {
+            this.navigateToStockDetail(symbol);
+        });
 
         return item;
     }
@@ -674,6 +914,20 @@ class StockTagExplorer {
         } else {
             return date.toLocaleDateString('zh-CN');
         }
+    }
+
+    /**
+     * 跳转到个股详情页
+     */
+    navigateToStockDetail(symbol) {
+        // 构建个股详情页URL - 使用用户指定的详情页
+        const detailUrl = `https://stock-details-final-1e1vcxew3-simon-pans-projects.vercel.app/?symbol=${symbol}`;
+        
+        // 在新标签页中打开
+        window.open(detailUrl, '_blank');
+        
+        // 显示提示信息
+        this.showToast(`正在打开 ${symbol} 的详情页面`, 'info');
     }
 
     /**
