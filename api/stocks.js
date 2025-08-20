@@ -354,16 +354,16 @@ module.exports = async function handler(req, res) {
               rankQuery = `
                 SELECT DISTINCT s.*
                 FROM stocks s
-                WHERE s.roe IS NOT NULL AND s.roe > 0
-                ORDER BY s.roe DESC NULLS LAST
+                WHERE s.roe_ttm IS NOT NULL AND s.roe_ttm > 0
+                ORDER BY s.roe_ttm DESC NULLS LAST
                 LIMIT ${topCount}
               `;
-            } else if (tag === 'rank_pe_ratio_low10') {
+            } else if (tag === 'rank_pe_ttm_low10') {
               rankQuery = `
                 SELECT DISTINCT s.*
                 FROM stocks s
-                WHERE s.pe_ratio IS NOT NULL AND s.pe_ratio > 0
-                ORDER BY s.pe_ratio ASC NULLS LAST
+                WHERE s.pe_ttm IS NOT NULL AND s.pe_ttm > 0
+                ORDER BY s.pe_ttm ASC NULLS LAST
                 LIMIT ${topCount}
               `;
             } else if (tag === 'rank_revenue_growth_top10') {
