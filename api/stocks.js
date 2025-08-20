@@ -217,34 +217,33 @@ module.exports = async function handler(req, res) {
             const result = await client.query(sectorQuery, [sectorName]);
             queryResult = result.rows;
           }
-          // 处理市值分类标签 (marketcap_开头)
-          else if (tag.startsWith('marketcap_')) {
-            const capType = tag.replace('marketcap_', '');
+          // 处理市值分类标签 (marketcap_开头或large_cap等)
+          else if (tag.startsWith('marketcap_') || ['large_cap', 'mid_cap', 'small_cap'].includes(tag)) {
             let marketCapQuery = '';
             
-            if (capType === '大盘股') {
+            if (tag === 'large_cap' || tag === 'marketcap_大盘股') {
               marketCapQuery = `
                 SELECT DISTINCT s.*
                 FROM stocks s
                 WHERE CAST(s.market_cap AS BIGINT) >= 200000000000
-                ORDER BY s.ticker
+                ORDER BY s.market_cap DESC
                 LIMIT 100
               `;
-            } else if (capType === '中盘股') {
+            } else if (tag === 'mid_cap' || tag === 'marketcap_中盘股') {
               marketCapQuery = `
                 SELECT DISTINCT s.*
                 FROM stocks s
                 WHERE CAST(s.market_cap AS BIGINT) >= 10000000000 
                   AND CAST(s.market_cap AS BIGINT) < 200000000000
-                ORDER BY s.ticker
+                ORDER BY s.market_cap DESC
                 LIMIT 100
               `;
-            } else if (capType === '小盘股') {
+            } else if (tag === 'small_cap' || tag === 'marketcap_小盘股') {
               marketCapQuery = `
                 SELECT DISTINCT s.*
                 FROM stocks s
-                WHERE CAST(s.market_cap AS BIGINT) < 10000000000
-                ORDER BY s.ticker
+                WHERE CAST(s.market_cap AS BIGINT) < 10000000000 AND CAST(s.market_cap AS BIGINT) > 0
+                ORDER BY s.market_cap DESC
                 LIMIT 100
               `;
             }
@@ -252,6 +251,90 @@ module.exports = async function handler(req, res) {
             if (marketCapQuery) {
               console.log('Executing market cap query:', marketCapQuery);
               const result = await client.query(marketCapQuery);
+              queryResult = result.rows;
+            }
+          }
+          // 处理财务表现标签 (financial_开头)
+          else if (tag.startsWith('financial_')) {
+            const financialType = tag.replace('financial_', '');
+            let financialQuery = '';
+            const topCount = Math.ceil(502 * 0.1); // 前10%
+            
+            if (financialType === 'high_roe') {
+              financialQuery = `
+                SELECT DISTINCT s.*
+                FROM stocks s
+                WHERE s.roe IS NOT NULL AND s.roe > 0
+                ORDER BY s.roe DESC NULLS LAST
+                LIMIT ${topCount}
+              `;
+            } else if (financialType === 'low_pe') {
+              financialQuery = `
+                SELECT DISTINCT s.*
+                FROM stocks s
+                WHERE s.pe_ratio IS NOT NULL AND s.pe_ratio > 0
+                ORDER BY s.pe_ratio ASC NULLS LAST
+                LIMIT ${topCount}
+              `;
+            } else if (financialType === 'high_growth') {
+              financialQuery = `
+                SELECT DISTINCT s.*
+                FROM stocks s
+                WHERE s.revenue_growth IS NOT NULL
+                ORDER BY s.revenue_growth DESC NULLS LAST
+                LIMIT ${topCount}
+              `;
+            } else if (financialType === 'high_dividend') {
+              financialQuery = `
+                SELECT DISTINCT s.*
+                FROM stocks s
+                WHERE s.dividend_yield IS NOT NULL AND s.dividend_yield > 0
+                ORDER BY s.dividend_yield DESC NULLS LAST
+                LIMIT ${topCount}
+              `;
+            }
+            
+            if (financialQuery) {
+              console.log('Executing financial query:', financialQuery);
+              const result = await client.query(financialQuery);
+              queryResult = result.rows;
+            }
+          }
+          // 处理股市表现标签 (performance_开头)
+          else if (tag.startsWith('performance_')) {
+            const performanceType = tag.replace('performance_', '');
+            let performanceQuery = '';
+            const topCount = Math.ceil(502 * 0.1); // 前10%
+            
+            if (performanceType === 'high_volume') {
+              performanceQuery = `
+                SELECT DISTINCT s.*
+                FROM stocks s
+                WHERE s.volume IS NOT NULL AND s.volume > 0
+                ORDER BY s.volume DESC NULLS LAST
+                LIMIT ${topCount}
+              `;
+            } else if (performanceType === 'top_gainers') {
+              performanceQuery = `
+                SELECT DISTINCT s.*
+                FROM stocks s
+                WHERE s.change_percent IS NOT NULL
+                ORDER BY s.change_percent DESC NULLS LAST
+                LIMIT ${topCount}
+              `;
+            } else if (performanceType === 'top_losers') {
+              performanceQuery = `
+                SELECT DISTINCT s.*
+                FROM stocks s
+                WHERE s.change_percent IS NOT NULL
+                ORDER BY s.change_percent ASC NULLS LAST
+                LIMIT ${topCount}
+              `;
+            }
+            
+            if (performanceQuery) {
+              console.log('Executing performance query:', performanceQuery);
+              const result = await client.query(performanceQuery);
               queryResult = result.rows;
             }
           }

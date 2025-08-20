@@ -7,80 +7,134 @@ const pool = new Pool({
 });
 
 // 备用标签数据
-const fallbackTags = [
-    {
-        id: 1,
-        name: "科技股",
-        description: "科技类股票，包括软件、硬件、互联网等",
-        color: "#3B82F6",
-        stock_count: 156,
-        avg_market_cap: "500B",
-        top_stocks: ["AAPL", "MSFT", "GOOGL"]
-    },
-    {
-        id: 2,
-        name: "金融股",
-        description: "银行、保险、证券等金融服务类股票",
-        color: "#10B981",
-        stock_count: 89,
-        avg_market_cap: "200B",
-        top_stocks: ["JPM", "BAC", "WFC"]
-    },
-    {
-        id: 3,
-        name: "医疗健康",
-        description: "制药、医疗设备、生物技术等健康相关股票",
-        color: "#F59E0B",
-        stock_count: 124,
-        avg_market_cap: "150B",
-        top_stocks: ["JNJ", "PFE", "UNH"]
-    },
-    {
-        id: 4,
-        name: "消费品",
-        description: "日用消费品、零售、餐饮等消费相关股票",
-        color: "#EF4444",
-        stock_count: 203,
-        avg_market_cap: "100B",
-        top_stocks: ["AMZN", "TSLA", "HD"]
-    },
-    {
-        id: 5,
-        name: "能源股",
-        description: "石油、天然气、可再生能源等能源类股票",
-        color: "#8B5CF6",
-        stock_count: 67,
-        avg_market_cap: "80B",
-        top_stocks: ["XOM", "CVX", "COP"]
-    },
-    {
-        id: 6,
-        name: "工业股",
-        description: "制造业、航空航天、基础设施等工业类股票",
-        color: "#06B6D4",
-        stock_count: 145,
-        avg_market_cap: "75B",
-        top_stocks: ["BA", "CAT", "GE"]
-    },
-    {
-        id: 7,
-        name: "房地产",
-        description: "房地产开发、REITs等房地产相关股票",
-        color: "#84CC16",
-        stock_count: 78,
-        avg_market_cap: "50B",
-        top_stocks: ["AMT", "PLD", "CCI"]
-    },
-    {
-        id: 8,
-        name: "材料股",
-        description: "化工、金属、建材等原材料类股票",
-        color: "#F97316",
-        stock_count: 92,
-        avg_market_cap: "45B",
-        top_stocks: ["LIN", "APD", "SHW"]
-    }
-];
+const fallbackTags = {
+    '股市表现': [
+        {
+            id: 'marketcap_大盘股',
+            name: '大盘股',
+            description: '市值超过2000亿美元的股票',
+            stock_count: 156,
+            avg_market_cap: '500B',
+            top_stocks: ['AAPL', 'MSFT', 'GOOGL']
+        },
+        {
+            id: 'marketcap_中盘股',
+            name: '中盘股',
+            description: '市值在100亿-2000亿美元之间的股票',
+            stock_count: 89,
+            avg_market_cap: '200B',
+            top_stocks: ['JPM', 'BAC', 'WFC']
+        },
+        {
+            id: 'marketcap_小盘股',
+            name: '小盘股',
+            description: '市值低于100亿美元的股票',
+            stock_count: 67,
+            avg_market_cap: '50B',
+            top_stocks: ['XOM', 'CVX', 'COP']
+        }
+    ],
+    '财务表现': [
+        {
+            id: 'rank_roe_ttm_top10',
+            name: 'ROE前10%',
+            description: '净资产收益率最高的前10%股票',
+            stock_count: 50,
+            avg_market_cap: 'N/A',
+            top_stocks: ['AAPL', 'MSFT', 'GOOGL'],
+            dynamic_rank: true,
+            metric: 'roe_ttm',
+            percentile: 'top10'
+        },
+        {
+            id: 'rank_pe_ratio_low10',
+            name: '低PE前10%',
+            description: '市盈率最低的前10%股票',
+            stock_count: 50,
+            avg_market_cap: 'N/A',
+            top_stocks: ['META', 'TSLA', 'NFLX'],
+            dynamic_rank: true,
+            metric: 'pe_ratio',
+            percentile: 'low10'
+        }
+    ],
+    '行业分类': [
+        {
+            id: 'sector_科技',
+            name: '科技',
+            description: '科技类股票，包括软件、硬件、互联网等',
+            stock_count: 156,
+            avg_market_cap: '500B',
+            top_stocks: ['AAPL', 'MSFT', 'GOOGL']
+        },
+        {
+            id: 'sector_金融',
+            name: '金融',
+            description: '银行、保险、证券等金融服务类股票',
+            stock_count: 89,
+            avg_market_cap: '200B',
+            top_stocks: ['JPM', 'BAC', 'WFC']
+        },
+        {
+            id: 'sector_医疗健康',
+            name: '医疗健康',
+            description: '制药、医疗设备、生物技术等健康相关股票',
+            stock_count: 124,
+            avg_market_cap: '150B',
+            top_stocks: ['JNJ', 'PFE', 'UNH']
+        },
+        {
+            id: 'sector_消费品',
+            name: '消费品',
+            description: '日用消费品、零售、餐饮等消费相关股票',
+            stock_count: 203,
+            avg_market_cap: '100B',
+            top_stocks: ['AMZN', 'TSLA', 'HD']
+        },
+        {
+            id: 'sector_能源',
+            name: '能源',
+            description: '石油、天然气、可再生能源等能源类股票',
+            stock_count: 67,
+            avg_market_cap: '80B',
+            top_stocks: ['XOM', 'CVX', 'COP']
+        }
+    ],
+    '特殊名单': [
+        {
+            id: 'special_sp500',
+            name: 'S&P 500',
+            description: '标准普尔500指数成分股',
+            stock_count: 500,
+            avg_market_cap: '300B',
+            top_stocks: ['AAPL', 'MSFT', 'GOOGL']
+        }
+    ],
+    '趋势排名': [
+        {
+            id: 'rank_revenue_growth_top10',
+            name: '营收增长前10%',
+            description: '营收增长率最高的前10%股票',
+            stock_count: 50,
+            avg_market_cap: 'N/A',
+            top_stocks: ['NVDA', 'AMD', 'TSLA'],
+            dynamic_rank: true,
+            metric: 'revenue_growth',
+            percentile: 'top10'
+        },
+        {
+            id: 'rank_market_cap_top10',
+            name: '市值前10%',
+            description: '市值最大的前10%股票',
+            stock_count: 50,
+            avg_market_cap: 'N/A',
+            top_stocks: ['AAPL', 'MSFT', 'GOOGL'],
+            dynamic_rank: true,
+            metric: 'market_cap',
+            percentile: 'top10'
+        }
+    ]
+};
 
 function handler(req, res) {
     // 设置 CORS 头
@@ -165,6 +219,7 @@ async function getTags(req, res) {
         // 处理静态标签
         const staticTags = staticResult.rows.map(tag => ({
             ...tag,
+            id: String(tag.id),
             avg_market_cap: formatMarketCap(tag.avg_market_cap),
             top_stocks: (tag.top_stocks || []).slice(0, 3)
         }));
@@ -172,7 +227,7 @@ async function getTags(req, res) {
         // 处理行业标签
         const industryTags = industryResult.rows.map(tag => ({
             ...tag,
-            id: `sector_${tag.name}`, // 添加唯一ID
+            id: `sector_${tag.name}`,
             avg_market_cap: formatMarketCap(tag.avg_market_cap),
             top_stocks: (tag.top_stocks || []).slice(0, 3)
         }));
@@ -181,27 +236,27 @@ async function getTags(req, res) {
         const marketCapData = marketCapResult.rows[0];
         const marketCapTags = [
             {
-                id: 'marketcap_大盘股', // 添加唯一ID
+                id: 'marketcap_大盘股',
                 name: '大盘股',
-                type: '市值分类',
+                type: '股市表现',
                 description: '市值超过2000亿美元的股票',
                 stock_count: parseInt(marketCapData.large_cap_count) || 0,
                 avg_market_cap: 'N/A',
                 top_stocks: (marketCapData.large_cap_stocks || []).slice(0, 3)
             },
             {
-                id: 'marketcap_中盘股', // 添加唯一ID
+                id: 'marketcap_中盘股',
                 name: '中盘股',
-                type: '市值分类',
+                type: '股市表现',
                 description: '市值在100亿-2000亿美元之间的股票',
                 stock_count: parseInt(marketCapData.mid_cap_count) || 0,
                 avg_market_cap: 'N/A',
                 top_stocks: (marketCapData.mid_cap_stocks || []).slice(0, 3)
             },
             {
-                id: 'marketcap_小盘股', // 添加唯一ID
+                id: 'marketcap_小盘股',
                 name: '小盘股',
-                type: '市值分类',
+                type: '股市表现',
                 description: '市值低于100亿美元的股票',
                 stock_count: parseInt(marketCapData.small_cap_count) || 0,
                 avg_market_cap: 'N/A',
@@ -209,16 +264,132 @@ async function getTags(req, res) {
             }
         ];
         
+        // 添加新的动态排名标签
+        const financialTags = [
+            {
+                id: 'rank_roe_ttm_top10',
+                name: 'ROE前10%',
+                type: '财务表现',
+                description: '净资产收益率最高的前10%股票',
+                stock_count: 50,
+                avg_market_cap: 'N/A',
+                top_stocks: [],
+                dynamic_rank: true,
+                metric: 'roe_ttm',
+                percentile: 'top10'
+            },
+            {
+                id: 'rank_pe_ratio_low10',
+                name: '低PE前10%',
+                type: '财务表现',
+                description: '市盈率最低的前10%股票',
+                stock_count: 50,
+                avg_market_cap: 'N/A',
+                top_stocks: [],
+                dynamic_rank: true,
+                metric: 'pe_ratio',
+                percentile: 'low10'
+            },
+            {
+                id: 'rank_dividend_yield_top10',
+                name: '高股息前10%',
+                type: '财务表现',
+                description: '股息收益率最高的前10%股票',
+                stock_count: 50,
+                avg_market_cap: 'N/A',
+                top_stocks: [],
+                dynamic_rank: true,
+                metric: 'dividend_yield',
+                percentile: 'top10'
+            },
+            {
+                id: 'rank_debt_to_equity_low10',
+                name: '低负债率前10%',
+                type: '财务表现',
+                description: '负债率最低的前10%股票',
+                stock_count: 50,
+                avg_market_cap: 'N/A',
+                top_stocks: [],
+                dynamic_rank: true,
+                metric: 'debt_to_equity',
+                percentile: 'low10'
+            },
+            {
+                id: 'rank_current_ratio_top10',
+                name: '高流动比率前10%',
+                type: '财务表现',
+                description: '流动比率最高的前10%股票',
+                stock_count: 50,
+                avg_market_cap: 'N/A',
+                top_stocks: [],
+                dynamic_rank: true,
+                metric: 'current_ratio',
+                percentile: 'top10'
+            }
+        ];
+        
+        const trendTags = [
+            {
+                id: 'rank_revenue_growth_top10',
+                name: '营收增长前10%',
+                type: '趋势排名',
+                description: '营收增长率最高的前10%股票',
+                stock_count: 50,
+                avg_market_cap: 'N/A',
+                top_stocks: [],
+                dynamic_rank: true,
+                metric: 'revenue_growth',
+                percentile: 'top10'
+            },
+            {
+                id: 'rank_market_cap_top10',
+                name: '市值前10%',
+                type: '趋势排名',
+                description: '市值最大的前10%股票',
+                stock_count: 50,
+                avg_market_cap: 'N/A',
+                top_stocks: [],
+                dynamic_rank: true,
+                metric: 'market_cap',
+                percentile: 'top10'
+            },
+            {
+                id: 'rank_gross_margin_top10',
+                name: '高毛利率前10%',
+                type: '趋势排名',
+                description: '毛利率最高的前10%股票',
+                stock_count: 50,
+                avg_market_cap: 'N/A',
+                top_stocks: [],
+                dynamic_rank: true,
+                metric: 'gross_margin',
+                percentile: 'top10'
+            }
+        ];
+        
         // 合并所有标签并按类型分组
-        const allTags = [...staticTags, ...industryTags, ...marketCapTags];
+        const allTags = [...staticTags, ...industryTags, ...marketCapTags, ...financialTags, ...trendTags];
+        
+        // 确保所有标签的 id 都是字符串格式
+        allTags.forEach(tag => {
+            tag.id = String(tag.id);
+        });
         
         const groupedTags = {
-            '股市表现': allTags.filter(tag => tag.type === '股市表现' || tag.type === 'performance'),
-            '财务表现': allTags.filter(tag => tag.type === '财务表现' || tag.type === 'financial'),
+            '股市表现': [
+                ...marketCapTags,
+                ...staticTags.filter(tag => tag.type === '股市表现')
+            ],
+            '财务表现': [
+                ...financialTags,
+                ...staticTags.filter(tag => tag.type === '财务表现')
+            ],
             '行业分类': industryTags,
-            '市值分类': marketCapTags,
-            '特殊名单': allTags.filter(tag => tag.type === '特殊名单' || tag.type === 'special'),
-            '趋势': allTags.filter(tag => tag.type === '趋势' || tag.type === 'trend')
+            '特殊名单': staticTags.filter(tag => tag.type === '特殊名单' || tag.type === 'special'),
+            '趋势排名': [
+                ...trendTags,
+                ...staticTags.filter(tag => tag.type === '趋势排名')
+            ]
         };
         
         client.release();
@@ -237,7 +408,7 @@ async function getTags(req, res) {
         res.status(200).json({
             success: true,
             data: fallbackTags,
-            total: fallbackTags.length,
+            total: Object.values(fallbackTags).reduce((sum, tags) => sum + tags.length, 0),
             timestamp: new Date().toISOString(),
             fallback: true,
             message: 'Using fallback data due to database connection issue'
