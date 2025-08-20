@@ -85,7 +85,7 @@ async function getStocksByRank(req, res) {
             WITH RankedStocks AS (
                 SELECT 
                     ticker,
-                    company_name,
+                    name,
                     ${dbColumn},
                     market_cap,
                     sector_zh,
@@ -99,11 +99,11 @@ async function getStocksByRank(req, res) {
                 WHERE ${dbColumn} IS NOT NULL
                     AND ${dbColumn} > 0
                     AND ticker IS NOT NULL
-                    AND company_name IS NOT NULL
+                    AND name IS NOT NULL
             )
             SELECT 
                 ticker,
-                company_name,
+                name,
                 ${dbColumn} as metric_value,
                 market_cap,
                 sector_zh,
@@ -124,8 +124,8 @@ async function getStocksByRank(req, res) {
         const stocks = result.rows.map(stock => ({
             ticker: stock.ticker,
             symbol: stock.ticker,
-            name: stock.company_name,
-            company_name: stock.company_name,
+            name: stock.name,
+            company_name: stock.name,
             sector: stock.sector_zh,
             price: parseFloat(stock.current_price) || 0,
             current_price: parseFloat(stock.current_price) || 0,
