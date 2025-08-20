@@ -213,7 +213,7 @@ module.exports = async function handler(req, res) {
         `;
         
         console.log('Executing query:', query);
-        console.log('Query params:', tagIds);
+        console.log('Query params:', [tagIds]);
         
         const result = await client.query(query, [tagIds]);
         const dbStocks = result.rows;

@@ -283,14 +283,22 @@ body {
 
 /* 标签卡片 */
 .tag-card {
-    background: var(--surface-color);
-    border: 2px solid var(--border-color);
+    background: white;
+    border: 2px solid var(--primary-color);
     border-radius: var(--radius-lg);
     padding: 1.25rem;
     cursor: pointer;
     transition: all 0.2s ease;
     position: relative;
     overflow: hidden;
+    color: var(--primary-color);
+}
+
+.tag-card:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3);
 }
 
 .tag-card::before {

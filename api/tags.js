@@ -101,60 +101,144 @@ function handler(req, res) {
     getTags(req, res);
 }
 
-function getTags(req, res) {
-    const query = `
-        SELECT 
-            t.id,
-            t.name,
-            t.description,
-            t.type,
-            COUNT(st.stock_ticker) as stock_count,
-            COALESCE(AVG(s.market_cap), 0) as avg_market_cap,
-            ARRAY_AGG(
-                CASE 
-                    WHEN s.market_cap IS NOT NULL 
-                    THEN st.stock_ticker 
-                    ELSE NULL 
-                END
-                ORDER BY s.market_cap DESC NULLS LAST
-            ) FILTER (WHERE s.market_cap IS NOT NULL) as top_stocks,
-            s.sector_zh,
-            s.market_cap
-        FROM tags t
-        LEFT JOIN stock_tags st ON t.id = st.tag_id::integer
-        LEFT JOIN stocks s ON st.stock_ticker = s.ticker
-        GROUP BY t.id, t.name, t.description, t.type, s.sector_zh, s.market_cap
-        ORDER BY stock_count DESC, t.name;
-    `;
-    
-    pool.query(query)
-        .then(result => {
-            const tags = result.rows.map(tag => ({
-                ...tag,
-                avg_market_cap: formatMarketCap(tag.avg_market_cap),
-                top_stocks: (tag.top_stocks || []).slice(0, 3)
-            }));
-            
-            res.status(200).json({
-                success: true,
-                data: tags,
-                total: tags.length,
-                timestamp: new Date().toISOString()
-            });
-        })
-        .catch(error => {
-            console.error('Database query failed, using fallback tags:', error.message);
-            
-            // 使用备用数据
-            res.status(200).json({
-                success: true,
-                data: fallbackTags,
-                total: fallbackTags.length,
-                timestamp: new Date().toISOString(),
-                fallback: true,
-                message: 'Using fallback data due to database connection issue'
-            });
+async function getTags(req, res) {
+    try {
+        const client = await pool.connect();
+        
+        // 1. 获取静态标签
+        const staticTagsQuery = `
+            SELECT 
+                t.id,
+                t.name,
+                t.description,
+                t.type,
+                COUNT(st.stock_ticker) as stock_count,
+                COALESCE(AVG(s.market_cap), 0) as avg_market_cap,
+                ARRAY_AGG(
+                    CASE 
+                        WHEN s.market_cap IS NOT NULL 
+                        THEN st.stock_ticker 
+                        ELSE NULL 
+                    END
+                    ORDER BY s.market_cap DESC NULLS LAST
+                ) FILTER (WHERE s.market_cap IS NOT NULL) as top_stocks
+            FROM tags t
+            LEFT JOIN stock_tags st ON t.id = st.tag_id
+            LEFT JOIN stocks s ON st.stock_ticker = s.ticker
+            GROUP BY t.id, t.name, t.description, t.type
+            ORDER BY stock_count DESC, t.name;
+        `;
+        
+        // 2. 获取行业分类
+        const industryTagsQuery = `
+            SELECT 
+                sector_zh as name,
+                '行业分类' as type,
+                sector_zh as description,
+                COUNT(*) as stock_count,
+                COALESCE(AVG(market_cap), 0) as avg_market_cap,
+                ARRAY_AGG(ticker ORDER BY market_cap DESC NULLS LAST) as top_stocks
+            FROM stocks 
+            WHERE sector_zh IS NOT NULL AND sector_zh != ''
+            GROUP BY sector_zh
+            ORDER BY stock_count DESC;
+        `;
+        
+        // 3. 获取市值分类
+        const marketCapQuery = `
+            SELECT 
+                COUNT(*) FILTER (WHERE market_cap >= 200000) as large_cap_count,
+                COUNT(*) FILTER (WHERE market_cap >= 10000 AND market_cap < 200000) as mid_cap_count,
+                COUNT(*) FILTER (WHERE market_cap < 10000 AND market_cap > 0) as small_cap_count,
+                ARRAY_AGG(ticker ORDER BY market_cap DESC) FILTER (WHERE market_cap >= 200000) as large_cap_stocks,
+                ARRAY_AGG(ticker ORDER BY market_cap DESC) FILTER (WHERE market_cap >= 10000 AND market_cap < 200000) as mid_cap_stocks,
+                ARRAY_AGG(ticker ORDER BY market_cap DESC) FILTER (WHERE market_cap < 10000 AND market_cap > 0) as small_cap_stocks
+            FROM stocks;
+        `;
+        
+        const [staticResult, industryResult, marketCapResult] = await Promise.all([
+            client.query(staticTagsQuery),
+            client.query(industryTagsQuery),
+            client.query(marketCapQuery)
+        ]);
+        
+        // 处理静态标签
+        const staticTags = staticResult.rows.map(tag => ({
+            ...tag,
+            avg_market_cap: formatMarketCap(tag.avg_market_cap),
+            top_stocks: (tag.top_stocks || []).slice(0, 3)
+        }));
+        
+        // 处理行业标签
+        const industryTags = industryResult.rows.map(tag => ({
+            ...tag,
+            avg_market_cap: formatMarketCap(tag.avg_market_cap),
+            top_stocks: (tag.top_stocks || []).slice(0, 3)
+        }));
+        
+        // 处理市值标签
+        const marketCapData = marketCapResult.rows[0];
+        const marketCapTags = [
+            {
+                name: '大盘股',
+                type: '市值分类',
+                description: '市值超过2000亿美元的股票',
+                stock_count: parseInt(marketCapData.large_cap_count) || 0,
+                avg_market_cap: 'N/A',
+                top_stocks: (marketCapData.large_cap_stocks || []).slice(0, 3)
+            },
+            {
+                name: '中盘股',
+                type: '市值分类',
+                description: '市值在100亿-2000亿美元之间的股票',
+                stock_count: parseInt(marketCapData.mid_cap_count) || 0,
+                avg_market_cap: 'N/A',
+                top_stocks: (marketCapData.mid_cap_stocks || []).slice(0, 3)
+            },
+            {
+                name: '小盘股',
+                type: '市值分类',
+                description: '市值低于100亿美元的股票',
+                stock_count: parseInt(marketCapData.small_cap_count) || 0,
+                avg_market_cap: 'N/A',
+                top_stocks: (marketCapData.small_cap_stocks || []).slice(0, 3)
+            }
+        ];
+        
+        // 合并所有标签并按类型分组
+        const allTags = [...staticTags, ...industryTags, ...marketCapTags];
+        
+        const groupedTags = {
+            '股市表现': allTags.filter(tag => tag.type === '股市表现' || tag.type === 'performance'),
+            '财务表现': allTags.filter(tag => tag.type === '财务表现' || tag.type === 'financial'),
+            '行业分类': industryTags,
+            '市值分类': marketCapTags,
+            '特殊名单': allTags.filter(tag => tag.type === '特殊名单' || tag.type === 'special'),
+            '趋势': allTags.filter(tag => tag.type === '趋势' || tag.type === 'trend')
+        };
+        
+        client.release();
+        
+        res.status(200).json({
+            success: true,
+            data: groupedTags,
+            total: allTags.length,
+            timestamp: new Date().toISOString()
         });
+        
+    } catch (error) {
+        console.error('Database query failed, using fallback tags:', error.message);
+        
+        // 使用备用数据
+        res.status(200).json({
+            success: true,
+            data: fallbackTags,
+            total: fallbackTags.length,
+            timestamp: new Date().toISOString(),
+            fallback: true,
+            message: 'Using fallback data due to database connection issue'
+        });
+    }
 }
 
 function formatMarketCap(marketCap) {

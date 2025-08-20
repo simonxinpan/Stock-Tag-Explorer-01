@@ -85,14 +85,17 @@ class StockTagExplorer {
             
             const data = await response.json();
             if (data.success && data.data) {
-                // 将数据库标签数据转换为前端期望的格式
-                this.tagData = this.convertDatabaseTagsToFrontendFormat(data.data);
-                this.renderTagPlaza();
-                
-                // 显示成功连接到真实数据的提示
-                if (!data.fallback) {
+                // 检查是否是备用数据（数组格式）还是分组数据（对象格式）
+                if (data.fallback || Array.isArray(data.data)) {
+                    // 备用数据，使用本地备用数据
+                    this.tagData = this.getFallbackTagData();
+                    this.showToast('连接数据库失败，使用离线数据', 'warning');
+                } else {
+                    // 真实数据库数据，转换格式
+                    this.tagData = this.convertDatabaseTagsToFrontendFormat(data.data);
                     this.showToast('已连接到真实数据库标签', 'success');
                 }
+                this.renderTagPlaza();
             } else {
                 throw new Error('Invalid API response format');
             }
@@ -113,100 +116,108 @@ class StockTagExplorer {
      * 将数据库标签数据转换为前端期望的格式
      */
     convertDatabaseTagsToFrontendFormat(dbTags) {
-        // 按类型分组标签
-        const groupedTags = {
-            'performance': [],
-            'financial': [],
-            'trend': [],
-            'industry': [],
-            'special': []
-        };
-        
-        // 将数据库标签分配到相应组
-        dbTags.forEach(tag => {
-            const tagData = {
-                id: tag.id,
-                name: tag.name,
-                description: tag.description,
-                stock_count: tag.stock_count || 0,
-                avg_market_cap: tag.avg_market_cap || 'N/A',
-                top_stocks: tag.top_stocks || [],
-                sector_zh: tag.sector_zh || null,
-                market_cap: tag.market_cap || 0
-            };
-            
-            // 根据标签类型或名称分组
-            if (tag.type) {
-                if (groupedTags[tag.type]) {
-                    groupedTags[tag.type].push(tagData);
-                } else {
-                    groupedTags['special'].push(tagData);
-                }
-            } else {
-                // 如果没有类型，根据名称推断
-                const name = tag.name.toLowerCase();
-                // 行业分类判断
-                if (tag.sector_zh || name.includes('科技') || name.includes('医疗') || 
-                    name.includes('能源') || name.includes('金融') || name.includes('工业') || 
-                    name.includes('房地产') || name.includes('材料')) {
-                    groupedTags['industry'].push(tagData);
-                } 
-                // 市值分类判断
-                else if (name.includes('大盘股') || name.includes('中盘股') || name.includes('小盘股')) {
-                    groupedTags['special'].push(tagData);
-                }
-                // 其他标签
-                else {
-                    groupedTags['special'].push(tagData);
-                }
-            }
-        });
-        
-        // 转换为前端期望的格式
+        // API现在返回已分组的数据
         const result = [];
         
-        if (groupedTags.performance.length > 0) {
+        // 处理股市表现
+        if (dbTags['股市表现'] && dbTags['股市表现'].length > 0) {
             result.push({
                 id: 'stock-performance',
                 name: '股市表现',
                 type: 'performance',
-                tags: groupedTags.performance
+                tags: dbTags['股市表现'].map(tag => ({
+                    id: tag.id || tag.name,
+                    name: tag.name,
+                    description: tag.description,
+                    stock_count: tag.stock_count || 0,
+                    avg_market_cap: tag.avg_market_cap || 'N/A',
+                    top_stocks: tag.top_stocks || []
+                }))
             });
         }
         
-        if (groupedTags.financial.length > 0) {
+        // 处理财务表现
+        if (dbTags['财务表现'] && dbTags['财务表现'].length > 0) {
             result.push({
                 id: 'financial-performance',
                 name: '财务表现',
                 type: 'financial',
-                tags: groupedTags.financial
+                tags: dbTags['财务表现'].map(tag => ({
+                    id: tag.id || tag.name,
+                    name: tag.name,
+                    description: tag.description,
+                    stock_count: tag.stock_count || 0,
+                    avg_market_cap: tag.avg_market_cap || 'N/A',
+                    top_stocks: tag.top_stocks || []
+                }))
             });
         }
         
-        if (groupedTags.trend.length > 0) {
-            result.push({
-                id: 'trend-ranking',
-                name: '趋势',
-                type: 'trend',
-                tags: groupedTags.trend
-            });
-        }
-        
-        if (groupedTags.industry.length > 0) {
+        // 处理行业分类
+        if (dbTags['行业分类'] && dbTags['行业分类'].length > 0) {
             result.push({
                 id: 'industry',
                 name: '行业分类',
                 type: 'industry',
-                tags: groupedTags.industry
+                tags: dbTags['行业分类'].map(tag => ({
+                    id: tag.name,
+                    name: tag.name,
+                    description: tag.description || tag.name,
+                    stock_count: tag.stock_count || 0,
+                    avg_market_cap: tag.avg_market_cap || 'N/A',
+                    top_stocks: tag.top_stocks || []
+                }))
             });
         }
         
-        if (groupedTags.special.length > 0) {
+        // 处理市值分类
+        if (dbTags['市值分类'] && dbTags['市值分类'].length > 0) {
             result.push({
-                id: 'special-lists',
+                id: 'market-cap',
+                name: '市值分类',
+                type: 'market-cap',
+                tags: dbTags['市值分类'].map(tag => ({
+                    id: tag.name,
+                    name: tag.name,
+                    description: tag.description,
+                    stock_count: tag.stock_count || 0,
+                    avg_market_cap: tag.avg_market_cap || 'N/A',
+                    top_stocks: tag.top_stocks || []
+                }))
+            });
+        }
+        
+        // 处理特殊名单
+        if (dbTags['特殊名单'] && dbTags['特殊名单'].length > 0) {
+            result.push({
+                id: 'special',
                 name: '特殊名单',
                 type: 'special',
-                tags: groupedTags.special
+                tags: dbTags['特殊名单'].map(tag => ({
+                    id: tag.id || tag.name,
+                    name: tag.name,
+                    description: tag.description,
+                    stock_count: tag.stock_count || 0,
+                    avg_market_cap: tag.avg_market_cap || 'N/A',
+                    top_stocks: tag.top_stocks || []
+                }))
+            });
+        }
+        
+        // 处理趋势
+        if (dbTags['趋势'] && dbTags['趋势'].length > 0) {
+            result.push({
+                id: 'trend-ranking',
+                name: '趋势',
+                type: 'trend',
+                tags: dbTags['趋势'].map(tag => ({
+                    id: tag.id || tag.name,
+                    name: tag.name,
+                    description: tag.description,
+                    stock_count: tag.stock_count || 0,
+                    avg_market_cap: tag.avg_market_cap || 'N/A',
+                    top_stocks: tag.top_stocks || []
+                }))
             });
         }
         
@@ -613,6 +624,12 @@ class StockTagExplorer {
                 </div>
             </div>
         `;
+        
+        // 添加点击事件，跳转到个股详情页
+        item.style.cursor = 'pointer';
+        item.addEventListener('click', () => {
+            this.navigateToStockDetail(stock.symbol);
+        });
 
         return item;
     }
@@ -708,6 +725,20 @@ class StockTagExplorer {
         } else {
             return date.toLocaleDateString('zh-CN');
         }
+    }
+
+    /**
+     * 跳转到个股详情页
+     */
+    navigateToStockDetail(symbol) {
+        // 构建个股详情页URL
+        const detailUrl = `https://finance.yahoo.com/quote/${symbol}`;
+        
+        // 在新标签页中打开
+        window.open(detailUrl, '_blank');
+        
+        // 显示提示信息
+        this.showToast(`正在打开 ${symbol} 的详情页面`, 'info');
     }
 
     /**
