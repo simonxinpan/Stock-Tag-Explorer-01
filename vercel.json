@@ -9,23 +9,19 @@
   "routes": [
     {
       "src": "/",
-      "dest": "/public/index-vercel.html"
+      "dest": "/index-vercel.html"
     },
     {
       "src": "/trending",
-      "dest": "/public/trending-vercel.html"
+      "dest": "/trending-vercel.html"
     },
     {
       "src": "/index.html",
-      "dest": "/public/index-vercel.html"
+      "dest": "/index-vercel.html"
     },
     {
       "src": "/trending.html",
-      "dest": "/public/trending-vercel.html"
-    },
-    {
-      "src": "/public/(.*)",
-      "dest": "/public/$1"
+      "dest": "/trending-vercel.html"
     }
   ],
   "crons": [
