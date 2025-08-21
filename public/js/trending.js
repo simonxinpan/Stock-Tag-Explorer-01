@@ -4,8 +4,8 @@
 const TRENDING_LISTS_CONFIG = [
   { id: 'top-gainers-list', type: 'top_gainers' },
   { id: 'high-volume-list', type: 'high_volume' },
-  { id: 'new-highs-list', type: 'new_highs' },
-  { id: 'value-picks-list', type: 'value_picks' }
+  { id: 'top-losers-list', type: 'top_losers' },
+  { id: 'new-lows-list', type: 'new_lows' }
 ];
 
 /**
@@ -34,19 +34,18 @@ function createStockListItemHTML(stock, type) {
         <span class="change ${colorClass}">${sign}${changePercent.toFixed(2)}%</span>
       `;
       break;
-    case 'new_highs':
-      // 新高榜显示52周最高价
-      const weekHigh = stock.week_52_high ? `$${Number(stock.week_52_high).toFixed(2)}` : 'N/A';
+    case 'top_losers':
+      // 跌幅榜显示价格和跌幅
       mainMetricHTML = `
-        <span class="price">${weekHigh}</span>
-        <span class="change ${colorClass}">${sign}${changePercent.toFixed(2)}%</span>
+        <span class="price">$${Number(price).toFixed(2)}</span>
+        <span class="change ${colorClass}">${changePercent.toFixed(2)}%</span>
       `;
       break;
-    case 'value_picks':
-      // 价值榜显示PE比率
-      const peRatio = stock.pe_ttm ? `PE: ${Number(stock.pe_ttm).toFixed(1)}` : 'N/A';
+    case 'new_lows':
+      // 新低榜显示52周最低价
+      const weekLow = stock.week_52_low ? `$${Number(stock.week_52_low).toFixed(2)}` : 'N/A';
       mainMetricHTML = `
-        <span class="price">${peRatio}</span>
+        <span class="price">${weekLow}</span>
         <span class="change ${colorClass}">${sign}${changePercent.toFixed(2)}%</span>
       `;
       break;
