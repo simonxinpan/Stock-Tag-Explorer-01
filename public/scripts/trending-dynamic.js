@@ -4,11 +4,11 @@ class TrendingDataManager {
     this.apiBase = '/api/trending';
     this.rankingConfigs = [
       { id: 'top-gainers-list', type: 'top_gainers', title: '涨幅榜' },
-      { id: 'top-losers-list', type: 'top_losers', title: '跌幅榜' },
       { id: 'high-volume-list', type: 'high_volume', title: '成交额榜' },
-      { id: 'new-highs-list', type: 'new_highs', title: '创年内新高' },
-      { id: 'new-lows-list', type: 'new_lows', title: '创年内新低' },
+      { id: 'new-highs-list', type: 'new_highs', title: '新高榜' },
+      { id: 'top-losers-list', type: 'top_losers', title: '跌幅榜' },
       { id: 'risk-warning-list', type: 'risk_warning', title: '风险警示榜' },
+      { id: 'new-lows-list', type: 'new_lows', title: '新低榜' },
       { id: 'value-picks-list', type: 'value_picks', title: '特色价值榜' }
     ];
     this.loadingStates = new Map();
