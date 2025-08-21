@@ -126,7 +126,7 @@ module.exports = async function handler(req, res) {
     console.error('趋势榜单API错误:', error);
     
     // 返回模拟数据作为fallback
-    const mockData = generateMockData(type, limit);
+    const mockData = generateMockData(type, 20); // 使用默认限制20条
     res.status(200).json(mockData);
   } finally {
     if (client) {
