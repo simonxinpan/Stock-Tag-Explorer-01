@@ -33,96 +33,287 @@
         <!-- 主内容区 -->
         <main class="main">
             <div class="container">
-                <!-- 榜单导航 -->
-                <section class="trending-nav">
-                    <div class="nav-tabs">
-                        <button class="nav-tab active" data-category="all">全部榜单</button>
-                        <button class="nav-tab" data-category="golden">每日趋势金榜</button>
-                        <button class="nav-tab" data-category="risk">每日风险警示榜</button>
-                        <button class="nav-tab" data-category="value">特色价值榜</button>
+                <!-- 顶部统计数据 -->
+                <section class="top-stats">
+                    <div class="stat-item">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-number" id="total-stocks">1247</div>
+                        <div class="stat-label">总股票数</div>
                     </div>
-                    <div class="nav-controls">
-                        <select id="time-filter" class="time-filter">
-                            <option value="today">今日</option>
-                            <option value="week">本周</option>
-                            <option value="month">本月</option>
-                        </select>
-                        <button id="refresh-btn" class="refresh-btn">🔄 刷新数据</button>
+                    <div class="stat-item">
+                        <div class="stat-icon">📈</div>
+                        <div class="stat-number" id="rising-stocks">892</div>
+                        <div class="stat-label">上涨股票</div>
                     </div>
-                </section>
-
-                <!-- 榜单概览 -->
-                <section class="trending-overview">
-                    <div class="overview-stats">
-                        <div class="stat-card">
-                            <div class="stat-icon">🚀</div>
-                            <div class="stat-content">
-                                <div class="stat-number" id="rising-count">--</div>
-                                <div class="stat-label">上涨股票</div>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">📉</div>
-                            <div class="stat-content">
-                                <div class="stat-number" id="falling-count">--</div>
-                                <div class="stat-label">下跌股票</div>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">💰</div>
-                            <div class="stat-content">
-                                <div class="stat-number" id="volume-total">--</div>
-                                <div class="stat-label">总成交额</div>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">⭐</div>
-                            <div class="stat-content">
-                                <div class="stat-number" id="new-high-count">--</div>
-                                <div class="stat-label">创新高</div>
-                            </div>
-                        </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">💎</div>
+                        <div class="stat-number" id="value-stocks">$2.8T</div>
+                        <div class="stat-label">总市值</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">🔥</div>
+                        <div class="stat-number" id="hot-stocks">156</div>
+                        <div class="stat-label">热门股票</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">⚡</div>
+                        <div class="stat-number" id="active-stocks">89</div>
+                        <div class="stat-label">活跃股票</div>
                     </div>
                 </section>
 
-                <!-- 榜单内容 -->
-                <section class="trending-content">
-                    <div id="loading" class="loading">加载中...</div>
-                    <div id="error" class="error hidden">加载失败，请刷新重试</div>
+                <!-- 每日趋势金榜 -->
+                <section class="ranking-section">
+                    <div class="section-header">
+                        <h2 class="section-title">🏆 每日趋势金榜</h2>
+                        <div class="section-controls">
+                            <span class="update-time">已更新至最新数据</span>
+                            <button class="refresh-btn">🔄 刷新</button>
+                        </div>
+                    </div>
                     
-                    <!-- 每日趋势金榜 -->
-                    <div class="ranking-category" data-category="golden">
-                        <h2 class="category-title">
-                            <span class="category-icon">🏆</span>
-                            每日趋势金榜
-                            <span class="category-desc">市场表现最佳的股票</span>
-                        </h2>
-                        <div class="ranking-grid" id="golden-list">
-                            <!-- 动态加载内容 -->
-                        </div>
+                    <div class="ranking-tabs">
+                        <button class="ranking-tab active" data-tab="rising">涨幅榜</button>
+                        <button class="ranking-tab" data-tab="volume">成交榜</button>
+                        <button class="ranking-tab" data-tab="turnover">换手榜</button>
                     </div>
 
-                    <!-- 每日风险警示榜 -->
-                    <div class="ranking-category" data-category="risk">
-                        <h2 class="category-title">
-                            <span class="category-icon">⚠️</span>
-                            每日风险警示榜
-                            <span class="category-desc">需要关注的风险股票</span>
-                        </h2>
-                        <div class="ranking-grid" id="risk-list">
-                            <!-- 动态加载内容 -->
+                    <div class="ranking-content">
+                        <div class="ranking-list" id="rising-list">
+                            <!-- 涨幅榜股票列表 -->
+                            <div class="stock-item">
+                                <div class="stock-rank">1</div>
+                                <div class="stock-info">
+                                    <div class="stock-symbol">TSLA</div>
+                                    <div class="stock-name">Tesla Inc</div>
+                                </div>
+                                <div class="stock-price">
+                                    <div class="current-price">$198.21</div>
+                                    <div class="price-change positive">+8.32%</div>
+                                </div>
+                            </div>
+                            
+                            <div class="stock-item">
+                                <div class="stock-rank">2</div>
+                                <div class="stock-info">
+                                    <div class="stock-symbol">NVDA</div>
+                                    <div class="stock-name">NVIDIA Corporation</div>
+                                </div>
+                                <div class="stock-price">
+                                    <div class="current-price">$719.43</div>
+                                    <div class="price-change positive">+7.89%</div>
+                                </div>
+                            </div>
+                            
+                            <div class="stock-item">
+                                <div class="stock-rank">3</div>
+                                <div class="stock-info">
+                                    <div class="stock-symbol">AAPL</div>
+                                    <div class="stock-name">Apple Inc</div>
+                                </div>
+                                <div class="stock-price">
+                                    <div class="current-price">$175.38</div>
+                                    <div class="price-change positive">+6.75%</div>
+                                </div>
+                            </div>
+                            
+                            <div class="stock-item">
+                                <div class="stock-rank">4</div>
+                                <div class="stock-info">
+                                    <div class="stock-symbol">MSFT</div>
+                                    <div class="stock-name">Microsoft Corporation</div>
+                                </div>
+                                <div class="stock-price">
+                                    <div class="current-price">$378.29</div>
+                                    <div class="price-change positive">+5.42%</div>
+                                </div>
+                            </div>
+                            
+                            <div class="stock-item">
+                                <div class="stock-rank">5</div>
+                                <div class="stock-info">
+                                    <div class="stock-symbol">GOOGL</div>
+                                    <div class="stock-name">Alphabet Inc</div>
+                                </div>
+                                <div class="stock-price">
+                                    <div class="current-price">$142.65</div>
+                                    <div class="price-change positive">+4.91%</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="view-more">
+                            <button class="view-more-btn">查看更多榜单</button>
                         </div>
                     </div>
+                </section>
 
-                    <!-- 特色价值榜 -->
-                    <div class="ranking-category" data-category="value">
-                        <h2 class="category-title">
-                            <span class="category-icon">💎</span>
-                            特色价值榜
-                            <span class="category-desc">具有投资价值的股票</span>
-                        </h2>
-                        <div class="ranking-grid" id="value-list">
-                            <!-- 动态加载内容 -->
+                <!-- 每日风险警示榜 -->
+                <section class="ranking-section">
+                    <div class="section-header">
+                        <h2 class="section-title">⚠️ 每日风险警示榜</h2>
+                        <div class="section-controls">
+                            <span class="update-time">已更新至最新数据</span>
+                            <button class="refresh-btn">🔄 刷新</button>
+                        </div>
+                    </div>
+                    
+                    <div class="ranking-tabs">
+                        <button class="ranking-tab active" data-tab="decline">跌幅榜</button>
+                        <button class="ranking-tab" data-tab="risk">风险榜</button>
+                    </div>
+
+                    <div class="ranking-content">
+                        <div class="ranking-list" id="decline-list">
+                            <!-- 跌幅榜股票列表 -->
+                            <div class="stock-item">
+                                <div class="stock-rank">1</div>
+                                <div class="stock-info">
+                                    <div class="stock-symbol">META</div>
+                                    <div class="stock-name">Meta Platforms Inc</div>
+                                </div>
+                                <div class="stock-price">
+                                    <div class="current-price">$324.56</div>
+                                    <div class="price-change negative">-6.78%</div>
+                                </div>
+                            </div>
+                            
+                            <div class="stock-item">
+                                <div class="stock-rank">2</div>
+                                <div class="stock-info">
+                                    <div class="stock-symbol">NFLX</div>
+                                    <div class="stock-name">Netflix Inc</div>
+                                </div>
+                                <div class="stock-price">
+                                    <div class="current-price">$425.89</div>
+                                    <div class="price-change negative">-5.43%</div>
+                                </div>
+                            </div>
+                            
+                            <div class="stock-item">
+                                <div class="stock-rank">3</div>
+                                <div class="stock-info">
+                                    <div class="stock-symbol">AMZN</div>
+                                    <div class="stock-name">Amazon.com Inc</div>
+                                </div>
+                                <div class="stock-price">
+                                    <div class="current-price">$142.31</div>
+                                    <div class="price-change negative">-4.92%</div>
+                                </div>
+                            </div>
+                            
+                            <div class="stock-item">
+                                <div class="stock-rank">4</div>
+                                <div class="stock-info">
+                                    <div class="stock-symbol">PYPL</div>
+                                    <div class="stock-name">PayPal Holdings Inc</div>
+                                </div>
+                                <div class="stock-price">
+                                    <div class="current-price">$58.74</div>
+                                    <div class="price-change negative">-4.15%</div>
+                                </div>
+                            </div>
+                            
+                            <div class="stock-item">
+                                <div class="stock-rank">5</div>
+                                <div class="stock-info">
+                                    <div class="stock-symbol">UBER</div>
+                                    <div class="stock-name">Uber Technologies Inc</div>
+                                </div>
+                                <div class="stock-price">
+                                    <div class="current-price">$67.23</div>
+                                    <div class="price-change negative">-3.87%</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="view-more">
+                            <button class="view-more-btn">查看更多榜单</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 特色价值榜 -->
+                <section class="ranking-section">
+                    <div class="section-header">
+                        <h2 class="section-title">💎 特色价值榜</h2>
+                        <div class="section-controls">
+                            <span class="update-time">已更新至最新数据</span>
+                            <button class="refresh-btn">🔄 刷新</button>
+                        </div>
+                    </div>
+                    
+                    <div class="ranking-tabs">
+                        <button class="ranking-tab active" data-tab="value">价值榜</button>
+                        <button class="ranking-tab" data-tab="growth">成长榜</button>
+                    </div>
+
+                    <div class="ranking-content">
+                        <div class="ranking-list" id="value-list">
+                            <!-- 价值榜股票列表 -->
+                            <div class="stock-item">
+                                <div class="stock-rank">1</div>
+                                <div class="stock-info">
+                                    <div class="stock-symbol">BRK.A</div>
+                                    <div class="stock-name">Berkshire Hathaway Inc</div>
+                                </div>
+                                <div class="stock-price">
+                                    <div class="current-price">$548,325</div>
+                                    <div class="price-change positive">+2.15%</div>
+                                </div>
+                            </div>
+                            
+                            <div class="stock-item">
+                                <div class="stock-rank">2</div>
+                                <div class="stock-info">
+                                    <div class="stock-symbol">JPM</div>
+                                    <div class="stock-name">JPMorgan Chase & Co</div>
+                                </div>
+                                <div class="stock-price">
+                                    <div class="current-price">$165.42</div>
+                                    <div class="price-change positive">+1.87%</div>
+                                </div>
+                            </div>
+                            
+                            <div class="stock-item">
+                                <div class="stock-rank">3</div>
+                                <div class="stock-info">
+                                    <div class="stock-symbol">JNJ</div>
+                                    <div class="stock-name">Johnson & Johnson</div>
+                                </div>
+                                <div class="stock-price">
+                                    <div class="current-price">$159.73</div>
+                                    <div class="price-change positive">+1.42%</div>
+                                </div>
+                            </div>
+                            
+                            <div class="stock-item">
+                                <div class="stock-rank">4</div>
+                                <div class="stock-info">
+                                    <div class="stock-symbol">PG</div>
+                                    <div class="stock-name">Procter & Gamble Co</div>
+                                </div>
+                                <div class="stock-price">
+                                    <div class="current-price">$152.89</div>
+                                    <div class="price-change positive">+0.98%</div>
+                                </div>
+                            </div>
+                            
+                            <div class="stock-item">
+                                <div class="stock-rank">5</div>
+                                <div class="stock-info">
+                                    <div class="stock-symbol">KO</div>
+                                    <div class="stock-name">The Coca-Cola Company</div>
+                                </div>
+                                <div class="stock-price">
+                                    <div class="current-price">$58.94</div>
+                                    <div class="price-change positive">+0.76%</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="view-more">
+                            <button class="view-more-btn">查看更多榜单</button>
                         </div>
                     </div>
                 </section>
