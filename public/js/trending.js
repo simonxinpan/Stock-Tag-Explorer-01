@@ -18,7 +18,7 @@ const TRENDING_LISTS_CONFIG = [
  */
 function createStockListItemHTML(stock) {
   const changePercent = stock.change_percent || 0;
-  const price = stock.last_price || 'N/A';
+  const price = stock.last_price || 0;
   const colorClass = changePercent >= 0 ? 'text-green-500' : 'text-red-500';
   const sign = changePercent >= 0 ? '+' : '';
    
@@ -33,7 +33,7 @@ function createStockListItemHTML(stock) {
           <span class="name">${stock.name_zh}</span>
         </div>
         <div class="stock-performance">
-          <span class="price">$${Number(price).toFixed(2)}</span>
+          <span class="price">$${price.toFixed(2)}</span>
           <span class="change ${colorClass}">${sign}${changePercent.toFixed(2)}%</span>
         </div>
       </a>
@@ -57,7 +57,15 @@ async function loadAndRenderList(listConfig) {
   try {
     const response = await fetch(`/api/trending?type=${listConfig.type}`);
     if (!response.ok) throw new Error(`API 请求失败，状态码: ${response.status}`);
-    const stocks = await response.json();
+    let stocks = await response.json();
+
+    // 确保数据类型正确，进行类型转换
+    stocks = stocks.map(stock => ({
+      ...stock,
+      last_price: Number(stock.last_price) || 0,
+      change_percent: Number(stock.change_percent) || 0,
+      market_cap: Number(stock.market_cap) || 0
+    }));
 
     if (stocks.length === 0) {
       listElement.innerHTML = '<li class="no-data">暂无符合条件的股票</li>';
