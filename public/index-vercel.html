@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Tag Explorer - 智能标签浏览器</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* 全局样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* 根变量定义 */
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --secondary-color: #64748b;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --background-color: #f8fafc;
+            --surface-color: #ffffff;
+            --border-color: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --radius-sm: 0.375rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --radius-xl: 1rem;
+        }
+
+        /* 基础样式 */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        /* 工具类 */
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        /* 头部样式 */
+        .header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #3b82f6 100%);
+            color: white;
+            padding: 2rem 0;
+            box-shadow: var(--shadow-md);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header-left {
+            flex: 1;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+
+        .header-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 1rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-md);
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.2);
+            font-weight: 600;
+        }
+
+        /* 实时时间显示 */
+        .time-display {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .local-time {
+            margin-bottom: 0.25rem;
+        }
+
+        .et-time {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        /* 主内容区 */
+        .main {
+            padding: 2rem 0;
+            min-height: calc(100vh - 200px);
+        }
+
+        /* 标签广场 */
+        .tag-plaza {
+            margin-bottom: 2rem;
+        }
+
+        .tag-plaza h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        /* 加载和错误状态 */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .error {
+            text-align: center;
+            padding: 2rem;
+            color: var(--danger-color);
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: var(--radius-md);
+            margin: 1rem 0;
+        }
+
+        /* 标签组 */
+        .tag-groups {
+            display: grid;
+            gap: 2rem;
+        }
+
+        .tag-group {
+            background: var(--surface-color);
+            border-radius: var(--radius-xl);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .tag-group:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .tag-group h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tag-group.performance h3::before {
+            content: '📈';
+        }
+
+        .tag-group.financial h3::before {
+            content: '💰';
+        }
+
+        .tag-group.trend h3::before {
+            content: '🔥';
+        }
+
+        .tag-group.industry h3::before {
+            content: '🏭';
+        }
+
+        .tag-group.special h3::before {
+            content: '⭐';
+        }
+
+        .tag-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .tag-card {
+            background: var(--background-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .tag-card:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .tag-card h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .tag-card p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 0.5rem;
+        }
+
+        .tag-card .stock-count {
+            font-size: 0.8rem;
+            font-weight: 500;
+            opacity: 0.7;
+        }
+
+        /* 股票列表 */
+        .stock-list-section {
+            margin-top: 2rem;
+        }
+
+        .stock-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .stock-list-header h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .stock-list-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .sort-select {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: var(--surface-color);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .clear-btn {
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .clear-btn:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stock-list {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .stock-item {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .stock-item:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+
+        .stock-info {
+            flex: 1;
+        }
+
+        .stock-symbol {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+        }
+
+        .stock-name {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+
+        .stock-metrics {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .stock-price {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+        }
+
+        .stock-change {
+            font-weight: 500;
+            padding: 0.25rem 0.5rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+        }
+
+        .stock-change.positive {
+            background: #dcfce7;
+            color: var(--success-color);
+        }
+
+        .stock-change.negative {
+            background: #fef2f2;
+            color: var(--danger-color);
+        }
+
+        .stock-change.neutral {
+            background: var(--background-color);
+            color: var(--text-secondary);
+        }
+
+        /* 分页 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+        }
+
+        .pagination button {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .pagination button:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .pagination button.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 页脚 */
+        .footer {
+            background: var(--surface-color);
+            border-top: 1px solid var(--border-color);
+            padding: 1.5rem 0;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Toast 通知 */
+        .toast {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: var(--surface-color);
+            color: var(--text-primary);
+            padding: 1rem 1.5rem;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-color);
+            z-index: 1001;
+            transition: all 0.3s ease;
+        }
+
+        .toast.success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .toast.error {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .header-right {
+                align-items: center;
+            }
+            
+            .stock-list-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .stock-list-controls {
+                justify-content: center;
+            }
+            
+            .stock-item {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 1rem;
+            }
+            
+            .stock-metrics {
+                justify-content: space-between;
+            }
+            
+            .tag-cards {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+        }
+
+        @media (max-width: 480px) {
+            .nav-links {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .tag-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .stock-metrics {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+
+        /* 加载动画 */
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .loading {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 头部 -->
+        <header class="header">
+            <div class="container">
+                <div class="header-content">
+                    <div class="header-left">
+                        <h1 class="logo">📊 Stock Tag Explorer</h1>
+                        <p class="subtitle">智能标签浏览器 - 发现投资机会</p>
+                    </div>
+                    <div class="header-right">
+                        <nav class="nav-links">
+                            <a href="#" class="nav-link active">标签广场</a>
+                            <a href="./trending-vercel.html" class="nav-link">趋势榜单</a>
+                        </nav>
+                        <div class="time-display">
+                            <div class="local-time" id="local-time">--</div>
+                            <div class="et-time" id="et-time">美东时间: --</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- 主内容区 -->
+        <main class="main">
+            <div class="container">
+                <!-- 标签广场 -->
+                <section id="tag-plaza" class="tag-plaza">
+                    <h2>标签广场</h2>
+                    <div id="loading" class="loading">加载中...</div>
+                    <div id="error" class="error hidden">加载失败，请刷新重试</div>
+                    <div id="tag-groups" class="tag-groups hidden"></div>
+                </section>
+                
+                <!-- 股票列表 -->
+                <section id="stock-list-section" class="stock-list-section hidden">
+                    <div class="stock-list-header">
+                        <h3 id="stock-list-title">选中标签的股票</h3>
+                        <div class="stock-list-controls">
+                            <select id="sort-select" class="sort-select">
+                                <option value="name-asc">按名称排序 ↑</option>
+                                <option value="name-desc">按名称排序 ↓</option>
+                                <option value="price-desc">按价格排序 ↓</option>
+                                <option value="price-asc">按价格排序 ↑</option>
+                                <option value="change-desc">按涨跌幅排序 ↓</option>
+                                <option value="change-asc">按涨跌幅排序 ↑</option>
+                                <option value="volume-desc">按成交量排序 ↓</option>
+                                <option value="volume-asc">按成交量排序 ↑</option>
+                            </select>
+                            <button id="clear-selection" class="clear-btn">清除选择</button>
+                        </div>
+                    </div>
+                    <div id="stock-list" class="stock-list"></div>
+                    <div id="pagination" class="pagination hidden"></div>
+                </section>
+            </div>
+        </main>
+        
+        <!-- 页脚 -->
+        <footer class="footer">
+            <div class="container">
+                <p>&copy; 2024 Stock Tag Explorer. 数据来源: Polygon.io & Finnhub | 更新时间: <span id="last-update">--</span></p>
+            </div>
+        </footer>
+        
+        <!-- Toast 通知 -->
+        <div id="toast" class="toast hidden"></div>
+    </div>
+    
+    <script>
+        // 实时时间显示功能
+        function updateTime() {
+            const now = new Date();
+            
+            // 本地时间
+            const localTime = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            
+            // 美东时间
+            const etTime = now.toLocaleString('en-US', {
+                timeZone: 'America/New_York',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            
+            document.getElementById('local-time').textContent = localTime;
+            document.getElementById('et-time').textContent = `美东时间: ${etTime}`;
+            document.getElementById('last-update').textContent = localTime;
+        }
+        
+        // 每秒更新时间
+        setInterval(updateTime, 1000);
+        updateTime(); // 立即执行一次
+        
+        // 标签广场应用类
+        class TagExplorerApp {
+            constructor() {
+                this.selectedTags = new Set();
+                this.currentPage = 1;
+                this.pageSize = 20;
+                this.currentSort = 'name-asc';
+                this.allStocks = [];
+                this.filteredStocks = [];
+                
+                this.init();
+            }
+            
+            init() {
+                this.bindEvents();
+                this.loadTagGroups();
+            }
+            
+            bindEvents() {
+                // 排序选择
+                document.getElementById('sort-select').addEventListener('change', (e) => {
+                    this.currentSort = e.target.value;
+                    this.sortAndDisplayStocks();
+                });
+                
+                // 清除选择
+                document.getElementById('clear-selection').addEventListener('click', () => {
+                    this.clearSelection();
+                });
+                
+                // 标签卡片点击
+                document.addEventListener('click', (e) => {
+                    if (e.target.closest('.tag-card')) {
+                        const tagCard = e.target.closest('.tag-card');
+                        const tagId = tagCard.dataset.tagId;
+                        this.toggleTag(tagId, tagCard);
+                    }
+                });
+            }
+            
+            async loadTagGroups() {
+                try {
+                    // 模拟API调用 - 实际应该调用后端API
+                    const tagGroups = this.generateMockTagGroups();
+                    this.renderTagGroups(tagGroups);
+                    this.hideLoading();
+                } catch (error) {
+                    this.showError('加载标签失败，请刷新重试');
+                    console.error('Failed to load tag groups:', error);
+                }
+            }
+            
+            generateMockTagGroups() {
+                return [
+                    {
+                        id: 'performance',
+                        name: '股市表现',
+                        type: 'performance',
+                        tags: [
+                            { id: 'high_growth', name: '高增长', description: '营收增长超过20%', stockCount: 156 },
+                            { id: 'dividend_kings', name: '股息之王', description: '连续25年分红', stockCount: 89 },
+                            { id: 'momentum', name: '动量股', description: '近期表现强劲', stockCount: 234 },
+                            { id: 'value_stocks', name: '价值股', description: '低估值高质量', stockCount: 178 }
+                        ]
+                    },
+                    {
+                        id: 'financial',
+                        name: '财务指标',
+                        type: 'financial',
+                        tags: [
+                            { id: 'low_pe', name: '低市盈率', description: 'P/E比率低于15', stockCount: 145 },
+                            { id: 'high_roe', name: '高ROE', description: '净资产收益率>15%', stockCount: 123 },
+                            { id: 'low_debt', name: '低负债', description: '负债率低于30%', stockCount: 167 },
+                            { id: 'cash_rich', name: '现金充裕', description: '现金流充足', stockCount: 198 }
+                        ]
+                    },
+                    {
+                        id: 'trend',
+                        name: '市场趋势',
+                        type: 'trend',
+                        tags: [
+                            { id: 'ai_revolution', name: 'AI革命', description: '人工智能相关', stockCount: 87 },
+                            { id: 'green_energy', name: '绿色能源', description: '清洁能源概念', stockCount: 134 },
+                            { id: 'cloud_computing', name: '云计算', description: '云服务提供商', stockCount: 76 },
+                            { id: 'biotech', name: '生物科技', description: '生物技术创新', stockCount: 112 }
+                        ]
+                    },
+                    {
+                        id: 'industry',
+                        name: '行业分类',
+                        type: 'industry',
+                        tags: [
+                            { id: 'tech_giants', name: '科技巨头', description: '大型科技公司', stockCount: 45 },
+                            { id: 'healthcare', name: '医疗保健', description: '医疗健康行业', stockCount: 189 },
+                            { id: 'financial_services', name: '金融服务', description: '银行保险证券', stockCount: 156 },
+                            { id: 'consumer_goods', name: '消费品', description: '日用消费品', stockCount: 234 }
+                        ]
+                    },
+                    {
+                        id: 'special',
+                        name: '特色标签',
+                        type: 'special',
+                        tags: [
+                            { id: 'esg_leaders', name: 'ESG领导者', description: '环境社会治理优秀', stockCount: 98 },
+                            { id: 'insider_buying', name: '内部人增持', description: '管理层增持股票', stockCount: 67 },
+                            { id: 'analyst_upgrades', name: '分析师上调', description: '近期被上调评级', stockCount: 89 },
+                            { id: 'earnings_beat', name: '业绩超预期', description: '财报超出预期', stockCount: 123 }
+                        ]
+                    }
+                ];
+            }
+            
+            renderTagGroups(tagGroups) {
+                const container = document.getElementById('tag-groups');
+                container.innerHTML = tagGroups.map(group => `
+                    <div class="tag-group ${group.type}">
+                        <h3>${group.name}</h3>
+                        <div class="tag-cards">
+                            ${group.tags.map(tag => `
+                                <div class="tag-card" data-tag-id="${tag.id}">
+                                    <h4>${tag.name}</h4>
+                                    <p>${tag.description}</p>
+                                    <div class="stock-count">${tag.stockCount} 只股票</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `).join('');
+                
+                container.classList.remove('hidden');
+            }
+            
+            async toggleTag(tagId, tagCard) {
+                if (this.selectedTags.has(tagId)) {
+                    this.selectedTags.delete(tagId);
+                    tagCard.style.background = '';
+                    tagCard.style.color = '';
+                } else {
+                    this.selectedTags.add(tagId);
+                    tagCard.style.background = 'var(--primary-color)';
+                    tagCard.style.color = 'white';
+                }
+                
+                if (this.selectedTags.size > 0) {
+                    await this.loadStocksByTags();
+                } else {
+                    this.hideStockList();
+                }
+            }
+            
+            async loadStocksByTags() {
+                try {
+                    this.showStockListLoading();
+                    
+                    // 模拟API调用 - 实际应该调用后端API
+                    const stocks = this.generateMockStocks();
+                    this.allStocks = stocks;
+                    this.filteredStocks = stocks;
+                    
+                    this.updateStockListTitle();
+                    this.sortAndDisplayStocks();
+                    this.showStockList();
+                } catch (error) {
+                    this.showToast('加载股票数据失败', 'error');
+                    console.error('Failed to load stocks:', error);
+                }
+            }
+            
+            generateMockStocks() {
+                const mockStocks = [
+                    { symbol: 'AAPL', name: '苹果公司', price: 175.43, change: 5.67, changePercent: 3.34, volume: '45.2M' },
+                    { symbol: 'MSFT', name: '微软公司', price: 378.85, change: -2.15, changePercent: -0.56, volume: '28.1M' },
+                    { symbol: 'GOOGL', name: '谷歌母公司', price: 138.21, change: 8.92, changePercent: 6.90, volume: '32.5M' },
+                    { symbol: 'AMZN', name: '亚马逊公司', price: 151.94, change: 4.23, changePercent: 2.86, volume: '41.8M' },
+                    { symbol: 'TSLA', name: '特斯拉公司', price: 248.50, change: -12.30, changePercent: -4.72, volume: '67.3M' },
+                    { symbol: 'META', name: 'Meta平台', price: 484.20, change: 15.67, changePercent: 3.35, volume: '19.4M' },
+                    { symbol: 'NVDA', name: '英伟达公司', price: 875.28, change: 45.82, changePercent: 5.52, volume: '52.1M' },
+                    { symbol: 'NFLX', name: '奈飞公司', price: 445.03, change: -8.97, changePercent: -1.98, volume: '15.7M' },
+                    { symbol: 'JPM', name: '摩根大通', price: 168.45, change: 3.21, changePercent: 1.94, volume: '22.3M' },
+                    { symbol: 'JNJ', name: '强生公司', price: 159.87, change: -1.45, changePercent: -0.90, volume: '18.9M' }
+                ];
+                
+                return mockStocks;
+            }
+            
+            sortAndDisplayStocks() {
+                const [field, direction] = this.currentSort.split('-');
+                
+                this.filteredStocks.sort((a, b) => {
+                    let aVal, bVal;
+                    
+                    switch (field) {
+                        case 'name':
+                            aVal = a.name;
+                            bVal = b.name;
+                            break;
+                        case 'price':
+                            aVal = a.price;
+                            bVal = b.price;
+                            break;
+                        case 'change':
+                            aVal = a.changePercent;
+                            bVal = b.changePercent;
+                            break;
+                        case 'volume':
+                            aVal = parseFloat(a.volume.replace('M', ''));
+                            bVal = parseFloat(b.volume.replace('M', ''));
+                            break;
+                        default:
+                            aVal = a.symbol;
+                            bVal = b.symbol;
+                    }
+                    
+                    if (direction === 'asc') {
+                        return aVal > bVal ? 1 : -1;
+                    } else {
+                        return aVal < bVal ? 1 : -1;
+                    }
+                });
+                
+                this.renderStockList();
+            }
+            
+            renderStockList() {
+                const container = document.getElementById('stock-list');
+                const startIndex = (this.currentPage - 1) * this.pageSize;
+                const endIndex = startIndex + this.pageSize;
+                const pageStocks = this.filteredStocks.slice(startIndex, endIndex);
+                
+                container.innerHTML = pageStocks.map(stock => {
+                    const changeClass = stock.change > 0 ? 'positive' : stock.change < 0 ? 'negative' : 'neutral';
+                    const changeSymbol = stock.change > 0 ? '+' : '';
+                    
+                    return `
+                        <div class="stock-item">
+                            <div class="stock-info">
+                                <div class="stock-symbol">${stock.symbol}</div>
+                                <div class="stock-name">${stock.name}</div>
+                            </div>
+                            <div class="stock-metrics">
+                                <div class="stock-price">$${stock.price.toFixed(2)}</div>
+                                <div class="stock-change ${changeClass}">
+                                    ${changeSymbol}${stock.changePercent.toFixed(2)}%
+                                </div>
+                                <div class="stock-volume">${stock.volume}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                this.renderPagination();
+            }
+            
+            renderPagination() {
+                const totalPages = Math.ceil(this.filteredStocks.length / this.pageSize);
+                if (totalPages <= 1) {
+                    document.getElementById('pagination').classList.add('hidden');
+                    return;
+                }
+                
+                const container = document.getElementById('pagination');
+                let paginationHTML = '';
+                
+                // 上一页
+                paginationHTML += `<button ${this.currentPage === 1 ? 'disabled' : ''} onclick="app.goToPage(${this.currentPage - 1})">上一页</button>`;
+                
+                // 页码
+                for (let i = 1; i <= totalPages; i++) {
+                    if (i === this.currentPage) {
+                        paginationHTML += `<button class="active">${i}</button>`;
+                    } else {
+                        paginationHTML += `<button onclick="app.goToPage(${i})">${i}</button>`;
+                    }
+                }
+                
+                // 下一页
+                paginationHTML += `<button ${this.currentPage === totalPages ? 'disabled' : ''} onclick="app.goToPage(${this.currentPage + 1})">下一页</button>`;
+                
+                container.innerHTML = paginationHTML;
+                container.classList.remove('hidden');
+            }
+            
+            goToPage(page) {
+                const totalPages = Math.ceil(this.filteredStocks.length / this.pageSize);
+                if (page < 1 || page > totalPages) return;
+                
+                this.currentPage = page;
+                this.renderStockList();
+            }
+            
+            updateStockListTitle() {
+                const tagNames = Array.from(this.selectedTags).join(', ');
+                document.getElementById('stock-list-title').textContent = `选中标签的股票 (${tagNames})`;
+            }
+            
+            clearSelection() {
+                this.selectedTags.clear();
+                document.querySelectorAll('.tag-card').forEach(card => {
+                    card.style.background = '';
+                    card.style.color = '';
+                });
+                this.hideStockList();
+            }
+            
+            showStockList() {
+                document.getElementById('stock-list-section').classList.remove('hidden');
+            }
+            
+            hideStockList() {
+                document.getElementById('stock-list-section').classList.add('hidden');
+            }
+            
+            showStockListLoading() {
+                document.getElementById('stock-list').innerHTML = '<div class="loading">加载股票数据中...</div>';
+                this.showStockList();
+            }
+            
+            hideLoading() {
+                document.getElementById('loading').classList.add('hidden');
+            }
+            
+            showError(message) {
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('error').classList.remove('hidden');
+                document.getElementById('error').textContent = message;
+            }
+            
+            showToast(message, type = 'info') {
+                const toast = document.getElementById('toast');
+                toast.textContent = message;
+                toast.className = `toast ${type}`;
+                toast.classList.remove('hidden');
+                
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                }, 3000);
+            }
+        }
+        
+        // 页面加载完成后初始化应用
+        let app;
+        document.addEventListener('DOMContentLoaded', () => {
+            app = new TagExplorerApp();
+        });
+    </script>
+</body>
+</html>

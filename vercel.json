@@ -1,4 +1,33 @@
 {
+  "version": 2,
+  "builds": [
+    {
+      "src": "public/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/",
+      "dest": "/public/index-vercel.html"
+    },
+    {
+      "src": "/trending",
+      "dest": "/public/trending-vercel.html"
+    },
+    {
+      "src": "/index.html",
+      "dest": "/public/index-vercel.html"
+    },
+    {
+      "src": "/trending.html",
+      "dest": "/public/trending-vercel.html"
+    },
+    {
+      "src": "/public/(.*)",
+      "dest": "/public/$1"
+    }
+  ],
   "crons": [
     {
       "path": "/api/update-market-batch",
@@ -11,7 +40,7 @@
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
+          "value": "public, max-age=3600, s-maxage=86400"
         }
       ]
     },
