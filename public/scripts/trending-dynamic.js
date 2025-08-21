@@ -3,15 +3,39 @@ class TrendingDataManager {
   constructor() {
     this.apiBase = '/api/trending';
     this.rankingConfigs = [
-      { id: 'top-gainers-list', type: 'top_gainers', title: '每日涨幅榜' },
-      { id: 'high-volume-list', type: 'high_volume', title: '成交量榜' },
-      { id: 'market-leaders-list', type: 'market_leaders', title: '市值领导者' },
+      { id: 'top-gainers-list', type: 'top_gainers', title: '涨幅榜' },
+      { id: 'top-losers-list', type: 'top_losers', title: '跌幅榜' },
+      { id: 'high-volume-list', type: 'high_volume', title: '成交额榜' },
+      { id: 'new-highs-list', type: 'new_highs', title: '创年内新高' },
+      { id: 'new-lows-list', type: 'new_lows', title: '创年内新低' },
       { id: 'risk-warning-list', type: 'risk_warning', title: '风险警示榜' },
-      { id: 'high-volatility-list', type: 'high_volatility', title: '高波动榜' },
-      { id: 'value-picks-list', type: 'value_picks', title: '特色价值榜' },
-      { id: 'growth-stocks-list', type: 'growth_stocks', title: '成长股榜' }
+      { id: 'value-picks-list', type: 'value_picks', title: '特色价值榜' }
     ];
     this.loadingStates = new Map();
+    this.detailsPageBase = 'https://stock-details-final-1e1vcxew3-simon-pans-projects.vercel.app/?symbol=';
+  }
+
+  // 初始化标签页切换功能
+  initTabSwitching() {
+    const tabButtons = document.querySelectorAll('.ranking-tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const targetTab = button.getAttribute('data-tab');
+        
+        // 移除所有活跃状态
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+        tabContents.forEach(content => content.classList.remove('active'));
+        
+        // 添加活跃状态
+        button.classList.add('active');
+        const targetContent = document.querySelector(`[data-content="${targetTab}"]`);
+        if (targetContent) {
+          targetContent.classList.add('active');
+        }
+      });
+    });
   }
 
   // 初始化所有榜单数据
@@ -83,54 +107,57 @@ class TrendingDataManager {
     });
   }
 
-  // 创建股票列表项
+  // 创建股票列表项HTML
   createStockListItem(stock, rank, type) {
-    const li = document.createElement('li');
-    li.className = 'stock-item';
+    const changePercent = parseFloat(stock.change_percent) || 0;
+    const price = parseFloat(stock.last_price) || 0;
+    const volume = parseInt(stock.volume) || 0;
+    const marketCap = stock.market_cap_formatted || 'N/A';
     
-    // 确定涨跌样式
-    const changeClass = stock.change > 0 ? 'positive' : stock.change < 0 ? 'negative' : 'neutral';
-    const changeSymbol = stock.change > 0 ? '+' : '';
+    // 确定涨跌颜色
+    const changeClass = changePercent >= 0 ? 'positive' : 'negative';
+    const changeSign = changePercent >= 0 ? '+' : '';
     
     // 构建详情页链接
-    const detailUrl = `https://stock-details-final.vercel.app/?symbol=${stock.ticker}`;
+    const detailsUrl = `${this.detailsPageBase}${stock.ticker}`;
     
-    // 根据榜单类型显示不同的额外信息
-    let extraInfo = '';
+    // 根据榜单类型显示不同的指标
+    let metricDisplay = '';
     switch (type) {
       case 'high_volume':
-        extraInfo = `<span class="volume">成交量: ${this.formatVolume(stock.volume)}</span>`;
+        const turnover = stock.turnover ? this.formatVolume(stock.turnover) : this.formatVolume(volume * price);
+        metricDisplay = `<div class="stock-volume">成交额: ${turnover}</div>`;
         break;
-      case 'market_leaders':
-        extraInfo = `<span class="market-cap">市值: ${stock.marketCap}</span>`;
+      case 'new_highs':
+        const highRatio = stock.week_52_high ? ((price / stock.week_52_high) * 100).toFixed(1) : 'N/A';
+        metricDisplay = `<div class="stock-high">距52周高点: ${highRatio}%</div>`;
+        break;
+      case 'new_lows':
+        const lowRatio = stock.week_52_low ? ((price / stock.week_52_low) * 100).toFixed(1) : 'N/A';
+        metricDisplay = `<div class="stock-low">距52周低点: ${lowRatio}%</div>`;
         break;
       case 'value_picks':
-        extraInfo = stock.pe_ratio ? `<span class="pe-ratio">PE: ${stock.pe_ratio.toFixed(2)}</span>` : '';
-        break;
-      case 'growth_stocks':
-        extraInfo = stock.roe ? `<span class="roe">ROE: ${stock.roe.toFixed(2)}%</span>` : '';
+        const peRatio = stock.pe_ratio ? parseFloat(stock.pe_ratio).toFixed(2) : 'N/A';
+        metricDisplay = `<div class="stock-pe">PE: ${peRatio}</div>`;
         break;
       default:
-        extraInfo = `<span class="market-cap">${stock.marketCap}</span>`;
+        metricDisplay = `<div class="stock-change ${changeClass}">${changeSign}${changePercent.toFixed(2)}%</div>`;
     }
     
+    const li = document.createElement('li');
+    li.className = 'stock-item';
     li.innerHTML = `
-      <a href="${detailUrl}" target="_blank" class="stock-link">
-        <div class="rank-number">${rank}</div>
-        <div class="stock-info">
-          <div class="stock-header">
-            <span class="stock-name">${stock.name}</span>
-            <span class="stock-ticker">${stock.ticker}</span>
-          </div>
-          <div class="stock-details">
-            <span class="stock-price">$${stock.price.toFixed(2)}</span>
-            <span class="stock-change ${changeClass}">
-              ${changeSymbol}${stock.change.toFixed(2)}%
-            </span>
-            ${extraInfo}
-          </div>
-        </div>
-      </a>
+      <div class="stock-rank">${rank}</div>
+      <div class="stock-info">
+        <a href="${detailsUrl}" target="_blank" class="stock-link">
+          <div class="stock-symbol">${stock.ticker}</div>
+          <div class="stock-name">${stock.name_zh || stock.ticker}</div>
+        </a>
+      </div>
+      <div class="stock-price">
+        <div class="current-price">$${price.toFixed(2)}</div>
+        ${metricDisplay}
+      </div>
     `;
     
     return li;
@@ -212,6 +239,9 @@ document.addEventListener('DOMContentLoaded', async function() {
   
   // 创建趋势数据管理器实例
   trendingManager = new TrendingDataManager();
+  
+  // 初始化标签页切换功能
+  trendingManager.initTabSwitching();
   
   // 初始化所有榜单数据
   await trendingManager.initializeAllRankings();

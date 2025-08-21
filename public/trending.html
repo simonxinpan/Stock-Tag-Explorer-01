@@ -6,6 +6,15 @@
     <title>每日趋势榜单 - Stock Tag Explorer</title>
     <link rel="stylesheet" href="./styles/main.css">
     <link rel="stylesheet" href="./styles/trending.css">
+    <style>
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -74,14 +83,28 @@
                     
                     <div class="ranking-tabs">
                         <button class="ranking-tab active" data-tab="rising">涨幅榜</button>
-                        <button class="ranking-tab" data-tab="volume">成交榜</button>
-                        <button class="ranking-tab" data-tab="turnover">换手榜</button>
+                        <button class="ranking-tab" data-tab="volume">成交额榜</button>
+                        <button class="ranking-tab" data-tab="highs">新高榜</button>
                     </div>
 
                     <div class="ranking-content">
-                        <ul class="ranking-list" id="top-gainers-list">
-                            <!-- 动态加载涨幅榜数据 -->
-                        </ul>
+                        <div class="tab-content active" data-content="rising">
+                            <ul class="ranking-list" id="top-gainers-list">
+                                <!-- 动态加载涨幅榜数据 -->
+                            </ul>
+                        </div>
+                        
+                        <div class="tab-content" data-content="volume">
+                            <ul class="ranking-list" id="high-volume-list">
+                                <!-- 动态加载成交额榜数据 -->
+                            </ul>
+                        </div>
+                        
+                        <div class="tab-content" data-content="highs">
+                            <ul class="ranking-list" id="new-highs-list">
+                                <!-- 动态加载新高榜数据 -->
+                            </ul>
+                        </div>
                         
                         <div class="view-more">
                             <button class="view-more-btn">查看更多榜单</button>
@@ -102,12 +125,27 @@
                     <div class="ranking-tabs">
                         <button class="ranking-tab active" data-tab="decline">跌幅榜</button>
                         <button class="ranking-tab" data-tab="risk">风险榜</button>
+                        <button class="ranking-tab" data-tab="lows">新低榜</button>
                     </div>
 
                     <div class="ranking-content">
-                        <ul class="ranking-list" id="risk-warning-list">
-                            <!-- 动态加载风险警示榜数据 -->
-                        </ul>
+                        <div class="tab-content active" data-content="decline">
+                            <ul class="ranking-list" id="top-losers-list">
+                                <!-- 动态加载跌幅榜数据 -->
+                            </ul>
+                        </div>
+                        
+                        <div class="tab-content" data-content="risk">
+                            <ul class="ranking-list" id="risk-warning-list">
+                                <!-- 动态加载风险警示榜数据 -->
+                            </ul>
+                        </div>
+                        
+                        <div class="tab-content" data-content="lows">
+                            <ul class="ranking-list" id="new-lows-list">
+                                <!-- 动态加载新低榜数据 -->
+                            </ul>
+                        </div>
                         
                         <div class="view-more">
                             <button class="view-more-btn">查看更多榜单</button>
@@ -154,7 +192,7 @@
         <div id="toast" class="toast hidden"></div>
     </div>
     
-    <script src="./scripts/trending.js"></script>
+    <script src="./js/trending.js"></script>
     <script src="./scripts/trending-dynamic.js"></script>
 </body>
 </html>
