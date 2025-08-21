@@ -1,6 +1,5 @@
 // 趋势榜单API - 支持多种榜单类型查询
 const { Pool } = require('pg');
-const cors = require('cors');
 
 // 数据库连接池
 const pool = new Pool({
@@ -8,23 +7,8 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
-// CORS配置
-const corsMiddleware = cors({
-  origin: ['http://localhost:3000', 'http://localhost:8000', 'https://stock-tag-explorer.vercel.app', 'https://stock-tag-explorer-01.vercel.app'],
-  methods: ['GET', 'POST'],
-  credentials: true
-});
-
 module.exports = async function handler(req, res) {
-  // 应用CORS中间件
-  await new Promise((resolve, reject) => {
-    corsMiddleware(req, res, (result) => {
-      if (result instanceof Error) {
-        return reject(result);
-      }
-      return resolve(result);
-    });
-  });
+  // CORS已在server.js中处理
 
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
