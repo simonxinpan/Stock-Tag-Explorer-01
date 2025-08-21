@@ -396,6 +396,104 @@
     margin: 0 0 1.5rem 0;
 }
 
+/* 股票列表项样式 */
+.stock-item {
+    margin-bottom: 0.75rem;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.stock-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.stock-link {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem;
+    background: rgba(255,255,255,0.8);
+    border: 1px solid rgba(226,232,240,0.5);
+    border-radius: 12px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s ease;
+}
+
+.stock-link:hover {
+    background: rgba(255,255,255,0.95);
+    border-color: rgba(79,70,229,0.3);
+}
+
+/* 排名圆圈 */
+.rank-circle {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 8px rgba(79,70,229,0.3);
+}
+
+/* 股票信息区域 */
+.stock-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.stock-info .ticker {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.stock-info .name {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.2;
+}
+
+/* 股票表现区域 */
+.stock-performance {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+}
+
+.stock-performance .price {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.stock-performance .change {
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.8);
+}
+
+.stock-performance .change.text-green-500 {
+    color: #059669;
+    background: rgba(16,185,129,0.1);
+}
+
+.stock-performance .change.text-red-500 {
+    color: #dc2626;
+    background: rgba(239,68,68,0.1);
+}
+
 .ranking-footer {
     text-align: center;
     padding-top: 1rem;

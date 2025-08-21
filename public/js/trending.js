@@ -12,9 +12,10 @@ const TRENDING_LISTS_CONFIG = [
  * 根据榜单类型和数据，生成单支股票的 HTML 字符串
  * @param {object} stock - 股票数据对象
  * @param {string} type - 榜单类型
+ * @param {number} rank - 排名
  * @returns {string} - 代表一个 <li> 元素的 HTML 字符串
  */
-function createStockListItemHTML(stock, type) {
+function createStockListItemHTML(stock, type, rank) {
   const changePercent = stock.change_percent || 0;
   const price = stock.last_price || 0;
   const colorClass = changePercent >= 0 ? 'text-green-500' : 'text-red-500';
@@ -30,29 +31,29 @@ function createStockListItemHTML(stock, type) {
       // 成交额榜显示成交额
       const turnover = stock.turnover ? formatTurnover(stock.turnover) : 'N/A';
       mainMetricHTML = `
-        <span class="price">${turnover}</span>
-        <span class="change ${colorClass}">${sign}${changePercent.toFixed(2)}%</span>
+        <div class="price">${turnover}</div>
+        <div class="change ${colorClass}">${sign}${changePercent.toFixed(2)}%</div>
       `;
       break;
     case 'top_losers':
       // 跌幅榜显示价格和跌幅
       mainMetricHTML = `
-        <span class="price">$${Number(price).toFixed(2)}</span>
-        <span class="change ${colorClass}">${changePercent.toFixed(2)}%</span>
+        <div class="price">$${Number(price).toFixed(2)}</div>
+        <div class="change ${colorClass}">${changePercent.toFixed(2)}%</div>
       `;
       break;
     case 'new_lows':
       // 新低榜显示52周最低价
       const weekLow = stock.week_52_low ? `$${Number(stock.week_52_low).toFixed(2)}` : 'N/A';
       mainMetricHTML = `
-        <span class="price">${weekLow}</span>
-        <span class="change ${colorClass}">${sign}${changePercent.toFixed(2)}%</span>
+        <div class="price">${weekLow}</div>
+        <div class="change ${colorClass}">${sign}${changePercent.toFixed(2)}%</div>
       `;
       break;
     default: // 涨幅榜等默认显示价格和涨跌幅
       mainMetricHTML = `
-        <span class="price">$${Number(price).toFixed(2)}</span>
-        <span class="change ${colorClass}">${sign}${changePercent.toFixed(2)}%</span>
+        <div class="price">$${Number(price).toFixed(2)}</div>
+        <div class="change ${colorClass}">${sign}${changePercent.toFixed(2)}%</div>
       `;
       break;
   }
@@ -60,9 +61,10 @@ function createStockListItemHTML(stock, type) {
   return `
     <li class="stock-item">
       <a href="${detailsPageUrl}" target="_blank" class="stock-link">
+        <div class="rank-circle">${rank}</div>
         <div class="stock-info">
-          <span class="ticker">${stock.ticker}</span>
-          <span class="name">${stock.name_zh || stock.name || 'N/A'}</span>
+          <div class="ticker">${stock.ticker}</div>
+          <div class="name">${stock.name_zh || stock.name || 'N/A'}</div>
         </div>
         <div class="stock-performance">
           ${mainMetricHTML}
@@ -123,7 +125,7 @@ async function loadAndRenderList(listConfig) {
     } else {
       // 只显示前5条数据
       const top5Stocks = stocks.slice(0, 5);
-      const top5HTML = top5Stocks.map(stock => createStockListItemHTML(stock, listConfig.type)).join('');
+      const top5HTML = top5Stocks.map((stock, index) => createStockListItemHTML(stock, listConfig.type, index + 1)).join('');
       listElement.innerHTML = top5HTML;
     }
   } catch (error) {
@@ -199,12 +201,9 @@ function getRankingTitle(type) {
     'top_gainers': '🚀 涨幅榜 - 完整榜单',
     'top_losers': '📉 跌幅榜 - 完整榜单',
     'high_volume': '💰 成交额榜 - 完整榜单',
-    'new_highs': '🎯 创年内新高 - 完整榜单',
     'new_lows': '⬇️ 创年内新低 - 完整榜单',
-    'risk_warning': '⚠️ 风险警示 - 完整榜单',
-    'value_picks': '💎 特色价值 - 完整榜单'
   };
-  return titles[type] || '榜单详情';
+  return titles[type] || '榜单';
 }
 
 // 辅助函数：格式化成交额显示
