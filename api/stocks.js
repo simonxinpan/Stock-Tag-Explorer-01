@@ -245,7 +245,7 @@ module.exports = async function handler(req, res) {
                 ORDER BY s.market_cap DESC
                 LIMIT 100
               `;
-            } else if (tag === 'small_cap' || tag === 'marketcap_小盘股') {
+            } else if (tag === 'small_cap' || tag === 'marketcap_小盘股' || tag === 'marketcap_小型股') {
               marketCapQuery = `
                 SELECT DISTINCT s.*
                 FROM stocks s
