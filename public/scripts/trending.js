@@ -13,140 +13,130 @@ class TrendingPage {
     }
 
     bindEvents() {
-        // 榜单分类切换
-        document.querySelectorAll('.nav-tab').forEach(tab => {
+        // 榜单标签页切换
+        document.querySelectorAll('.ranking-tab').forEach(tab => {
             tab.addEventListener('click', (e) => {
-                this.switchCategory(e.target.dataset.category);
+                this.switchTab(e.target.dataset.tab, e.target);
             });
-        });
-
-        // 时间筛选
-        document.getElementById('time-filter').addEventListener('change', (e) => {
-            this.currentTimeFilter = e.target.value;
-            this.loadTrendingData();
         });
 
         // 刷新按钮
-        document.getElementById('refresh-btn').addEventListener('click', () => {
-            this.refreshData();
+        document.querySelectorAll('.refresh-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.refreshData();
+            });
+        });
+
+        // 查看更多按钮
+        document.querySelectorAll('.view-more-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.viewMore(e.target);
+            });
         });
     }
 
-    switchCategory(category) {
-        this.currentCategory = category;
-        
-        // 更新导航标签状态
-        document.querySelectorAll('.nav-tab').forEach(tab => {
+    switchTab(tabType, tabElement) {
+        // 更新同一组标签页的状态
+        const tabGroup = tabElement.closest('.ranking-tabs');
+        tabGroup.querySelectorAll('.ranking-tab').forEach(tab => {
             tab.classList.remove('active');
         });
-        document.querySelector(`[data-category="${category}"]`).classList.add('active');
+        tabElement.classList.add('active');
 
-        // 显示/隐藏对应榜单
-        this.showCategoryContent(category);
+        // 这里可以添加切换不同榜单数据的逻辑
+        console.log(`切换到 ${tabType} 榜单`);
+        this.loadTabData(tabType);
     }
 
-    showCategoryContent(category) {
-        const categories = document.querySelectorAll('.ranking-category');
+    loadTabData(tabType) {
+        // 根据标签页类型加载不同的数据
+        // 这里可以实现具体的数据加载逻辑
+        this.showToast(`正在加载${tabType}数据...`);
+    }
+
+    viewMore(button) {
+        // 查看更多功能
+        const section = button.closest('.ranking-section');
+        const title = section.querySelector('.section-title').textContent;
+        this.showToast(`查看更多${title}数据...`);
         
-        if (category === 'all') {
-            categories.forEach(cat => cat.style.display = 'block');
-        } else {
-            categories.forEach(cat => {
-                if (cat.dataset.category === category) {
-                    cat.style.display = 'block';
-                } else {
-                    cat.style.display = 'none';
-                }
-            });
-        }
+        // 这里可以实现跳转到详细页面或加载更多数据的逻辑
     }
 
     async loadTrendingData() {
         try {
-            this.showLoading(true);
-            
-            // 模拟API调用
-            const response = await this.fetchTrendingData();
-            
-            if (response.success) {
-                this.renderTrendingLists(response.data);
-                this.hideError();
-            } else {
-                this.showError('数据加载失败');
-            }
+            const data = await this.fetchTrendingData();
+            this.renderTrendingLists(data);
+            this.showToast('数据加载完成');
         } catch (error) {
             console.error('加载趋势数据失败:', error);
-            this.showError('网络连接失败，请稍后重试');
-        } finally {
-            this.showLoading(false);
+            this.showToast('加载失败，请稍后重试');
         }
     }
 
     async fetchTrendingData() {
-        // 模拟数据，实际应该调用真实API
+        // 模拟API调用
         return new Promise((resolve) => {
             setTimeout(() => {
                 resolve({
-                    success: true,
-                    data: {
-                        golden: this.generateMockData('golden', 10),
-                        risk: this.generateMockData('risk', 8),
-                        value: this.generateMockData('value', 12)
-                    }
+                    rising: this.generateMockData('rising', 5),
+                    decline: this.generateMockData('decline', 5),
+                    value: this.generateMockData('value', 5)
                 });
-            }, 1000);
+            }, 500);
         });
     }
 
     generateMockData(type, count) {
-        const stocks = [];
-        const symbols = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'META', 'NVDA', 'NFLX', 'AMD', 'INTC', 'CRM', 'ORCL'];
+        const stockData = {
+            rising: [
+                { symbol: 'TSLA', name: 'Tesla Inc', price: '198.21', change: 8.32 },
+                { symbol: 'NVDA', name: 'NVIDIA Corporation', price: '719.43', change: 7.89 },
+                { symbol: 'AAPL', name: 'Apple Inc', price: '175.38', change: 6.75 },
+                { symbol: 'MSFT', name: 'Microsoft Corporation', price: '378.29', change: 5.42 },
+                { symbol: 'GOOGL', name: 'Alphabet Inc', price: '142.65', change: 4.91 }
+            ],
+            decline: [
+                { symbol: 'META', name: 'Meta Platforms Inc', price: '324.56', change: -6.78 },
+                { symbol: 'NFLX', name: 'Netflix Inc', price: '425.89', change: -5.43 },
+                { symbol: 'AMZN', name: 'Amazon.com Inc', price: '142.31', change: -4.92 },
+                { symbol: 'PYPL', name: 'PayPal Holdings Inc', price: '58.74', change: -4.15 },
+                { symbol: 'UBER', name: 'Uber Technologies Inc', price: '67.23', change: -3.87 }
+            ],
+            value: [
+                { symbol: 'BRK.A', name: 'Berkshire Hathaway Inc', price: '548,325', change: 2.15 },
+                { symbol: 'JPM', name: 'JPMorgan Chase & Co', price: '165.42', change: 1.87 },
+                { symbol: 'JNJ', name: 'Johnson & Johnson', price: '159.73', change: 1.42 },
+                { symbol: 'PG', name: 'Procter & Gamble Co', price: '152.89', change: 0.98 },
+                { symbol: 'KO', name: 'The Coca-Cola Company', price: '58.94', change: 0.76 }
+            ]
+        };
         
-        for (let i = 0; i < count; i++) {
-            const symbol = symbols[i % symbols.length];
-            const price = (Math.random() * 500 + 50).toFixed(2);
-            const change = type === 'risk' ? 
-                -(Math.random() * 10 + 1).toFixed(2) : 
-                (Math.random() * 15 + 0.5).toFixed(2);
-            const changePercent = ((change / price) * 100).toFixed(2);
-            
-            stocks.push({
-                symbol,
-                name: `${symbol} Inc.`,
-                price: parseFloat(price),
-                change: parseFloat(change),
-                changePercent: parseFloat(changePercent),
-                volume: Math.floor(Math.random() * 10000000),
-                rank: i + 1
-            });
-        }
-        
-        return stocks;
+        return stockData[type] || [];
     }
 
     renderTrendingLists(data) {
-        this.renderList('golden-list', data.golden, 'golden');
-        this.renderList('risk-list', data.risk, 'risk');
+        this.renderList('rising-list', data.rising, 'rising');
+        this.renderList('decline-list', data.decline, 'decline');
         this.renderList('value-list', data.value, 'value');
     }
 
     renderList(containerId, stocks, type) {
         const container = document.getElementById(containerId);
         if (!container) return;
-
-        container.innerHTML = stocks.map(stock => `
-            <div class="ranking-item ${type}">
-                <div class="rank-number">${stock.rank}</div>
+        
+        container.innerHTML = stocks.map((stock, index) => `
+            <div class="stock-item" data-symbol="${stock.symbol}">
+                <div class="stock-rank">${index + 1}</div>
                 <div class="stock-info">
                     <div class="stock-symbol">${stock.symbol}</div>
                     <div class="stock-name">${stock.name}</div>
                 </div>
-                <div class="stock-metrics">
-                    <div class="stock-price">$${stock.price.toFixed(2)}</div>
-                    <div class="stock-change ${stock.change >= 0 ? 'positive' : 'negative'}">
-                        ${stock.change >= 0 ? '+' : ''}${stock.change.toFixed(2)} (${stock.changePercent >= 0 ? '+' : ''}${stock.changePercent.toFixed(2)}%)
+                <div class="stock-price">
+                    <div class="current-price">$${stock.price}</div>
+                    <div class="price-change ${stock.change >= 0 ? 'positive' : 'negative'}">
+                        ${stock.change >= 0 ? '+' : ''}${stock.change}%
                     </div>
-                    <div class="stock-volume">成交量: ${this.formatVolume(stock.volume)}</div>
                 </div>
             </div>
         `).join('');
@@ -174,28 +164,6 @@ class TrendingPage {
         document.getElementById('falling-count').textContent = stats.falling;
         document.getElementById('volume-total').textContent = stats.volume;
         document.getElementById('new-high-count').textContent = stats.newHigh;
-    }
-
-    showLoading(show) {
-        const loading = document.getElementById('loading');
-        if (loading) {
-            loading.style.display = show ? 'block' : 'none';
-        }
-    }
-
-    showError(message) {
-        const error = document.getElementById('error');
-        if (error) {
-            error.textContent = message;
-            error.classList.remove('hidden');
-        }
-    }
-
-    hideError() {
-        const error = document.getElementById('error');
-        if (error) {
-            error.classList.add('hidden');
-        }
     }
 
     refreshData() {
