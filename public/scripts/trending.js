@@ -154,16 +154,28 @@ class TrendingPage {
     async updateStats() {
         // 模拟统计数据更新
         const stats = {
-            rising: Math.floor(Math.random() * 200 + 100),
-            falling: Math.floor(Math.random() * 150 + 50),
-            volume: (Math.random() * 500 + 100).toFixed(1) + 'B',
-            newHigh: Math.floor(Math.random() * 50 + 10)
+            totalStocks: '1247',
+            risingStocks: '892',
+            totalMarketCap: '$2.8T',
+            hotStocks: '156',
+            activeStocks: '324'
         };
 
-        document.getElementById('rising-count').textContent = stats.rising;
-        document.getElementById('falling-count').textContent = stats.falling;
-        document.getElementById('volume-total').textContent = stats.volume;
-        document.getElementById('new-high-count').textContent = stats.newHigh;
+        // 更新顶部统计数据
+        const statElements = {
+            'total-stocks': stats.totalStocks,
+            'rising-stocks': stats.risingStocks,
+            'total-market-cap': stats.totalMarketCap,
+            'hot-stocks': stats.hotStocks,
+            'active-stocks': stats.activeStocks
+        };
+
+        Object.entries(statElements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+            }
+        });
     }
 
     refreshData() {
