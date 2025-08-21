@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每日趋势榜单 - Stock Tag Explorer</title>
+    <link rel="stylesheet" href="./styles/main.css">
+    <link rel="stylesheet" href="./styles/trending.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <!-- 头部 -->
+        <header class="header">
+            <div class="container">
+                <div class="header-content">
+                    <div class="header-left">
+                        <h1 class="logo">📈 每日趋势榜单</h1>
+                        <p class="subtitle">实时追踪市场热点 - 发现投资机会</p>
+                    </div>
+                    <div class="header-right">
+                        <nav class="nav-links">
+                            <a href="index.html" class="nav-link">标签广场</a>
+                            <a href="trending.html" class="nav-link active">趋势榜单</a>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- 主内容区 -->
+        <main class="main">
+            <div class="container">
+                <!-- 榜单导航 -->
+                <section class="trending-nav">
+                    <div class="nav-tabs">
+                        <button class="nav-tab active" data-category="all">全部榜单</button>
+                        <button class="nav-tab" data-category="golden">每日趋势金榜</button>
+                        <button class="nav-tab" data-category="risk">每日风险警示榜</button>
+                        <button class="nav-tab" data-category="value">特色价值榜</button>
+                    </div>
+                    <div class="nav-controls">
+                        <select id="time-filter" class="time-filter">
+                            <option value="today">今日</option>
+                            <option value="week">本周</option>
+                            <option value="month">本月</option>
+                        </select>
+                        <button id="refresh-btn" class="refresh-btn">🔄 刷新数据</button>
+                    </div>
+                </section>
+
+                <!-- 榜单概览 -->
+                <section class="trending-overview">
+                    <div class="overview-stats">
+                        <div class="stat-card">
+                            <div class="stat-icon">🚀</div>
+                            <div class="stat-content">
+                                <div class="stat-number" id="rising-count">--</div>
+                                <div class="stat-label">上涨股票</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">📉</div>
+                            <div class="stat-content">
+                                <div class="stat-number" id="falling-count">--</div>
+                                <div class="stat-label">下跌股票</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">💰</div>
+                            <div class="stat-content">
+                                <div class="stat-number" id="volume-total">--</div>
+                                <div class="stat-label">总成交额</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">⭐</div>
+                            <div class="stat-content">
+                                <div class="stat-number" id="new-high-count">--</div>
+                                <div class="stat-label">创新高</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 榜单内容 -->
+                <section class="trending-content">
+                    <div id="loading" class="loading">加载中...</div>
+                    <div id="error" class="error hidden">加载失败，请刷新重试</div>
+                    
+                    <!-- 每日趋势金榜 -->
+                    <div class="ranking-category" data-category="golden">
+                        <h2 class="category-title">
+                            <span class="category-icon">🏆</span>
+                            每日趋势金榜
+                            <span class="category-desc">市场表现最佳的股票</span>
+                        </h2>
+                        <div class="ranking-grid">
+                            <div class="ranking-card" data-type="daily_gainers">
+                                <div class="ranking-header">
+                                    <h3 class="ranking-title">📈 涨幅先锋</h3>
+                                    <span class="ranking-badge">TOP 20</span>
+                                </div>
+                                <div class="ranking-description">今日涨幅最大的股票</div>
+                                <div class="ranking-list" id="daily-gainers-list">
+                                    <!-- 动态加载股票列表 -->
+                                </div>
+                                <button class="view-more-btn" data-ranking="daily_gainers">查看完整榜单</button>
+                            </div>
+
+                            <div class="ranking-card" data-type="new_highs">
+                                <div class="ranking-header">
+                                    <h3 class="ranking-title">🎯 创新高</h3>
+                                    <span class="ranking-badge">TOP 20</span>
+                                </div>
+                                <div class="ranking-description">创52周新高的股票</div>
+                                <div class="ranking-list" id="new-highs-list">
+                                    <!-- 动态加载股票列表 -->
+                                </div>
+                                <button class="view-more-btn" data-ranking="new_highs">查看完整榜单</button>
+                            </div>
+
+                            <div class="ranking-card" data-type="volume_leaders">
+                                <div class="ranking-header">
+                                    <h3 class="ranking-title">💎 成交额巨头</h3>
+                                    <span class="ranking-badge">TOP 20</span>
+                                </div>
+                                <div class="ranking-description">今日成交额最高的股票</div>
+                                <div class="ranking-list" id="volume-leaders-list">
+                                    <!-- 动态加载股票列表 -->
+                                </div>
+                                <button class="view-more-btn" data-ranking="volume_leaders">查看完整榜单</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 每日风险警示榜 -->
+                    <div class="ranking-category" data-category="risk">
+                        <h2 class="category-title">
+                            <span class="category-icon">⚠️</span>
+                            每日风险警示榜
+                            <span class="category-desc">需要关注的风险股票</span>
+                        </h2>
+                        <div class="ranking-grid">
+                            <div class="ranking-card risk-card" data-type="daily_losers">
+                                <div class="ranking-header">
+                                    <h3 class="ranking-title">📉 跌幅最多</h3>
+                                    <span class="ranking-badge risk">TOP 20</span>
+                                </div>
+                                <div class="ranking-description">今日跌幅最大的股票</div>
+                                <div class="ranking-list" id="daily-losers-list">
+                                    <!-- 动态加载股票列表 -->
+                                </div>
+                                <button class="view-more-btn" data-ranking="daily_losers">查看完整榜单</button>
+                            </div>
+
+                            <div class="ranking-card risk-card" data-type="new_lows">
+                                <div class="ranking-header">
+                                    <h3 class="ranking-title">🔻 创新低</h3>
+                                    <span class="ranking-badge risk">TOP 20</span>
+                                </div>
+                                <div class="ranking-description">创52周新低的股票</div>
+                                <div class="ranking-list" id="new-lows-list">
+                                    <!-- 动态加载股票列表 -->
+                                </div>
+                                <button class="view-more-btn" data-ranking="new_lows">查看完整榜单</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 特色价值榜 -->
+                    <div class="ranking-category" data-category="value">
+                        <h2 class="category-title">
+                            <span class="category-icon">💰</span>
+                            特色价值榜
+                            <span class="category-desc">价值投资机会发现</span>
+                        </h2>
+                        <div class="ranking-grid">
+                            <div class="ranking-card value-card" data-type="low_pe">
+                                <div class="ranking-header">
+                                    <h3 class="ranking-title">📊 低市盈率</h3>
+                                    <span class="ranking-badge value">TOP 20</span>
+                                </div>
+                                <div class="ranking-description">市盈率较低的价值股</div>
+                                <div class="ranking-list" id="low-pe-list">
+                                    <!-- 动态加载股票列表 -->
+                                </div>
+                                <button class="view-more-btn" data-ranking="low_pe">查看完整榜单</button>
+                            </div>
+
+                            <div class="ranking-card value-card" data-type="high_dividend">
+                                <div class="ranking-header">
+                                    <h3 class="ranking-title">💵 高股息</h3>
+                                    <span class="ranking-badge value">TOP 20</span>
+                                </div>
+                                <div class="ranking-description">股息收益率较高的股票</div>
+                                <div class="ranking-list" id="high-dividend-list">
+                                    <!-- 动态加载股票列表 -->
+                                </div>
+                                <button class="view-more-btn" data-ranking="high_dividend">查看完整榜单</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+        
+        <!-- 页脚 -->
+        <footer class="footer">
+            <div class="container">
+                <p>&copy; 2024 Stock Tag Explorer. 数据来源: Polygon.io & Finnhub | 更新时间: <span id="last-update">--</span></p>
+            </div>
+        </footer>
+        
+        <!-- Toast 通知 -->
+        <div id="toast" class="toast hidden"></div>
+        
+        <!-- 股票详情模态框 -->
+        <div id="stock-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-title">股票详情</h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body" id="modal-body">
+                    <!-- 动态加载股票详情 -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="./scripts/trending.js"></script>
+</body>
+</html>
