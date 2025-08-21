@@ -70,7 +70,10 @@ async function loadAndRenderList(listConfig) {
     if (stocks.length === 0) {
       listElement.innerHTML = '<li class="no-data">暂无符合条件的股票</li>';
     } else {
-      listElement.innerHTML = stocks.map(stock => createStockListItemHTML(stock)).join('');
+      // 只显示前5条数据
+      const top5Stocks = stocks.slice(0, 5);
+      const top5HTML = top5Stocks.map(stock => createStockListItemHTML(stock)).join('');
+      listElement.innerHTML = top5HTML;
     }
   } catch (error) {
     console.error(`加载榜单 "${listConfig.title}" 失败:`, error);
@@ -78,8 +81,93 @@ async function loadAndRenderList(listConfig) {
   }
 }
 
+/**
+ * 处理"更多"按钮点击事件
+ * @param {string} type - 榜单类型
+ */
+async function handleMoreButtonClick(type) {
+  try {
+    const response = await fetch(`/api/trending?type=${type}`);
+    if (!response.ok) throw new Error(`API 请求失败，状态码: ${response.status}`);
+    let stocks = await response.json();
+
+    // 确保数据类型正确
+    stocks = stocks.map(stock => ({
+      ...stock,
+      last_price: Number(stock.last_price) || 0,
+      change_percent: Number(stock.change_percent) || 0,
+      market_cap: Number(stock.market_cap) || 0
+    }));
+
+    // 创建模态框显示完整榜单
+    const modal = document.createElement('div');
+    modal.className = 'ranking-modal';
+    modal.innerHTML = `
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>${getRankingTitle(type)}</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <ul class="ranking-list-full">
+            ${stocks.map(stock => createStockListItemHTML(stock)).join('')}
+          </ul>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // 添加关闭事件
+    const closeBtn = modal.querySelector('.modal-close');
+    const modalContent = modal.querySelector('.modal-content');
+    
+    closeBtn.addEventListener('click', () => {
+      document.body.removeChild(modal);
+    });
+    
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        document.body.removeChild(modal);
+      }
+    });
+
+  } catch (error) {
+    console.error('加载完整榜单失败:', error);
+    alert('加载数据失败，请稍后重试');
+  }
+}
+
+/**
+ * 获取榜单标题
+ * @param {string} type - 榜单类型
+ * @returns {string} - 榜单标题
+ */
+function getRankingTitle(type) {
+  const titles = {
+    'top_gainers': '🚀 涨幅榜 - 完整榜单',
+    'top_losers': '📉 跌幅榜 - 完整榜单',
+    'high_volume': '💰 成交额榜 - 完整榜单',
+    'new_highs': '🎯 创年内新高 - 完整榜单',
+    'new_lows': '⬇️ 创年内新低 - 完整榜单',
+    'risk_warning': '⚠️ 风险警示 - 完整榜单',
+    'value_picks': '💎 特色价值 - 完整榜单'
+  };
+  return titles[type] || '榜单详情';
+}
+
 // 当整个页面加载完成后，开始执行我们的脚本
 document.addEventListener('DOMContentLoaded', () => {
   console.log('📈 页面加载完成，开始获取所有趋势榜单数据...');
   TRENDING_LISTS_CONFIG.forEach(loadAndRenderList);
+  
+  // 为所有"更多"按钮添加事件监听
+  document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('more-btn') || e.target.classList.contains('more-btn-small')) {
+      const type = e.target.getAttribute('data-type');
+      if (type) {
+        handleMoreButtonClick(type);
+      }
+    }
+  });
 });

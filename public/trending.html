@@ -42,139 +42,159 @@
         <!-- 主内容区 -->
         <main class="main">
             <div class="container">
-                <!-- 顶部统计数据 -->
-                <section class="top-stats">
-                    <div class="stat-item">
-                        <div class="stat-icon">📊</div>
-                        <div class="stat-number" id="total-stocks">1247</div>
-                        <div class="stat-label">总股票数</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-icon">📈</div>
-                        <div class="stat-number" id="rising-stocks">892</div>
-                        <div class="stat-label">上涨股票</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-icon">💎</div>
-                        <div class="stat-number" id="value-stocks">$2.8T</div>
-                        <div class="stat-label">总市值</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-icon">🔥</div>
-                        <div class="stat-number" id="hot-stocks">156</div>
-                        <div class="stat-label">热门股票</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-icon">⚡</div>
-                        <div class="stat-number" id="active-stocks">89</div>
-                        <div class="stat-label">活跃股票</div>
+                <!-- 顶部统计数据 - 横排展示 -->
+                <section class="top-stats-horizontal">
+                    <div class="stats-container">
+                        <div class="stat-item-horizontal">
+                            <div class="stat-icon-horizontal">📊</div>
+                            <div class="stat-content-horizontal">
+                                <div class="stat-number-horizontal" id="total-stocks">1247</div>
+                                <div class="stat-label-horizontal">总股票数</div>
+                            </div>
+                        </div>
+                        <div class="stat-item-horizontal">
+                            <div class="stat-icon-horizontal">📈</div>
+                            <div class="stat-content-horizontal">
+                                <div class="stat-number-horizontal" id="rising-stocks">892</div>
+                                <div class="stat-label-horizontal">上涨股票</div>
+                            </div>
+                        </div>
+                        <div class="stat-item-horizontal">
+                            <div class="stat-icon-horizontal">💎</div>
+                            <div class="stat-content-horizontal">
+                                <div class="stat-number-horizontal" id="value-stocks">$2.8T</div>
+                                <div class="stat-label-horizontal">总市值</div>
+                            </div>
+                        </div>
+                        <div class="stat-item-horizontal">
+                            <div class="stat-icon-horizontal">🔥</div>
+                            <div class="stat-content-horizontal">
+                                <div class="stat-number-horizontal" id="hot-stocks">156</div>
+                                <div class="stat-label-horizontal">热门股票</div>
+                            </div>
+                        </div>
+                        <div class="stat-item-horizontal">
+                            <div class="stat-icon-horizontal">⚡</div>
+                            <div class="stat-content-horizontal">
+                                <div class="stat-number-horizontal" id="active-stocks">89</div>
+                                <div class="stat-label-horizontal">活跃股票</div>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
-                <!-- 每日趋势金榜 -->
-                <section class="ranking-section">
-                    <div class="section-header">
-                        <h2 class="section-title">🏆 每日趋势金榜</h2>
-                        <div class="section-controls">
+                <!-- 趋势榜单 - 三列并排展示 -->
+                <section class="trending-rankings">
+                    <div class="section-header-main">
+                        <h2 class="section-title-main">📊 每日趋势榜单</h2>
+                        <div class="section-controls-main">
                             <span class="update-time">已更新至最新数据</span>
                             <button class="refresh-btn">🔄 刷新</button>
                         </div>
                     </div>
                     
-                    <div class="ranking-tabs">
-                        <button class="ranking-tab active" data-tab="rising">涨幅榜</button>
-                        <button class="ranking-tab" data-tab="volume">成交额榜</button>
-                        <button class="ranking-tab" data-tab="highs">新高榜</button>
-                    </div>
-
-                    <div class="ranking-content">
-                        <div class="tab-content active" data-content="rising">
-                            <ul class="ranking-list" id="top-gainers-list">
-                                <!-- 动态加载涨幅榜数据 -->
+                    <div class="rankings-grid">
+                        <!-- 涨幅榜 -->
+                        <div class="ranking-card">
+                            <div class="ranking-header">
+                                <h3 class="ranking-title">🚀 涨幅榜</h3>
+                                <span class="ranking-subtitle">今日表现最佳</span>
+                            </div>
+                            <ul class="ranking-list-compact" id="top-gainers-list">
+                                <!-- 动态加载涨幅榜前5名数据 -->
                             </ul>
+                            <div class="ranking-footer">
+                                <button class="more-btn" data-type="top_gainers">查看更多</button>
+                            </div>
                         </div>
                         
-                        <div class="tab-content" data-content="volume">
-                            <ul class="ranking-list" id="high-volume-list">
-                                <!-- 动态加载成交额榜数据 -->
+                        <!-- 跌幅榜 -->
+                        <div class="ranking-card">
+                            <div class="ranking-header">
+                                <h3 class="ranking-title">📉 跌幅榜</h3>
+                                <span class="ranking-subtitle">今日跌幅最大</span>
+                            </div>
+                            <ul class="ranking-list-compact" id="top-losers-list">
+                                <!-- 动态加载跌幅榜前5名数据 -->
                             </ul>
+                            <div class="ranking-footer">
+                                <button class="more-btn" data-type="top_losers">查看更多</button>
+                            </div>
                         </div>
                         
-                        <div class="tab-content" data-content="highs">
-                            <ul class="ranking-list" id="new-highs-list">
-                                <!-- 动态加载新高榜数据 -->
+                        <!-- 成交额榜 -->
+                        <div class="ranking-card">
+                            <div class="ranking-header">
+                                <h3 class="ranking-title">💰 成交额榜</h3>
+                                <span class="ranking-subtitle">今日成交最活跃</span>
+                            </div>
+                            <ul class="ranking-list-compact" id="high-volume-list">
+                                <!-- 动态加载成交额榜前5名数据 -->
                             </ul>
-                        </div>
-                        
-                        <div class="view-more">
-                            <button class="view-more-btn">查看更多榜单</button>
+                            <div class="ranking-footer">
+                                <button class="more-btn" data-type="high_volume">查看更多</button>
+                            </div>
                         </div>
                     </div>
                 </section>
-
-                <!-- 每日风险警示榜 -->
-                <section class="ranking-section">
-                    <div class="section-header">
-                        <h2 class="section-title">⚠️ 每日风险警示榜</h2>
-                        <div class="section-controls">
-                            <span class="update-time">已更新至最新数据</span>
-                            <button class="refresh-btn">🔄 刷新</button>
-                        </div>
+                
+                <!-- 其他榜单 -->
+                <section class="other-rankings">
+                    <div class="section-header-main">
+                        <h2 class="section-title-main">📈 其他重要榜单</h2>
                     </div>
                     
-                    <div class="ranking-tabs">
-                        <button class="ranking-tab active" data-tab="decline">跌幅榜</button>
-                        <button class="ranking-tab" data-tab="risk">风险榜</button>
-                        <button class="ranking-tab" data-tab="lows">新低榜</button>
-                    </div>
-
-                    <div class="ranking-content">
-                        <div class="tab-content active" data-content="decline">
-                            <ul class="ranking-list" id="top-losers-list">
-                                <!-- 动态加载跌幅榜数据 -->
+                    <div class="rankings-grid-four">
+                        <!-- 创年内新高榜 -->
+                        <div class="ranking-card-small">
+                            <div class="ranking-header">
+                                <h3 class="ranking-title-small">🎯 创年内新高</h3>
+                            </div>
+                            <ul class="ranking-list-mini" id="new-highs-list">
+                                <!-- 动态加载新高榜前5名数据 -->
                             </ul>
+                            <div class="ranking-footer">
+                                <button class="more-btn-small" data-type="new_highs">更多</button>
+                            </div>
                         </div>
                         
-                        <div class="tab-content" data-content="risk">
-                            <ul class="ranking-list" id="risk-warning-list">
-                                <!-- 动态加载风险警示榜数据 -->
+                        <!-- 创年内新低榜 -->
+                        <div class="ranking-card-small">
+                            <div class="ranking-header">
+                                <h3 class="ranking-title-small">⬇️ 创年内新低</h3>
+                            </div>
+                            <ul class="ranking-list-mini" id="new-lows-list">
+                                <!-- 动态加载新低榜前5名数据 -->
                             </ul>
+                            <div class="ranking-footer">
+                                <button class="more-btn-small" data-type="new_lows">更多</button>
+                            </div>
                         </div>
                         
-                        <div class="tab-content" data-content="lows">
-                            <ul class="ranking-list" id="new-lows-list">
-                                <!-- 动态加载新低榜数据 -->
+                        <!-- 风险警示榜 -->
+                        <div class="ranking-card-small">
+                            <div class="ranking-header">
+                                <h3 class="ranking-title-small">⚠️ 风险警示</h3>
+                            </div>
+                            <ul class="ranking-list-mini" id="risk-warning-list">
+                                <!-- 动态加载风险警示榜前5名数据 -->
                             </ul>
+                            <div class="ranking-footer">
+                                <button class="more-btn-small" data-type="risk_warning">更多</button>
+                            </div>
                         </div>
                         
-                        <div class="view-more">
-                            <button class="view-more-btn">查看更多榜单</button>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- 特色价值榜 -->
-                <section class="ranking-section">
-                    <div class="section-header">
-                        <h2 class="section-title">💎 特色价值榜</h2>
-                        <div class="section-controls">
-                            <span class="update-time">已更新至最新数据</span>
-                            <button class="refresh-btn">🔄 刷新</button>
-                        </div>
-                    </div>
-                    
-                    <div class="ranking-tabs">
-                        <button class="ranking-tab active" data-tab="value">价值榜</button>
-                        <button class="ranking-tab" data-tab="growth">成长榜</button>
-                    </div>
-
-                    <div class="ranking-content">
-                        <ul class="ranking-list" id="value-picks-list">
-                            <!-- 动态加载特色价值榜数据 -->
-                        </ul>
-                        
-                        <div class="view-more">
-                            <button class="view-more-btn">查看更多榜单</button>
+                        <!-- 特色价值榜 -->
+                        <div class="ranking-card-small">
+                            <div class="ranking-header">
+                                <h3 class="ranking-title-small">💎 特色价值</h3>
+                            </div>
+                            <ul class="ranking-list-mini" id="value-picks-list">
+                                <!-- 动态加载特色价值榜前5名数据 -->
+                            </ul>
+                            <div class="ranking-footer">
+                                <button class="more-btn-small" data-type="value_picks">更多</button>
+                            </div>
                         </div>
                     </div>
                 </section>
