@@ -46,7 +46,7 @@ module.exports = async function handler(req, res) {
     switch (type) {
       case 'top_gainers': // 涨幅榜 - 取change_percent前5%
         query = `
-          SELECT ticker, name_zh, last_price, change_percent, volume, market_cap
+          SELECT ticker, name_zh, last_price, change_percent, market_cap
           FROM stocks 
           WHERE change_percent IS NOT NULL AND last_price IS NOT NULL
           ORDER BY change_percent DESC 
@@ -57,7 +57,7 @@ module.exports = async function handler(req, res) {
 
       case 'top_losers': // 跌幅榜 - 取change_percent最后5%
         query = `
-          SELECT ticker, name_zh, last_price, change_percent, volume, market_cap
+          SELECT ticker, name_zh, last_price, change_percent, market_cap
           FROM stocks 
           WHERE change_percent IS NOT NULL AND last_price IS NOT NULL
           ORDER BY change_percent ASC 
@@ -66,13 +66,12 @@ module.exports = async function handler(req, res) {
         queryParams = [limit];
         break;
 
-      case 'high_volume': // 成交额榜 - 按成交额排序
+      case 'high_volume': // 成交额榜 - 按市值排序（替代成交额）
         query = `
-          SELECT ticker, name_zh, last_price, change_percent, volume, market_cap,
-                 (CAST(volume AS BIGINT) * last_price) as turnover
+          SELECT ticker, name_zh, last_price, change_percent, market_cap
           FROM stocks 
-          WHERE volume IS NOT NULL AND volume > 0 AND last_price IS NOT NULL
-          ORDER BY (CAST(volume AS BIGINT) * last_price) DESC 
+          WHERE market_cap IS NOT NULL AND CAST(market_cap AS BIGINT) > 0 AND last_price IS NOT NULL
+          ORDER BY CAST(market_cap AS BIGINT) DESC 
           LIMIT $1
         `;
         queryParams = [limit];
@@ -80,7 +79,7 @@ module.exports = async function handler(req, res) {
 
       case 'new_highs': // 创年内新高
         query = `
-          SELECT ticker, name_zh, last_price, change_percent, volume, market_cap, week_52_high
+          SELECT ticker, name_zh, last_price, change_percent, market_cap, week_52_high
           FROM stocks 
           WHERE last_price IS NOT NULL AND week_52_high IS NOT NULL 
                 AND last_price >= week_52_high * 0.99
@@ -92,7 +91,7 @@ module.exports = async function handler(req, res) {
 
       case 'new_lows': // 创年内新低
         query = `
-          SELECT ticker, name_zh, last_price, change_percent, volume, market_cap, week_52_low
+          SELECT ticker, name_zh, last_price, change_percent, market_cap, week_52_low
           FROM stocks 
           WHERE last_price IS NOT NULL AND week_52_low IS NOT NULL 
                 AND last_price <= week_52_low * 1.01
@@ -104,7 +103,7 @@ module.exports = async function handler(req, res) {
 
       case 'risk_warning': // 风险警示榜 - 大幅下跌股票
         query = `
-          SELECT ticker, name_zh, last_price, change_percent, volume, market_cap
+          SELECT ticker, name_zh, last_price, change_percent, market_cap
           FROM stocks 
           WHERE change_percent IS NOT NULL AND change_percent < -5
           ORDER BY change_percent ASC 
@@ -115,11 +114,11 @@ module.exports = async function handler(req, res) {
 
       case 'value_picks': // 特色价值榜 - 低PE高股息
         query = `
-          SELECT ticker, name_zh, last_price, change_percent, volume, market_cap, pe_ratio, dividend_yield
+          SELECT ticker, name_zh, last_price, change_percent, market_cap, pe_ttm as pe_ratio, dividend_yield
           FROM stocks 
-          WHERE pe_ratio IS NOT NULL AND pe_ratio > 0 AND pe_ratio < 20
+          WHERE pe_ttm IS NOT NULL AND pe_ttm > 0 AND pe_ttm < 20
                 AND market_cap IS NOT NULL AND CAST(market_cap AS BIGINT) > 10000
-          ORDER BY pe_ratio ASC 
+          ORDER BY pe_ttm ASC 
           LIMIT $1
         `;
         queryParams = [limit];
