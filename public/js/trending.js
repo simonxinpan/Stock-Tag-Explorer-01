@@ -3,42 +3,94 @@
 // 定义我们需要加载的所有榜单
 const TRENDING_LISTS_CONFIG = [
   { id: 'top-gainers-list', type: 'top_gainers' },
-  { id: 'top-losers-list', type: 'top_losers' },
   { id: 'high-volume-list', type: 'high_volume' },
   { id: 'new-highs-list', type: 'new_highs' },
-  { id: 'new-lows-list', type: 'new_lows' },
-  { id: 'risk-warning-list', type: 'risk_warning' },
   { id: 'value-picks-list', type: 'value_picks' }
 ];
 
 /**
- * 根据榜单类型和数据，生成单支股票的 HTML 字符串 (任务2)
+ * 根据榜单类型和数据，生成单支股票的 HTML 字符串
  * @param {object} stock - 股票数据对象
+ * @param {string} type - 榜单类型
  * @returns {string} - 代表一个 <li> 元素的 HTML 字符串
  */
-function createStockListItemHTML(stock) {
+function createStockListItemHTML(stock, type) {
   const changePercent = stock.change_percent || 0;
   const price = stock.last_price || 0;
   const colorClass = changePercent >= 0 ? 'text-green-500' : 'text-red-500';
   const sign = changePercent >= 0 ? '+' : '';
    
-  // 任务2的核心：构建指向正确详情页的链接
+  // 构建指向正确详情页的链接
   const detailsPageUrl = `https://stock-details-final-1e1vcxew3-simon-pans-projects.vercel.app/?symbol=${stock.ticker}`;
+
+  // 根据榜单类型决定显示哪个核心数据
+  let mainMetricHTML = '';
+  switch (type) {
+    case 'high_volume':
+      // 成交额榜显示成交额
+      const turnover = stock.turnover ? formatTurnover(stock.turnover) : 'N/A';
+      mainMetricHTML = `
+        <span class="price">${turnover}</span>
+        <span class="change ${colorClass}">${sign}${changePercent.toFixed(2)}%</span>
+      `;
+      break;
+    case 'new_highs':
+      // 新高榜显示52周最高价
+      const weekHigh = stock.week_52_high ? `$${Number(stock.week_52_high).toFixed(2)}` : 'N/A';
+      mainMetricHTML = `
+        <span class="price">${weekHigh}</span>
+        <span class="change ${colorClass}">${sign}${changePercent.toFixed(2)}%</span>
+      `;
+      break;
+    case 'value_picks':
+      // 价值榜显示PE比率
+      const peRatio = stock.pe_ttm ? `PE: ${Number(stock.pe_ttm).toFixed(1)}` : 'N/A';
+      mainMetricHTML = `
+        <span class="price">${peRatio}</span>
+        <span class="change ${colorClass}">${sign}${changePercent.toFixed(2)}%</span>
+      `;
+      break;
+    default: // 涨幅榜等默认显示价格和涨跌幅
+      mainMetricHTML = `
+        <span class="price">$${Number(price).toFixed(2)}</span>
+        <span class="change ${colorClass}">${sign}${changePercent.toFixed(2)}%</span>
+      `;
+      break;
+  }
 
   return `
     <li class="stock-item">
       <a href="${detailsPageUrl}" target="_blank" class="stock-link">
         <div class="stock-info">
           <span class="ticker">${stock.ticker}</span>
-          <span class="name">${stock.name_zh}</span>
+          <span class="name">${stock.name_zh || stock.name || 'N/A'}</span>
         </div>
         <div class="stock-performance">
-          <span class="price">$${price.toFixed(2)}</span>
-          <span class="change ${colorClass}">${sign}${changePercent.toFixed(2)}%</span>
+          ${mainMetricHTML}
         </div>
       </a>
     </li>
   `;
+}
+
+/**
+ * 格式化市值显示
+ * @param {string|number} marketCap - 市值
+ * @returns {string} - 格式化后的市值字符串
+ */
+function formatMarketCap(marketCap) {
+  if (!marketCap || marketCap === 0) return 'N/A';
+  
+  const cap = parseFloat(marketCap);
+  if (cap >= 1000000000000) {
+    return `$${(cap / 1000000000000).toFixed(2)}T`;
+  } else if (cap >= 1000000000) {
+    return `$${(cap / 1000000000).toFixed(2)}B`;
+  } else if (cap >= 1000000) {
+    return `$${(cap / 1000000).toFixed(2)}M`;
+  } else {
+    return `$${cap.toFixed(0)}`;
+  }
 }
 
 /**
@@ -72,7 +124,7 @@ async function loadAndRenderList(listConfig) {
     } else {
       // 只显示前5条数据
       const top5Stocks = stocks.slice(0, 5);
-      const top5HTML = top5Stocks.map(stock => createStockListItemHTML(stock)).join('');
+      const top5HTML = top5Stocks.map(stock => createStockListItemHTML(stock, listConfig.type)).join('');
       listElement.innerHTML = top5HTML;
     }
   } catch (error) {
@@ -110,7 +162,7 @@ async function handleMoreButtonClick(type) {
         </div>
         <div class="modal-body">
           <ul class="ranking-list-full">
-            ${stocks.map(stock => createStockListItemHTML(stock)).join('')}
+            ${stocks.map(stock => createStockListItemHTML(stock, type)).join('')}
           </ul>
         </div>
       </div>
@@ -154,6 +206,17 @@ function getRankingTitle(type) {
     'value_picks': '💎 特色价值 - 完整榜单'
   };
   return titles[type] || '榜单详情';
+}
+
+// 辅助函数：格式化成交额显示
+function formatTurnover(value) {
+  if (!value || value === 0) return 'N/A';
+  const num = parseFloat(value);
+  if (num >= 1e12) return `$${(num / 1e12).toFixed(2)}T`; // 万亿
+  if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;  // 十亿
+  if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;  // 百万
+  if (num >= 1e3) return `$${(num / 1e3).toFixed(2)}K`;  // 千
+  return `$${num.toFixed(0)}`;
 }
 
 // 当整个页面加载完成后，开始执行我们的脚本

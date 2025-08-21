@@ -50,12 +50,13 @@ module.exports = async function handler(req, res) {
         queryParams = [];
         break;
 
-      case 'high_volume': // 成交额榜 - 按市值排序（替代成交额）前20名
+      case 'high_volume': // 成交额榜 - 按成交额排序前20名
         query = `
-          SELECT ticker, name_zh, last_price, change_percent, market_cap
+          SELECT ticker, name_zh, last_price, change_percent, volume,
+                 (CAST(volume AS BIGINT) * last_price) AS turnover
           FROM stocks 
-          WHERE market_cap IS NOT NULL AND CAST(market_cap AS BIGINT) > 0 AND last_price IS NOT NULL
-          ORDER BY CAST(market_cap AS BIGINT) DESC 
+          WHERE volume IS NOT NULL AND last_price IS NOT NULL AND volume > 0
+          ORDER BY turnover DESC 
           LIMIT 20
         `;
         queryParams = [];

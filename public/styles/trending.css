@@ -336,6 +336,14 @@
     margin-bottom: 3rem;
 }
 
+/* 两列布局 */
+.rankings-grid-two {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
 .ranking-card {
     background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.95) 100%);
     backdrop-filter: blur(20px);
@@ -615,6 +623,11 @@
 /* 响应式设计 */
 @media (max-width: 768px) {
     .rankings-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .rankings-grid-two {
         grid-template-columns: 1fr;
         gap: 1.5rem;
     }
