@@ -122,9 +122,12 @@ module.exports = async function handler(req, res) {
   } catch (error) {
     console.error('趋势榜单API错误:', error);
     
-    // 返回模拟数据作为fallback
-    const mockData = generateMockData(type, 20); // 使用默认限制20条
-    res.status(200).json(mockData);
+    // 不使用模拟数据，直接返回错误信息
+    res.status(500).json({ 
+      error: 'Database connection failed', 
+      message: '数据库连接失败，请检查数据库配置',
+      details: error.message 
+    });
   } finally {
     if (client) {
       client.release();
@@ -146,42 +149,4 @@ function formatMarketCap(marketCap) {
   }
 }
 
-// 生成模拟数据的函数
-function generateMockData(type, limit) {
-  const mockStocks = [
-    { ticker: 'AAPL', name_zh: '苹果公司', last_price: 175.43, change_percent: 2.34, market_cap: '2800000000000' },
-    { ticker: 'MSFT', name_zh: '微软公司', last_price: 378.85, change_percent: 1.87, market_cap: '2750000000000' },
-    { ticker: 'GOOGL', name_zh: '谷歌', last_price: 142.56, change_percent: -0.95, market_cap: '1800000000000' },
-    { ticker: 'AMZN', name_zh: '亚马逊', last_price: 151.94, change_percent: 1.23, market_cap: '1600000000000' },
-    { ticker: 'TSLA', name_zh: '特斯拉', last_price: 248.42, change_percent: -2.15, market_cap: '800000000000' },
-    { ticker: 'META', name_zh: 'Meta平台', last_price: 484.20, change_percent: 0.78, market_cap: '1200000000000' },
-    { ticker: 'NVDA', name_zh: '英伟达', last_price: 875.28, change_percent: 3.45, market_cap: '2200000000000' },
-    { ticker: 'NFLX', name_zh: '奈飞', last_price: 486.81, change_percent: -1.34, market_cap: '220000000000' }
-  ];
-  
-  // 根据榜单类型调整数据
-  let sortedStocks = [...mockStocks];
-  switch (type) {
-    case 'top_gainers':
-      sortedStocks.sort((a, b) => b.change_percent - a.change_percent);
-      break;
-    case 'top_losers':
-      sortedStocks.sort((a, b) => a.change_percent - b.change_percent);
-      break;
-    // case 'high_volume': // 已移除，数据库无volume字段
-    case 'new_highs':
-    case 'value_picks':
-      sortedStocks.sort((a, b) => parseFloat(b.market_cap) - parseFloat(a.market_cap));
-      break;
-    case 'new_lows':
-    case 'risk_warning':
-      sortedStocks = sortedStocks.filter(stock => stock.change_percent < 0);
-      sortedStocks.sort((a, b) => a.change_percent - b.change_percent);
-      break;
-  }
-  
-  return sortedStocks.slice(0, limit).map(stock => ({
-    ...stock,
-    market_cap_formatted: formatMarketCap(stock.market_cap)
-  }));
-}
+// 模拟数据功能已移除 - 确保只连接真实数据库

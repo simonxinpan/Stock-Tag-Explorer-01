@@ -3,6 +3,7 @@
 // 定义我们需要加载的所有榜单
 const TRENDING_LISTS_CONFIG = [
   { id: 'top-gainers-list', type: 'top_gainers' },
+  { id: 'new-highs-list', type: 'new_highs' },
   // { id: 'high-volume-list', type: 'high_volume' }, // 已移除 - 数据库无volume字段
   { id: 'top-losers-list', type: 'top_losers' },
   { id: 'new-lows-list', type: 'new_lows' }
@@ -40,6 +41,11 @@ function createStockListItemHTML(stock, type, rank) {
       // 新低榜显示52周最低价
       const weekLow = stock.week_52_low ? `$${Number(stock.week_52_low).toFixed(2)}` : 'N/A';
       mainMetricHTML = `<div class="price">${weekLow}</div>`;
+      break;
+    case 'new_highs':
+      // 新高榜显示52周最高价
+      const weekHigh = stock.week_52_high ? `$${Number(stock.week_52_high).toFixed(2)}` : 'N/A';
+      mainMetricHTML = `<div class="price">${weekHigh}</div>`;
       break;
     default: // 涨幅榜等默认显示价格和涨跌幅
       mainMetricHTML = `<div class="price">$${price.toFixed(2)}</div>`;
@@ -99,10 +105,15 @@ async function loadAndRenderList(listConfig) {
   try {
     const response = await fetch(`/api/trending?type=${listConfig.type}`);
     if (!response.ok) throw new Error(`API 请求失败，状态码: ${response.status}`);
-    let stocks = await response.json();
+    let data = await response.json();
+
+    // 检查是否是错误响应
+    if (data.error) {
+      throw new Error(data.message || data.error);
+    }
 
     // 确保数据类型正确，进行类型转换
-    stocks = stocks.map(stock => ({
+    let stocks = data.map(stock => ({
       ...stock,
       last_price: Number(stock.last_price) || 0,
       change_percent: Number(stock.change_percent) || 0,
@@ -119,7 +130,7 @@ async function loadAndRenderList(listConfig) {
     }
   } catch (error) {
     console.error(`加载榜单 "${listConfig.title}" 失败:`, error);
-    listElement.innerHTML = '<li class="error">数据加载失败</li>';
+    listElement.innerHTML = `<li class="error">数据库连接失败<br><small>${error.message}</small></li>`;
   }
 }
 
