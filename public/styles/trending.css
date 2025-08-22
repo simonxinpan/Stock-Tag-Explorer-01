@@ -302,18 +302,27 @@
     letter-spacing: 0.025em;
 }
 
-/* 主要趋势榜单 - 三列并排 */
+/* 趋势榜单区域 */
 .trending-rankings {
+    padding: 2rem 0;
     margin-bottom: 4rem;
 }
 
 .section-header-main {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    text-align: center;
     margin-bottom: 2rem;
-    flex-wrap: wrap;
-    gap: 1rem;
+}
+
+.section-header-main h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+}
+
+.section-header-main p {
+    font-size: 1.125rem;
+    color: #6b7280;
 }
 
 .section-title-main {
@@ -329,31 +338,41 @@
     align-items: center;
 }
 
+/* 榜单网格布局 - 两列 */
 .rankings-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 2rem;
-    margin-bottom: 3rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
 }
 
-/* 两列布局 */
 .rankings-grid-two {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 2rem;
-    margin-bottom: 3rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
 }
 
+/* 响应式：在小屏幕上自动变为单列 */
+@media (max-width: 768px) {
+    .rankings-grid,
+    .rankings-grid-two {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 单个榜单卡片 */
 .ranking-card {
-    background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.95) 100%);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.3);
+    background: white;
     border-radius: 16px;
-    padding: 2rem;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem;
     transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
+    border: 1px solid #f3f4f6;
 }
 
 .ranking-card::before {
@@ -369,25 +388,30 @@
 
 .ranking-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
 }
 
+/* 榜单头部 */
 .ranking-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 1.5rem;
-    text-align: center;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f3f4f6;
 }
 
 .ranking-title {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
 }
 
 .ranking-subtitle {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    font-weight: 500;
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin: 0.25rem 0 0 0;
 }
 
 .ranking-list-compact {
@@ -402,23 +426,34 @@
     border-top: 1px solid rgba(226, 232, 240, 0.5);
 }
 
+/* 更多按钮 */
 .more-btn {
-    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    background: linear-gradient(135deg, #10B981, #059669);
     color: white;
     border: none;
-    padding: 0.75rem 2rem;
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
 
 .more-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
-    background: linear-gradient(135deg, #5b52e8, #8b5cf6);
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+/* TOP 20 徽章样式 */
+.top-badge {
+    background-color: #10B981;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 500;
 }
 
 /* 其他榜单 - 四列网格 */
@@ -775,12 +810,15 @@
     gap: 1rem;
 }
 
-/* 三列榜单网格 */
+/* 两列榜单网格 */
 .rankings-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 2rem;
     margin-bottom: 3rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
 }
 
 /* 四列小榜单网格 */
@@ -874,13 +912,96 @@
     margin: 0 0 1.5rem 0;
 }
 
+.ranking-list-compact .stock-item {
+    margin-bottom: 0.5rem;
+}
+
+.ranking-list-compact .stock-link {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 8px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.ranking-list-compact .stock-link:hover {
+    background: rgba(255, 255, 255, 0.8);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.ranking-list-compact .rank-circle {
+    background-color: #10B981;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+}
+
+.ranking-list-compact .stock-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 0;
+}
+
+.ranking-list-compact .ticker {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    margin-bottom: 0.2rem;
+}
+
+.ranking-list-compact .name {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.ranking-list-compact .stock-performance {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+}
+
+.ranking-list-compact .price {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    margin-bottom: 0.2rem;
+}
+
+.ranking-list-compact .change {
+    font-weight: 600;
+    font-size: 0.75rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.8);
+}
+
 .ranking-list-mini {
     list-style: none;
     padding: 0;
     margin: 0 0 1rem 0;
 }
 
-.ranking-list-compact li,
 .ranking-list-mini li {
     display: flex;
     align-items: center;
@@ -890,7 +1011,6 @@
     transition: all 0.2s ease;
 }
 
-.ranking-list-compact li:hover,
 .ranking-list-mini li:hover {
     background: rgba(79,70,229,0.05);
     border-radius: var(--radius-md);
@@ -898,7 +1018,6 @@
     padding-right: 0.5rem;
 }
 
-.ranking-list-compact li:last-child,
 .ranking-list-mini li:last-child {
     border-bottom: none;
 }
@@ -1017,6 +1136,93 @@
     margin: 0;
 }
 
+.ranking-list-full .stock-item {
+    margin-bottom: 0.75rem;
+}
+
+.ranking-list-full .stock-link {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 12px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+}
+
+.ranking-list-full .stock-link:hover {
+    background: rgba(255, 255, 255, 0.95);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    text-decoration: none;
+    color: inherit;
+}
+
+.ranking-list-full .rank-circle {
+    background-color: #3B82F6;
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+.ranking-list-full .stock-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 0;
+}
+
+.ranking-list-full .ticker {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.ranking-list-full .name {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.ranking-list-full .stock-performance {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+}
+
+.ranking-list-full .price {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.ranking-list-full .change {
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.8);
+}
+
 .ranking-list-full li {
     display: flex;
     align-items: center;
@@ -1071,6 +1277,12 @@
     
     .stat-item-horizontal {
         min-width: 100%;
+    }
+    
+    .rankings-grid,
+    .rankings-grid-two {
+        grid-template-columns: 1fr;
+        padding: 0 0.5rem;
     }
     
     .rankings-grid-four {
@@ -1494,6 +1706,101 @@
         transform: translateX(0);
         opacity: 1;
     }
+}
+
+/* 股票列表样式 */
+.stock-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.stock-item {
+  margin-bottom: 0.75rem;
+}
+
+.stock-link {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.stock-link:hover {
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  text-decoration: none;
+  color: inherit;
+}
+
+/* 排名圆圈 */
+.rank-circle {
+  background-color: #3B82F6;
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.stock-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.ticker {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.name {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.stock-performance {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.price {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.change {
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.8);
 }
 
 /* 响应式设计 */

@@ -12,11 +12,12 @@ const TRENDING_LISTS_CONFIG = [
  * 根据榜单类型和数据，生成单支股票的 HTML 字符串
  * @param {object} stock - 股票数据对象
  * @param {string} type - 榜单类型
+ * @param {number} rank - 排名
  * @returns {string} - 代表一个 <li> 元素的 HTML 字符串
  */
-function createStockListItemHTML(stock, type) {
-  const changePercent = stock.change_percent || 0;
-  const price = stock.last_price || 0;
+function createStockListItemHTML(stock, type, rank) {
+  const changePercent = parseFloat(stock.change_percent) || 0;
+  const price = parseFloat(stock.last_price) || 0;
   const colorClass = changePercent >= 0 ? 'text-green-500' : 'text-red-500';
   const sign = changePercent >= 0 ? '+' : '';
    
@@ -28,44 +29,34 @@ function createStockListItemHTML(stock, type) {
   switch (type) {
     case 'high_volume':
       // 成交额榜显示成交额
-      const turnover = stock.turnover ? formatTurnover(stock.turnover) : 'N/A';
-      mainMetricHTML = `
-        <span class="price">${turnover}</span>
-        <span class="change ${colorClass}">${sign}${changePercent.toFixed(2)}%</span>
-      `;
+      const turnover = stock.turnover ? formatLargeNumber(stock.turnover) : 'N/A';
+      mainMetricHTML = `<div class="price">${turnover}</div>`;
       break;
     case 'top_losers':
       // 跌幅榜显示价格和跌幅
-      mainMetricHTML = `
-        <span class="price">$${Number(price).toFixed(2)}</span>
-        <span class="change ${colorClass}">${changePercent.toFixed(2)}%</span>
-      `;
+      mainMetricHTML = `<div class="price">$${price.toFixed(2)}</div>`;
       break;
     case 'new_lows':
       // 新低榜显示52周最低价
       const weekLow = stock.week_52_low ? `$${Number(stock.week_52_low).toFixed(2)}` : 'N/A';
-      mainMetricHTML = `
-        <span class="price">${weekLow}</span>
-        <span class="change ${colorClass}">${sign}${changePercent.toFixed(2)}%</span>
-      `;
+      mainMetricHTML = `<div class="price">${weekLow}</div>`;
       break;
     default: // 涨幅榜等默认显示价格和涨跌幅
-      mainMetricHTML = `
-        <span class="price">$${Number(price).toFixed(2)}</span>
-        <span class="change ${colorClass}">${sign}${changePercent.toFixed(2)}%</span>
-      `;
+      mainMetricHTML = `<div class="price">$${price.toFixed(2)}</div>`;
       break;
   }
 
   return `
     <li class="stock-item">
       <a href="${detailsPageUrl}" target="_blank" class="stock-link">
+        <div class="rank-circle">${rank}</div>
         <div class="stock-info">
-          <span class="ticker">${stock.ticker}</span>
-          <span class="name">${stock.name_zh || stock.name || 'N/A'}</span>
+          <div class="ticker">${stock.ticker}</div>
+          <div class="name">${stock.name_zh || stock.name || 'N/A'}</div>
         </div>
         <div class="stock-performance">
           ${mainMetricHTML}
+          <div class="change ${colorClass}">${sign}${changePercent.toFixed(2)}%</div>
         </div>
       </a>
     </li>
@@ -123,7 +114,7 @@ async function loadAndRenderList(listConfig) {
     } else {
       // 只显示前5条数据
       const top5Stocks = stocks.slice(0, 5);
-      const top5HTML = top5Stocks.map(stock => createStockListItemHTML(stock, listConfig.type)).join('');
+      const top5HTML = top5Stocks.map((stock, index) => createStockListItemHTML(stock, listConfig.type, index + 1)).join('');
       listElement.innerHTML = top5HTML;
     }
   } catch (error) {
@@ -161,7 +152,7 @@ async function handleMoreButtonClick(type) {
         </div>
         <div class="modal-body">
           <ul class="ranking-list-full">
-            ${stocks.map(stock => createStockListItemHTML(stock, type)).join('')}
+            ${stocks.map((stock, index) => createStockListItemHTML(stock, type, index + 1)).join('')}
           </ul>
         </div>
       </div>
@@ -207,15 +198,21 @@ function getRankingTitle(type) {
   return titles[type] || '榜单详情';
 }
 
-// 辅助函数：格式化成交额显示
-function formatTurnover(value) {
+// 辅助函数：格式化大数字显示
+function formatLargeNumber(value) {
   if (!value || value === 0) return 'N/A';
   const num = parseFloat(value);
+  if (isNaN(num)) return 'N/A';
   if (num >= 1e12) return `$${(num / 1e12).toFixed(2)}T`; // 万亿
   if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;  // 十亿
   if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;  // 百万
   if (num >= 1e3) return `$${(num / 1e3).toFixed(2)}K`;  // 千
   return `$${num.toFixed(0)}`;
+}
+
+// 辅助函数：格式化成交额显示（保持向后兼容）
+function formatTurnover(value) {
+  return formatLargeNumber(value);
 }
 
 // 当整个页面加载完成后，开始执行我们的脚本
