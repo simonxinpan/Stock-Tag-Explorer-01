@@ -199,15 +199,14 @@ function getRankingTitle(type) {
 }
 
 // 辅助函数：格式化大数字显示
-function formatLargeNumber(value) {
-  if (!value || value === 0) return 'N/A';
+function formatLargeNumber(value, isCurrency = false) {
   const num = parseFloat(value);
-  if (isNaN(num)) return 'N/A';
-  if (num >= 1e12) return `$${(num / 1e12).toFixed(2)}T`; // 万亿
-  if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;  // 十亿
-  if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;  // 百万
-  if (num >= 1e3) return `$${(num / 1e3).toFixed(2)}K`;  // 千
-  return `$${num.toFixed(0)}`;
+  if (isNaN(num)) return '--';
+  const prefix = isCurrency ? '$' : '';
+  if (num >= 1e12) return `${prefix}${(num / 1e12).toFixed(2)}T`; // 万亿
+  if (num >= 1e9) return `${prefix}${(num / 1e9).toFixed(2)}B`;  // 十亿
+  if (num >= 1e6) return `${prefix}${(num / 1e6).toFixed(1)}M`;  // 百万
+  return `${prefix}${num.toLocaleString()}`; // 普通数字加千位分隔符
 }
 
 // 辅助函数：格式化成交额显示（保持向后兼容）
@@ -215,9 +214,64 @@ function formatTurnover(value) {
   return formatLargeNumber(value);
 }
 
+// 新函数：获取并渲染市场汇总数据
+async function loadAndRenderSummaryData() {
+  try {
+    console.log('📊 开始获取市场汇总数据...');
+    const response = await fetch('/api/market-summary');
+    if (!response.ok) throw new Error('API request failed');
+    const data = await response.json();
+    console.log('📊 市场汇总数据获取成功:', data);
+
+    // 更新 DOM 元素
+    document.getElementById('total-stocks').textContent = data.totalStocks || '--';
+    document.getElementById('rising-stocks').textContent = data.risingStocks || '--';
+    document.getElementById('falling-stocks').textContent = data.fallingStocks || '--';
+    
+    // 注意：总市值需要进行单位换算，因为数据库存的是百万美元
+    const totalMarketCapFormatted = data.totalMarketCap ? 
+      formatLargeNumber(data.totalMarketCap * 1000000, true) : '--';
+    document.getElementById('total-market-cap').textContent = totalMarketCapFormatted;
+    
+    document.getElementById('hot-stocks').textContent = data.hotStocks || '--';
+    document.getElementById('active-stocks').textContent = data.activeStocks || '--';
+    
+  } catch (error) {
+    console.error('❌ 获取市场汇总数据失败:', error);
+    // 保持默认的 '--' 显示
+  }
+}
+
+// 新函数：获取并渲染市场汇总数据
+async function loadAndRenderSummaryData() {
+  try {
+    const response = await fetch('/api/market-summary');
+    if (!response.ok) throw new Error('API request failed');
+    const data = await response.json();
+
+    // 更新 DOM 元素
+     document.getElementById('summary-total-stocks').textContent = data.totalStocks;
+     document.getElementById('summary-rising-stocks').textContent = data.risingStocks;
+     document.getElementById('summary-falling-stocks').textContent = data.fallingStocks;
+     
+     // 注意：总市值需要进行单位换算，因为数据库存的是百万美元
+     document.getElementById('summary-total-market-cap').textContent = formatLargeNumber(data.totalMarketCap * 1000000, true);
+
+     // 活跃股票
+     document.getElementById('summary-active-stocks').textContent = data.activeStocks;
+
+  } catch (error) {
+    console.error('加载市场汇总数据失败:', error);
+    // 可以选择在这里显示错误提示
+  }
+}
+
 // 当整个页面加载完成后，开始执行我们的脚本
 document.addEventListener('DOMContentLoaded', () => {
   console.log('📈 页面加载完成，开始获取所有趋势榜单数据...');
+  
+  // 并发地加载所有榜单和汇总数据
+  loadAndRenderSummaryData(); // <-- 新增的调用
   TRENDING_LISTS_CONFIG.forEach(loadAndRenderList);
   
   // 为所有"更多"按钮添加事件监听
