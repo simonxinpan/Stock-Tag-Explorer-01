@@ -217,6 +217,7 @@ async function main() {
             
             // 每个批次使用独立事务
             await client.query('BEGIN');
+            console.log(`🔄 Transaction BEGIN for batch ${i/BATCH_SIZE + 1}/${Math.ceil(companiesArray.length/BATCH_SIZE)}`);
             
             try {
                 for (const company of batch) {
