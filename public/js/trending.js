@@ -203,7 +203,7 @@ function formatLargeNumber(value, isCurrency = false) {
   const num = parseFloat(value);
   if (isNaN(num)) return '--';
   const prefix = isCurrency ? '$' : '';
-  if (num >= 1e12) return `${prefix}${(num / 1e12).toFixed(2)}T`; // 万亿
+  if (num >= 1e12) return `${prefix}${(num / 1e12).toFixed(2)}万亿`; // 万亿
   if (num >= 1e9) return `${prefix}${(num / 1e9).toFixed(2)}B`;  // 十亿
   if (num >= 1e6) return `${prefix}${(num / 1e6).toFixed(1)}M`;  // 百万
   return `${prefix}${num.toLocaleString()}`; // 普通数字加千位分隔符
