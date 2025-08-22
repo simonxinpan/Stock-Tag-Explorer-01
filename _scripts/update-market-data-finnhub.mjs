@@ -63,12 +63,13 @@ async function getSingleTickerDataFromFinnhub(ticker, apiKey) {
         
         if (quoteData.c && quoteData.c > 0) {
             return {
-                c: quoteData.c || 0, // 当前价格（收盘价）
-                o: quoteData.o || 0, // 开盘价
-                h: quoteData.h || 0, // 最高价
-                l: quoteData.l || 0, // 最低价
-                v: 0  // Finnhub 实时报价不包含成交量，设为0
-            };
+            c: quoteData.c || 0, // 当前价格（收盘价）
+            o: quoteData.o || 0, // 开盘价
+            h: quoteData.h || 0, // 最高价
+            l: quoteData.l || 0, // 最低价
+            pc: quoteData.pc || 0, // 昨日收盘价
+            v: quoteData.v || 0  // 成交量（如果API提供的话）
+        };
         }
         
         return null;
@@ -116,7 +117,7 @@ async function getFinnhubMarketData(tickers, apiKey, client = null, pool = null)
                 successCount++;
                 
                 if (process.env.DEBUG) {
-                    console.log(`✅ ${ticker}: price=${data.c}, open=${data.o}, high=${data.h}, low=${data.l}`);
+                    console.log(`✅ ${ticker}: price=${data.c}, open=${data.o}, high=${data.h}, low=${data.l}, prev_close=${data.pc}, volume=${data.v}`);
                 }
             } else {
                 failCount++;
@@ -195,7 +196,7 @@ async function main() {
             const sampleData = Array.from(finnhubMarketData.entries()).slice(0, 3);
             console.log('📊 Sample data to be written:');
             sampleData.forEach(([ticker, data]) => {
-                console.log(`   ${ticker}: price=${data.c}, open=${data.o}, high=${data.h}, low=${data.l}`);
+                console.log(`   ${ticker}: price=${data.c}, open=${data.o}, high=${data.h}, low=${data.l}, prev_close=${data.pc}, volume=${data.v}`);
             });
         }
         
@@ -223,13 +224,13 @@ async function main() {
                 for (const company of batch) {
                     const marketData = finnhubMarketData.get(company.ticker);
                     if (marketData && marketData.c > 0) {
-                        // 计算涨跌幅和涨跌额
-                        const changePercent = marketData.o > 0 ? 
-                            ((marketData.c - marketData.o) / marketData.o) * 100 : 0;
-                        const changeAmount = marketData.o > 0 ? 
-                            (marketData.c - marketData.o) : 0;
+                        // 计算涨跌幅和涨跌额（基于昨日收盘价）
+                        const changePercent = marketData.pc > 0 ? 
+                            ((marketData.c - marketData.pc) / marketData.pc) * 100 : 0;
+                        const changeAmount = marketData.pc > 0 ? 
+                            (marketData.c - marketData.pc) : 0;
                         
-                        // 准备SQL语句和参数
+                        // 准备SQL语句和参数 - 添加新字段
                         const sql = `UPDATE stocks SET 
                              last_price = $1, 
                              change_amount = $2,
@@ -239,9 +240,15 @@ async function main() {
                                  WHEN week_52_low IS NULL OR week_52_low = 0 THEN $5
                                  ELSE LEAST(week_52_low, $5)
                              END,
+                             open_price = $6,
+                             high_price = $7,
+                             low_price = $8,
+                             previous_close = $9,
+                             volume = $10,
                              last_updated = NOW() 
-                             WHERE ticker = $6`;
-                        const params = [marketData.c, changeAmount, changePercent, marketData.h, marketData.l, company.ticker];
+                             WHERE ticker = $11`;
+                        const params = [marketData.c, changeAmount, changePercent, marketData.h, marketData.l, 
+                                      marketData.o, marketData.h, marketData.l, marketData.pc, marketData.v, company.ticker];
                         
                         // 日志：打印将要执行的SQL语句和参数
                         if (process.env.DEBUG) {
@@ -266,7 +273,7 @@ async function main() {
                         
                         // 详细日志（仅在DEBUG模式下）
                         if (process.env.DEBUG) {
-                            console.log(`📊 ${company.ticker}: price=${marketData.c}, change=${changeAmount.toFixed(2)} (${changePercent.toFixed(2)}%)`);
+                            console.log(`📊 ${company.ticker}: price=${marketData.c}, change=${changeAmount.toFixed(2)} (${changePercent.toFixed(2)}%), open=${marketData.o}, high=${marketData.h}, low=${marketData.l}, prev_close=${marketData.pc}, volume=${marketData.v}`);
                         }
                     } else {
                         console.warn(`⚠️ No market data for ${company.ticker}: hasData=${!!marketData}, price=${marketData?.c || 'N/A'}`);
