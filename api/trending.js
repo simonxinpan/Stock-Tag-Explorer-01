@@ -50,17 +50,13 @@ module.exports = async function handler(req, res) {
         queryParams = [];
         break;
 
-      case 'high_volume': // 成交额榜 - 按成交额排序前20名
-        query = `
-          SELECT ticker, name_zh, last_price, change_percent, volume,
-                 (CAST(volume AS BIGINT) * last_price) AS turnover
-          FROM stocks 
-          WHERE volume IS NOT NULL AND last_price IS NOT NULL AND volume > 0
-          ORDER BY turnover DESC 
-          LIMIT 20
-        `;
-        queryParams = [];
-        break;
+      case 'high_volume': // 成交额榜 - 数据库无volume字段，返回空数组
+        // 注意：数据库中没有volume字段，此功能已禁用
+        return res.status(200).json({
+          success: true,
+          data: [],
+          message: '成交额数据暂不可用'
+        });
 
       case 'new_highs': // 创年内新高前15名
         query = `
@@ -172,7 +168,7 @@ function generateMockData(type, limit) {
     case 'top_losers':
       sortedStocks.sort((a, b) => a.change_percent - b.change_percent);
       break;
-    case 'high_volume':
+    // case 'high_volume': // 已移除，数据库无volume字段
     case 'new_highs':
     case 'value_picks':
       sortedStocks.sort((a, b) => parseFloat(b.market_cap) - parseFloat(a.market_cap));

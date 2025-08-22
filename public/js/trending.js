@@ -3,7 +3,7 @@
 // 定义我们需要加载的所有榜单
 const TRENDING_LISTS_CONFIG = [
   { id: 'top-gainers-list', type: 'top_gainers' },
-  { id: 'high-volume-list', type: 'high_volume' },
+  // { id: 'high-volume-list', type: 'high_volume' }, // 已移除 - 数据库无volume字段
   { id: 'top-losers-list', type: 'top_losers' },
   { id: 'new-lows-list', type: 'new_lows' }
 ];
@@ -217,48 +217,17 @@ function formatTurnover(value) {
 // 新函数：获取并渲染市场汇总数据
 async function loadAndRenderSummaryData() {
   try {
-    console.log('📊 开始获取市场汇总数据...');
-    const response = await fetch('/api/market-summary');
-    if (!response.ok) throw new Error('API request failed');
-    const data = await response.json();
-    console.log('📊 市场汇总数据获取成功:', data);
-
-    // 更新 DOM 元素
-    document.getElementById('total-stocks').textContent = data.totalStocks || '--';
-    document.getElementById('rising-stocks').textContent = data.risingStocks || '--';
-    document.getElementById('falling-stocks').textContent = data.fallingStocks || '--';
-    
-    // 注意：总市值需要进行单位换算，因为数据库存的是百万美元
-    const totalMarketCapFormatted = data.totalMarketCap ? 
-      formatLargeNumber(data.totalMarketCap * 1000000, true) : '--';
-    document.getElementById('total-market-cap').textContent = totalMarketCapFormatted;
-    
-    document.getElementById('hot-stocks').textContent = data.hotStocks || '--';
-    document.getElementById('active-stocks').textContent = data.activeStocks || '--';
-    
-  } catch (error) {
-    console.error('❌ 获取市场汇总数据失败:', error);
-    // 保持默认的 '--' 显示
-  }
-}
-
-// 新函数：获取并渲染市场汇总数据
-async function loadAndRenderSummaryData() {
-  try {
     const response = await fetch('/api/market-summary');
     if (!response.ok) throw new Error('API request failed');
     const data = await response.json();
 
     // 更新 DOM 元素
-     document.getElementById('summary-total-stocks').textContent = data.totalStocks;
-     document.getElementById('summary-rising-stocks').textContent = data.risingStocks;
-     document.getElementById('summary-falling-stocks').textContent = data.fallingStocks;
+    document.getElementById('summary-total-stocks').textContent = data.totalStocks;
+    document.getElementById('summary-rising-stocks').textContent = data.risingStocks;
+    document.getElementById('summary-falling-stocks').textContent = data.fallingStocks;
      
-     // 注意：总市值需要进行单位换算，因为数据库存的是百万美元
-     document.getElementById('summary-total-market-cap').textContent = formatLargeNumber(data.totalMarketCap * 1000000, true);
-
-     // 活跃股票
-     document.getElementById('summary-active-stocks').textContent = data.activeStocks;
+    // 注意：总市值需要进行单位换算，因为数据库存的是百万美元
+    document.getElementById('summary-total-market-cap').textContent = formatLargeNumber(data.totalMarketCap * 1000000, true);
 
   } catch (error) {
     console.error('加载市场汇总数据失败:', error);
