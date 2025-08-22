@@ -62,13 +62,16 @@ async function getSingleTickerDataFromFinnhub(ticker, apiKey) {
         }
         
         if (quoteData.c && quoteData.c > 0) {
+            // 🔍 调试：打印原始API响应中的volume数据
+            console.log(`🔍 Raw API response for ${ticker} - volume (v):`, quoteData.v, `(type: ${typeof quoteData.v})`);
+            
             return {
             c: quoteData.c || 0, // 当前价格（收盘价）
             o: quoteData.o || 0, // 开盘价
             h: quoteData.h || 0, // 最高价
             l: quoteData.l || 0, // 最低价
             pc: quoteData.pc || 0, // 昨日收盘价
-            v: quoteData.v || 0  // 成交量（如果API提供的话）
+            v: quoteData.v !== undefined && quoteData.v !== null ? quoteData.v : null  // 成交量：只有在有实际数据时才使用，否则为null
         };
         }
         
@@ -247,8 +250,16 @@ async function main() {
                              volume = $10,
                              last_updated = NOW() 
                              WHERE ticker = $11`;
+                        // 🔍 处理volume数据：确保null值正确传递到数据库
+                        const volumeValue = marketData.v !== null && marketData.v !== undefined ? marketData.v : null;
+                        
                         const params = [marketData.c, changeAmount, changePercent, marketData.h, marketData.l, 
-                                      marketData.o, marketData.h, marketData.l, marketData.pc, marketData.v, company.ticker];
+                                      marketData.o, marketData.h, marketData.l, marketData.pc, volumeValue, company.ticker];
+                        
+                        // 🔍 调试日志：追踪volume数据
+                        console.log(`🔍 Ticker: ${company.ticker}, Raw volume from API (marketData.v):`, marketData.v);
+                        console.log(`🔍 Processed volume value:`, volumeValue, `(type: ${typeof volumeValue})`);
+                        console.log(`  Parameters to be executed:`, params);
                         
                         // 日志：打印将要执行的SQL语句和参数
                         if (process.env.DEBUG) {
@@ -273,8 +284,11 @@ async function main() {
                         
                         // 详细日志（仅在DEBUG模式下）
                         if (process.env.DEBUG) {
-                            console.log(`📊 ${company.ticker}: price=${marketData.c}, change=${changeAmount.toFixed(2)} (${changePercent.toFixed(2)}%), open=${marketData.o}, high=${marketData.h}, low=${marketData.l}, prev_close=${marketData.pc}, volume=${marketData.v}`);
+                            console.log(`📊 ${company.ticker}: price=${marketData.c}, change=${changeAmount.toFixed(2)} (${changePercent.toFixed(2)}%), open=${marketData.o}, high=${marketData.h}, low=${marketData.l}, prev_close=${marketData.pc}, volume=${volumeValue}`);
                         }
+                        
+                        // 🔍 额外的volume调试信息
+                        console.log(`📈 Volume update for ${company.ticker}: ${volumeValue} (type: ${typeof volumeValue}) [原始API值: ${marketData.v}]`);
                     } else {
                         console.warn(`⚠️ No market data for ${company.ticker}: hasData=${!!marketData}, price=${marketData?.c || 'N/A'}`);
                     }
