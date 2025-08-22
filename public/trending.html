@@ -6,6 +6,7 @@
     <title>每日趋势榜单 - Stock Tag Explorer</title>
     <link rel="stylesheet" href="./styles/main.css">
     <link rel="stylesheet" href="./styles/trending.css">
+
     <style>
         .tab-content {
             display: none;
@@ -15,11 +16,13 @@
             display: block;
         }
     </style>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+
     <!-- 全局导航栏 -->
     <nav class="global-navbar">
         <div class="navbar-container">
@@ -41,6 +44,7 @@
         </div>
     </nav>
     
+
     <div id="app">
         <!-- 头部 -->
         <header class="header">
@@ -63,6 +67,7 @@
         <!-- 主内容区 -->
         <main class="main">
             <div class="container">
+
                 <!-- 顶部统计数据 - 横排展示 -->
                 <section class="top-stats-horizontal">
                     <div class="stats-container">
@@ -163,6 +168,7 @@
                             </ul>
                             <div class="ranking-footer">
                                 <button class="more-btn" data-type="new_lows">查看更多</button>
+
                             </div>
                         </div>
                     </div>
@@ -173,14 +179,18 @@
         <!-- 页脚 -->
         <footer class="footer">
             <div class="container">
+
                 <p>&copy; 2024 Stock Tag Explorer. 数据来源: Polygon.io & Finnhub</p>
+
             </div>
         </footer>
         
         <!-- Toast 通知 -->
         <div id="toast" class="toast hidden"></div>
+
     </div>
     
     <script src="./js/trending.js"></script>
+
 </body>
 </html>

@@ -1,3 +1,4 @@
+
 // 趋势榜单页面脚本
 class TrendingPage {
     constructor() {
@@ -82,6 +83,7 @@ class TrendingPage {
                     rising: this.generateMockData('rising', 5),
                     decline: this.generateMockData('decline', 5),
                     value: this.generateMockData('value', 5)
+
                 });
             }, 500);
         });
