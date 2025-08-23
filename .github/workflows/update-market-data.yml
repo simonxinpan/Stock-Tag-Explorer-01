@@ -2,7 +2,8 @@ name: Update Market Data (High Frequency)
 
 on:
   schedule:
-    - cron: '*/30 * * * *'  # 每30分钟执行一次，减少并行冲突
+    # 仅在美股交易时段运行（UTC 13:30-20:00，周一至周五）
+    - cron: '30,0 13-19 * * 1-5'  # 每30分钟执行一次，仅交易日交易时段
   workflow_dispatch:  # 允许手动触发
     inputs:
       debug:
@@ -23,6 +24,12 @@ jobs:
   update-market-data:
     runs-on: ubuntu-latest
     timeout-minutes: 12  # 设置超时，防止任务卡死
+    
+    # 添加交易时段检查
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      (github.event_name == 'schedule' && 
+       github.event.schedule == '30,0 13-19 * * 1-5')
     
     steps:
       - name: Checkout repository
