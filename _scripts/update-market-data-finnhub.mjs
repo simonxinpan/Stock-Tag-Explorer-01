@@ -248,17 +248,22 @@ async function main() {
                              low_price = $8,
                              previous_close = $9,
                              volume = $10,
+                             turnover = $11,
                              last_updated = NOW() 
-                             WHERE ticker = $11`;
+                             WHERE ticker = $12`;
                         // 🔍 处理volume数据：确保null值正确传递到数据库
                         const volumeValue = marketData.v !== null && marketData.v !== undefined ? marketData.v : null;
                         
-                        const params = [marketData.c, changeAmount, changePercent, marketData.h, marketData.l, 
-                                      marketData.o, marketData.h, marketData.l, marketData.pc, volumeValue, company.ticker];
+                        // 💰 计算成交额 turnover = volume * last_price
+                        const turnoverValue = volumeValue && marketData.c ? volumeValue * marketData.c : null;
                         
-                        // 🔍 调试日志：追踪volume数据
+                        const params = [marketData.c, changeAmount, changePercent, marketData.h, marketData.l, 
+                                      marketData.o, marketData.h, marketData.l, marketData.pc, volumeValue, turnoverValue, company.ticker];
+                        
+                        // 🔍 调试日志：追踪volume和turnover数据
                         console.log(`🔍 Ticker: ${company.ticker}, Raw volume from API (marketData.v):`, marketData.v);
                         console.log(`🔍 Processed volume value:`, volumeValue, `(type: ${typeof volumeValue})`);
+                        console.log(`💰 Calculated turnover value:`, turnoverValue, `(type: ${typeof turnoverValue})`);
                         console.log(`  Parameters to be executed:`, params);
                         
                         // 日志：打印将要执行的SQL语句和参数
@@ -284,11 +289,12 @@ async function main() {
                         
                         // 详细日志（仅在DEBUG模式下）
                         if (process.env.DEBUG) {
-                            console.log(`📊 ${company.ticker}: price=${marketData.c}, change=${changeAmount.toFixed(2)} (${changePercent.toFixed(2)}%), open=${marketData.o}, high=${marketData.h}, low=${marketData.l}, prev_close=${marketData.pc}, volume=${volumeValue}`);
+                            console.log(`📊 ${company.ticker}: price=${marketData.c}, change=${changeAmount.toFixed(2)} (${changePercent.toFixed(2)}%), open=${marketData.o}, high=${marketData.h}, low=${marketData.l}, prev_close=${marketData.pc}, volume=${volumeValue}, turnover=${turnoverValue}`);
                         }
                         
-                        // 🔍 额外的volume调试信息
+                        // 🔍 额外的volume和turnover调试信息
                         console.log(`📈 Volume update for ${company.ticker}: ${volumeValue} (type: ${typeof volumeValue}) [原始API值: ${marketData.v}]`);
+                        console.log(`💰 Turnover update for ${company.ticker}: ${turnoverValue} (type: ${typeof turnoverValue}) [计算: ${volumeValue} × ${marketData.c}]`);
                     } else {
                         console.warn(`⚠️ No market data for ${company.ticker}: hasData=${!!marketData}, price=${marketData?.c || 'N/A'}`);
                     }

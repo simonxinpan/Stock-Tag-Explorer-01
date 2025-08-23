@@ -42,6 +42,50 @@ async function getFinnhubMetrics(symbol, apiKey) {
     }
 }
 
+// 获取 Finnhub 实时报价数据（用于 market_status 计算）
+async function getFinnhubQuote(symbol, apiKey) {
+    try {
+        const response = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${apiKey}`);
+        const data = await response.json();
+        
+        if (data.error) {
+            console.warn(`⚠️ Finnhub Quote API error for ${symbol}: ${data.error}`);
+            return null;
+        }
+        
+        return data;
+    } catch (error) {
+        console.error(`❌ Error fetching Finnhub quote for ${symbol}:`, error.message);
+        return null;
+    }
+}
+
+// 计算市场状态
+function getMarketStatus(quoteTimestamp) {
+    if (!quoteTimestamp) return 'Unknown';
+    
+    const quoteDate = new Date(quoteTimestamp * 1000); // API返回的是秒，转为毫秒
+    const nowDate = new Date();
+    
+    // 如果数据是12小时前的，基本可以认为是休市
+    if ((nowDate - quoteDate) > 12 * 60 * 60 * 1000) {
+        return 'Closed';
+    }
+
+    // 获取美东时间的小时 (EST is UTC-5, EDT is UTC-4)
+    // 简单起见，我们按 UTC 时间大致匡算
+    const quoteUTCHour = quoteDate.getUTCHours();
+    
+    // 美股常规交易时间大致是 13:30 UTC - 20:00 UTC
+    if (quoteUTCHour >= 13 && quoteUTCHour < 20) {
+        return 'Regular';
+    } else if (quoteUTCHour >= 8 && quoteUTCHour < 13) {
+        return 'Pre-market';
+    } else {
+        return 'Post-market';
+    }
+}
+
 // 应用标签到股票
 async function applyTag(client, stockTicker, tagName) {
     try {
@@ -182,24 +226,43 @@ async function main() {
                     // 获取财务数据
                     const financialData = await getFinnhubMetrics(company.ticker, FINNHUB_API_KEY);
                     
+                    // 添加延迟避免API限制（Finnhub限制60次/分钟）
+                    await new Promise(resolve => setTimeout(resolve, 1100)); // 1.1秒延迟
+                    
+                    // 获取实时报价数据（用于 market_status 计算）
+                    const quoteData = await getFinnhubQuote(company.ticker, FINNHUB_API_KEY);
+                    
                     if (financialData && financialData.metric) {
                         const metrics = financialData.metric;
                         
-                        // 更新财务数据
+                        // 🔍 提取 dividend_yield 数据
+                        const dividendYield = metrics.dividendYieldIndicatedAnnual || metrics.dividendYield || null;
+                        
+                        // 🔍 计算 market_status
+                        const marketStatus = quoteData ? getMarketStatus(quoteData.t) : 'Unknown';
+                        
+                        // 更新财务数据（包含新字段）
                         await client.query(
                             `UPDATE stocks SET 
                              market_cap = $1, 
                              roe_ttm = $2, 
-                             pe_ttm = $3, 
+                             pe_ttm = $3,
+                             dividend_yield = $4,
+                             market_status = $5,
                              last_updated = NOW() 
-                             WHERE ticker = $4`,
+                             WHERE ticker = $6`,
                             [
                                 metrics.marketCapitalization || null,
                                 metrics.roeTTM || null,
                                 metrics.peTTM || null,
+                                dividendYield,
+                                marketStatus,
                                 company.ticker
                             ]
                         );
+                        
+                        // 🔍 调试日志：显示新字段的更新情况
+                        console.log(`💰 ${company.ticker}: dividend_yield=${dividendYield}, market_status=${marketStatus}`);
                         
                         updatedCount++;
                         
