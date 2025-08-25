@@ -375,10 +375,9 @@ async function updateAllFinancials(client, apiKey) {
                 }
                 
                 console.log(`✅ ${stock.ticker} (${updatedCount}/${stocks.length}) - ${logParts.join(', ')}`);
-                } else {
-                    errorCount++;
-                    console.warn(`⚠️ No financial data for ${stock.ticker} (${errorCount} errors so far)`);
-                }
+                
+                // 应用动态标签
+                await calculateAndApplyTags(client, stock);
                 
                 // API限制延迟
                 await new Promise(resolve => setTimeout(resolve, API_DELAY));
