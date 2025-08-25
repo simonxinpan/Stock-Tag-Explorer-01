@@ -162,25 +162,38 @@ async function main() {
                 for (const company of batch) {
                     const marketData = polygonMarketData.get(company.ticker);
                     if (marketData && marketData.c > 0) {
-                        // 计算涨跌幅和涨跌额
-                        const changePercent = marketData.o > 0 ? 
-                            ((marketData.c - marketData.o) / marketData.o) * 100 : 0;
-                        const changeAmount = marketData.o > 0 ? 
-                            (marketData.c - marketData.o) : 0;
+                        // 解析所有需要的数据
+                        const last_price = marketData.c;
+                        const open_price = marketData.o;
+                        const high_price = marketData.h;
+                        const low_price = marketData.l;
+                        const volume = marketData.v || 0; // 确保volume被正确解析
+                        
+                        // 计算衍生数据
+                        const changePercent = open_price > 0 ? 
+                            ((last_price - open_price) / open_price) * 100 : 0;
+                        const changeAmount = open_price > 0 ? 
+                            (last_price - open_price) : 0;
+                        const turnover = volume * last_price; // 计算成交额
                         
                         // 准备SQL语句和参数
                         const sql = `UPDATE stocks SET 
                              last_price = $1, 
                              change_amount = $2,
                              change_percent = $3, 
-                             week_52_high = GREATEST(COALESCE(week_52_high, 0), $4),
+                             open_price = $4,
+                             high_price = $5,
+                             low_price = $6,
+                             volume = $7,
+                             turnover = $8,
+                             week_52_high = GREATEST(COALESCE(week_52_high, 0), $5),
                              week_52_low = CASE 
-                                 WHEN week_52_low IS NULL OR week_52_low = 0 THEN $5
-                                 ELSE LEAST(week_52_low, $5)
+                                 WHEN week_52_low IS NULL OR week_52_low = 0 THEN $6
+                                 ELSE LEAST(week_52_low, $6)
                              END,
                              last_updated = NOW() 
-                             WHERE ticker = $6`;
-                        const params = [marketData.c, changeAmount, changePercent, marketData.h, marketData.l, company.ticker];
+                             WHERE ticker = $9`;
+                        const params = [last_price, changeAmount, changePercent, open_price, high_price, low_price, volume, turnover, company.ticker];
                         
                         // 日志：打印将要执行的SQL语句和参数
                         if (process.env.DEBUG) {

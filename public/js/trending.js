@@ -4,7 +4,9 @@
 const TRENDING_LISTS_CONFIG = [
   { id: 'top-gainers-list', type: 'top_gainers' },
   { id: 'new-highs-list', type: 'new_highs' },
-  // { id: 'high-volume-list', type: 'high_volume' }, // 已移除 - 数据库无volume字段
+  { id: 'top-turnover-list', type: 'top_turnover' },
+  { id: 'top-volatility-list', type: 'top_volatility' },
+  { id: 'top-gap-up-list', type: 'top_gap_up' },
   { id: 'top-losers-list', type: 'top_losers' },
   { id: 'new-lows-list', type: 'new_lows' }
 ];
@@ -28,10 +30,20 @@ function createStockListItemHTML(stock, type, rank) {
   // 根据榜单类型决定显示哪个核心数据
   let mainMetricHTML = '';
   switch (type) {
-    case 'high_volume':
+    case 'top_turnover':
       // 成交额榜显示成交额
       const turnover = stock.turnover ? formatLargeNumber(stock.turnover) : 'N/A';
       mainMetricHTML = `<div class="price">${turnover}</div>`;
+      break;
+    case 'top_volatility':
+      // 振幅榜显示振幅百分比
+      const amplitude = stock.amplitude_percent ? `${Number(stock.amplitude_percent).toFixed(2)}%` : 'N/A';
+      mainMetricHTML = `<div class="price">${amplitude}</div>`;
+      break;
+    case 'top_gap_up':
+      // 高开缺口榜显示缺口百分比
+      const gapPercent = stock.gap_percent ? `${Number(stock.gap_percent).toFixed(2)}%` : 'N/A';
+      mainMetricHTML = `<div class="price">${gapPercent}</div>`;
       break;
     case 'top_losers':
       // 跌幅榜显示价格和跌幅
@@ -86,6 +98,26 @@ function formatMarketCap(marketCap) {
     return `$${(cap / 1000000).toFixed(2)}M`;
   } else {
     return `$${cap.toFixed(0)}`;
+  }
+}
+
+/**
+ * 格式化大数字（用于成交量、成交额等）
+ * @param {string|number} value - 需要格式化的数值
+ * @returns {string} - 格式化后的字符串
+ */
+function formatLargeNumber(value) {
+  if (!value || value === 0) return 'N/A';
+  
+  const num = parseFloat(value);
+  if (num >= 1000000000) {
+    return `${(num / 1000000000).toFixed(2)}B`;
+  } else if (num >= 1000000) {
+    return `${(num / 1000000).toFixed(2)}M`;
+  } else if (num >= 1000) {
+    return `${(num / 1000).toFixed(2)}K`;
+  } else {
+    return num.toFixed(0);
   }
 }
 
