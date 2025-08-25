@@ -17,10 +17,10 @@ jobs:
           echo "📋 Resetting task queue for all stocks..."
           
           # 调用ETL启动API重置任务队列
-          response=$(curl -s -w "\n%{http_code}" -X POST \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${{ secrets.ETL_API_TOKEN }}" \
-            "${{ secrets.VERCEL_DOMAIN }}/api/etl/start")
+           response=$(curl -s -w "\n%{http_code}" -X POST \
+             -H "Content-Type: application/json" \
+             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+             "https://${{ secrets.VERCEL_DOMAIN }}/api/etl/start")
           
           # 分离响应体和状态码
           http_code=$(echo "$response" | tail -n1)

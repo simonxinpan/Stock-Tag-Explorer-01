@@ -18,8 +18,8 @@ jobs:
           # 调用Vercel部署的ETL批处理API
           response=$(curl -s -w "\n%{http_code}" -X POST \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${{ secrets.ETL_API_TOKEN }}" \
-            "${{ secrets.VERCEL_DOMAIN }}/api/etl/process-batch")
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://${{ secrets.VERCEL_DOMAIN }}/api/etl/process-batch")
           
           # 分离响应体和状态码
           http_code=$(echo "$response" | tail -n1)

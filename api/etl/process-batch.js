@@ -73,6 +73,14 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
     
+    // 验证授权令牌
+    const authHeader = req.headers.authorization;
+    const expectedToken = `Bearer ${process.env.CRON_SECRET}`;
+    
+    if (!authHeader || authHeader !== expectedToken) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
     const client = await pool.connect();
     const BATCH_SIZE = 70;
     const API_DELAY = 200; // 200ms延迟
