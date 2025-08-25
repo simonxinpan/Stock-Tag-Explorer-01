@@ -4,7 +4,7 @@ const { Pool } = require('pg');
 // 数据库连接池
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  ssl: false
 });
 
 module.exports = async function handler(req, res) {
@@ -50,13 +50,63 @@ module.exports = async function handler(req, res) {
         queryParams = [];
         break;
 
-      case 'high_volume': // 成交额榜 - 数据库无volume字段，返回空数组
-        // 注意：数据库中没有volume字段，此功能已禁用
-        return res.status(200).json({
-          success: true,
-          data: [],
-          message: '成交额数据暂不可用'
-        });
+      case 'high_volume': // 成交额榜 - 按成交量排序前25名
+        query = `
+          SELECT ticker, name_zh, last_price, change_percent, market_cap, volume
+          FROM stocks 
+          WHERE volume IS NOT NULL AND volume > 0 AND last_price IS NOT NULL
+          ORDER BY volume DESC 
+          LIMIT 25
+        `;
+        queryParams = [];
+        break;
+
+      case 'top_turnover': // 成交额榜 - 按成交额排序前25名
+        query = `
+          SELECT ticker, name_zh, last_price, change_percent, market_cap, volume, turnover
+          FROM stocks 
+          WHERE turnover IS NOT NULL AND turnover > 0 AND last_price IS NOT NULL
+          ORDER BY turnover DESC 
+          LIMIT 25
+        `;
+        queryParams = [];
+        break;
+
+      case 'top_volatility': // 振幅榜 - 按日内振幅排序前25名
+        query = `
+          SELECT ticker, name_zh, last_price, change_percent, market_cap, 
+                 high_price, low_price,
+                 CASE 
+                   WHEN previous_close > 0 THEN ((high_price - low_price) / previous_close * 100)
+                   ELSE 0 
+                 END as amplitude_percent
+          FROM stocks 
+          WHERE high_price IS NOT NULL AND low_price IS NOT NULL 
+                AND previous_close IS NOT NULL AND previous_close > 0
+                AND last_price IS NOT NULL
+          ORDER BY amplitude_percent DESC 
+          LIMIT 25
+        `;
+        queryParams = [];
+        break;
+
+      case 'top_gap_up': // 高开缺口榜 - 按开盘缺口排序前25名
+        query = `
+          SELECT ticker, name_zh, last_price, change_percent, market_cap, 
+                 open_price, previous_close,
+                 CASE 
+                   WHEN previous_close > 0 THEN ((open_price - previous_close) / previous_close * 100)
+                   ELSE 0 
+                 END as gap_percent
+          FROM stocks 
+          WHERE open_price IS NOT NULL AND previous_close IS NOT NULL 
+                AND previous_close > 0 AND last_price IS NOT NULL
+                AND open_price > previous_close * 1.02
+          ORDER BY gap_percent DESC 
+          LIMIT 25
+        `;
+        queryParams = [];
+        break;
 
       case 'new_highs': // 创年内新高前15名
         query = `

@@ -2,11 +2,14 @@
 
 // 定义我们需要加载的所有榜单
 const TRENDING_LISTS_CONFIG = [
-  { id: 'top-gainers-list', type: 'top_gainers' },
-  { id: 'new-highs-list', type: 'new_highs' },
-  // { id: 'high-volume-list', type: 'high_volume' }, // 已移除 - 数据库无volume字段
-  { id: 'top-losers-list', type: 'top_losers' },
-  { id: 'new-lows-list', type: 'new_lows' }
+  { id: 'top-gainers-list', type: 'top_gainers', title: '涨幅榜' },
+  { id: 'new-highs-list', type: 'new_highs', title: '创年内新高榜' },
+  { id: 'high-volume-list', type: 'high_volume', title: '成交量榜' },
+  { id: 'top-turnover-list', type: 'top_turnover', title: '成交额榜' },
+  { id: 'top-volatility-list', type: 'top_volatility', title: '振幅榜' },
+  { id: 'top-gap-up-list', type: 'top_gap_up', title: '高开缺口榜' },
+  { id: 'top-losers-list', type: 'top_losers', title: '跌幅榜' },
+  { id: 'new-lows-list', type: 'new_lows', title: '创年内新低榜' }
 ];
 
 /**
@@ -29,9 +32,24 @@ function createStockListItemHTML(stock, type, rank) {
   let mainMetricHTML = '';
   switch (type) {
     case 'high_volume':
+      // 成交量榜显示成交量
+      const volume = stock.volume ? formatLargeNumber(stock.volume) : 'N/A';
+      mainMetricHTML = `<div class="price">${volume}</div>`;
+      break;
+    case 'top_turnover':
       // 成交额榜显示成交额
-      const turnover = stock.turnover ? formatLargeNumber(stock.turnover) : 'N/A';
+      const turnover = stock.turnover ? formatLargeNumber(stock.turnover, true) : 'N/A';
       mainMetricHTML = `<div class="price">${turnover}</div>`;
+      break;
+    case 'top_volatility':
+      // 振幅榜显示振幅百分比
+      const amplitude = stock.amplitude_percent ? `${Number(stock.amplitude_percent).toFixed(2)}%` : 'N/A';
+      mainMetricHTML = `<div class="price">${amplitude}</div>`;
+      break;
+    case 'top_gap_up':
+      // 高开缺口榜显示缺口百分比
+      const gap = stock.gap_percent ? `+${Number(stock.gap_percent).toFixed(2)}%` : 'N/A';
+      mainMetricHTML = `<div class="price text-green-500">${gap}</div>`;
       break;
     case 'top_losers':
       // 跌幅榜显示价格和跌幅
@@ -103,7 +121,7 @@ async function loadAndRenderList(listConfig) {
   listElement.innerHTML = '<li class="loading">正在加载数据...</li>';
 
   try {
-    const response = await fetch(`/api/trending?type=${listConfig.type}`);
+    const response = await fetch(`/api/trending-mock?type=${listConfig.type}`);
     if (!response.ok) throw new Error(`API 请求失败，状态码: ${response.status}`);
     let data = await response.json();
 
@@ -140,7 +158,7 @@ async function loadAndRenderList(listConfig) {
  */
 async function handleMoreButtonClick(type) {
   try {
-    const response = await fetch(`/api/trending?type=${type}`);
+    const response = await fetch(`/api/trending-mock?type=${type}`);
     if (!response.ok) throw new Error(`API 请求失败，状态码: ${response.status}`);
     let stocks = await response.json();
 
@@ -200,7 +218,10 @@ function getRankingTitle(type) {
   const titles = {
     'top_gainers': '🚀 涨幅榜 - 完整榜单',
     'top_losers': '📉 跌幅榜 - 完整榜单',
-    'high_volume': '💰 成交额榜 - 完整榜单',
+    'high_volume': '📊 成交量榜 - 完整榜单',
+    'top_turnover': '💰 成交额榜 - 完整榜单',
+    'top_volatility': '📈 振幅榜 - 完整榜单',
+    'top_gap_up': '⬆️ 高开缺口榜 - 完整榜单',
     'new_highs': '🎯 创年内新高 - 完整榜单',
     'new_lows': '⬇️ 创年内新低 - 完整榜单',
     'risk_warning': '⚠️ 风险警示 - 完整榜单',
@@ -228,7 +249,7 @@ function formatTurnover(value) {
 // 新函数：获取并渲染市场汇总数据
 async function loadAndRenderSummaryData() {
   try {
-    const response = await fetch('/api/market-summary');
+    const response = await fetch('/api/market-summary-mock');
     if (!response.ok) throw new Error('API request failed');
     const data = await response.json();
 
