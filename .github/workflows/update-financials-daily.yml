@@ -1,4 +1,4 @@
-name: Update Financials & Dynamic Tags (Daily)
+name: ETL Daily Starter (Reset Task Queue)
 
 on:
   schedule:
@@ -6,33 +6,50 @@ on:
   workflow_dispatch:  # 允许手动触发
 
 jobs:
-  update-financials-and-tags:
+  start-daily-etl:
     runs-on: ubuntu-latest
-    timeout-minutes: 240  # 4小时超时，处理所有股票的财务数据和标签计算
+    timeout-minutes: 5  # 5分钟超时，只是重置任务队列
     
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
+      - name: Reset ETL Task Queue
+        run: |
+          echo "🔄 Starting daily ETL process at $(date)"
+          echo "📋 Resetting task queue for all stocks..."
           
-      - name: Install dependencies
-        run: npm ci
-        
-      - name: Run daily financials and tags update
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
-          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
-          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
-        run: node _scripts/update-financials-daily.mjs
+          # 调用ETL启动API重置任务队列
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.ETL_API_TOKEN }}" \
+            "${{ secrets.VERCEL_DOMAIN }}/api/etl/start")
+          
+          # 分离响应体和状态码
+          http_code=$(echo "$response" | tail -n1)
+          response_body=$(echo "$response" | head -n -1)
+          
+          echo "📊 API Response (HTTP $http_code):"
+          echo "$response_body" | jq '.' 2>/dev/null || echo "$response_body"
+          
+          # 检查HTTP状态码
+          if [ "$http_code" -eq 200 ]; then
+            echo "✅ ETL task queue reset successfully"
+            
+            # 解析响应获取重置统计
+            reset_count=$(echo "$response_body" | jq -r '.resetCount // "N/A"')
+            estimated_hours=$(echo "$response_body" | jq -r '.estimatedCompletionHours // "N/A"')
+            
+            echo "📈 Reset Stats:"
+            echo "  - Stocks reset: $reset_count"
+            echo "  - Estimated completion: $estimated_hours hours"
+            echo "⚡ ETL batch processors will handle the rest every 15 minutes"
+          else
+            echo "❌ ETL task queue reset failed with HTTP $http_code"
+            echo "Response: $response_body"
+            exit 1
+          fi
         
       - name: Report completion
         if: always()
         run: |
-          echo "Daily financials and tags update completed at $(date)"
+          echo "📋 Daily ETL starter completed at $(date)"
           echo "Status: ${{ job.status }}"
+          echo "🚀 ETL batch processors (every 15min) will now handle data updates"

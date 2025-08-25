@@ -1,0 +1,69 @@
+name: ETL Batch Processor (Every 15 minutes)
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'  # 每15分钟执行一次
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  etl-batch-process:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10  # 10分钟超时，处理70只股票应该足够
+    
+    steps:
+      - name: Call ETL Batch Processor API
+        run: |
+          echo "🚀 Starting ETL batch processing at $(date)"
+          
+          # 调用Vercel部署的ETL批处理API
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.ETL_API_TOKEN }}" \
+            "${{ secrets.VERCEL_DOMAIN }}/api/etl/process-batch")
+          
+          # 分离响应体和状态码
+          http_code=$(echo "$response" | tail -n1)
+          response_body=$(echo "$response" | head -n -1)
+          
+          echo "📊 API Response (HTTP $http_code):"
+          echo "$response_body" | jq '.' 2>/dev/null || echo "$response_body"
+          
+          # 检查HTTP状态码
+          if [ "$http_code" -eq 200 ]; then
+            echo "✅ ETL batch processing completed successfully"
+            
+            # 解析响应获取处理统计
+            processed=$(echo "$response_body" | jq -r '.processed // "N/A"')
+            remaining=$(echo "$response_body" | jq -r '.remaining // "N/A"')
+            estimated_minutes=$(echo "$response_body" | jq -r '.estimatedMinutesLeft // "N/A"')
+            
+            echo "📈 Processing Stats:"
+            echo "  - Processed: $processed stocks"
+            echo "  - Remaining: $remaining stocks"
+            echo "  - Estimated completion: $estimated_minutes minutes"
+            
+            # 如果还有剩余股票，输出进度信息
+            if [ "$remaining" != "0" ] && [ "$remaining" != "N/A" ]; then
+              echo "⏳ ETL process ongoing, next batch in 15 minutes"
+            else
+              echo "🎉 All stocks processed! ETL cycle complete."
+            fi
+          else
+            echo "❌ ETL batch processing failed with HTTP $http_code"
+            echo "Response: $response_body"
+            exit 1
+          fi
+          
+      - name: Report completion
+        if: always()
+        run: |
+          echo "📋 ETL batch job completed at $(date)"
+          echo "Status: ${{ job.status }}"
+          
+          # 如果失败，输出调试信息
+          if [ "${{ job.status }}" != "success" ]; then
+            echo "🔍 Debug Info:"
+            echo "  - VERCEL_DOMAIN: ${{ secrets.VERCEL_DOMAIN }}"
+            echo "  - Workflow: ${{ github.workflow }}"
+            echo "  - Run ID: ${{ github.run_id }}"
+          fi
