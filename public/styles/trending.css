@@ -996,6 +996,16 @@
     background: rgba(255, 255, 255, 0.8);
 }
 
+/* 🆕 新榜单辅助指标样式 */
+.metric-small {
+    font-size: 0.7rem;
+    color: #64748b;
+    font-weight: 500;
+    margin-top: 0.1rem;
+    line-height: 1.2;
+    opacity: 0.8;
+}
+
 .ranking-list-mini {
     list-style: none;
     padding: 0;

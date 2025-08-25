@@ -37,7 +37,16 @@ const server = createServer(async (req, res) => {
     const apiPath = join(__dirname, 'api', `${apiName}.js`);
     
     try {
-      const apiHandler = importAPI(apiPath);
+      // 🔧 临时使用模拟数据API
+      let apiHandler;
+      if (apiPath === './api/trending.js') {
+        apiHandler = importAPI('./api/trending-mock.js');
+      } else if (apiPath === './api/market-summary.js') {
+        apiHandler = importAPI('./api/market-summary-mock.js');
+      } else {
+        apiHandler = importAPI(apiPath);
+      }
+      
       if (apiHandler) {
         // 创建模拟的 Vercel 请求/响应对象
         const mockReq = {

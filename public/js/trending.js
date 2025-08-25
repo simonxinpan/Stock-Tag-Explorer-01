@@ -8,7 +8,14 @@ const TRENDING_LISTS_CONFIG = [
   { id: 'top-volatility-list', type: 'top_volatility' },
   { id: 'top-gap-up-list', type: 'top_gap_up' },
   { id: 'top-losers-list', type: 'top_losers' },
-  { id: 'new-lows-list', type: 'new_lows' }
+  { id: 'new-lows-list', type: 'new_lows' },
+  // 🆕 基于Polygon API数据的新榜单
+  { id: 'institutional-focus-list', type: 'institutional_focus' },
+  { id: 'retail-hot-list', type: 'retail_hot' },
+  { id: 'smart-money-list', type: 'smart_money' },
+  { id: 'high-liquidity-list', type: 'high_liquidity' },
+  { id: 'unusual-activity-list', type: 'unusual_activity' },
+  { id: 'momentum-stocks-list', type: 'momentum_stocks' }
 ];
 
 /**
@@ -58,6 +65,43 @@ function createStockListItemHTML(stock, type, rank) {
       // 新高榜显示52周最高价
       const weekHigh = stock.week_52_high ? `$${Number(stock.week_52_high).toFixed(2)}` : 'N/A';
       mainMetricHTML = `<div class="price">${weekHigh}</div>`;
+      break;
+    // 🆕 基于Polygon API数据的新榜单
+    case 'institutional_focus':
+      // 机构关注榜显示成交额和VWAP偏离度
+      const instTurnover = stock.turnover ? formatLargeNumber(stock.turnover) : 'N/A';
+      const vwapPercent = stock.price_vs_vwap_percent ? `${Number(stock.price_vs_vwap_percent).toFixed(2)}%` : 'N/A';
+      mainMetricHTML = `<div class="price">${instTurnover}</div><div class="metric-small">vs VWAP: ${vwapPercent}</div>`;
+      break;
+    case 'retail_hot':
+      // 散户热门榜显示交易笔数和每百万股交易笔数
+      const tradeCount = stock.trade_count ? formatLargeNumber(stock.trade_count) : 'N/A';
+      const tradesPerMillion = stock.trades_per_million_shares ? Number(stock.trades_per_million_shares).toFixed(1) : 'N/A';
+      mainMetricHTML = `<div class="price">${tradeCount}笔</div><div class="metric-small">${tradesPerMillion}/M股</div>`;
+      break;
+    case 'smart_money':
+      // 主力动向榜显示VWAP偏离度和成交额
+      const smartVwapPercent = stock.price_vs_vwap_percent ? `+${Number(stock.price_vs_vwap_percent).toFixed(2)}%` : 'N/A';
+      const smartTurnover = stock.turnover ? formatLargeNumber(stock.turnover) : 'N/A';
+      mainMetricHTML = `<div class="price">${smartVwapPercent}</div><div class="metric-small">${smartTurnover}</div>`;
+      break;
+    case 'high_liquidity':
+      // 高流动性榜显示成交量和换手率
+      const volume = stock.volume ? formatLargeNumber(stock.volume) : 'N/A';
+      const turnoverRate = stock.turnover_rate_percent ? `${Number(stock.turnover_rate_percent).toFixed(2)}%` : 'N/A';
+      mainMetricHTML = `<div class="price">${volume}</div><div class="metric-small">换手率: ${turnoverRate}</div>`;
+      break;
+    case 'unusual_activity':
+      // 异动榜显示交易笔数和异常指标
+      const unusualTrades = stock.trade_count ? formatLargeNumber(stock.trade_count) : 'N/A';
+      const unusualRatio = stock.trades_per_million_shares ? Number(stock.trades_per_million_shares).toFixed(1) : 'N/A';
+      mainMetricHTML = `<div class="price">${unusualTrades}笔</div><div class="metric-small">异动指数: ${unusualRatio}</div>`;
+      break;
+    case 'momentum_stocks':
+      // 动量榜显示动量评分和成交量
+      const momentumScore = stock.momentum_score ? Number(stock.momentum_score).toFixed(2) : 'N/A';
+      const momentumVolume = stock.volume ? formatLargeNumber(stock.volume) : 'N/A';
+      mainMetricHTML = `<div class="price">评分: ${momentumScore}</div><div class="metric-small">${momentumVolume}</div>`;
       break;
     default: // 涨幅榜等默认显示价格和涨跌幅
       mainMetricHTML = `<div class="price">$${price.toFixed(2)}</div>`;
@@ -236,7 +280,14 @@ function getRankingTitle(type) {
     'new_highs': '🎯 创年内新高 - 完整榜单',
     'new_lows': '⬇️ 创年内新低 - 完整榜单',
     'risk_warning': '⚠️ 风险警示 - 完整榜单',
-    'value_picks': '💎 特色价值 - 完整榜单'
+    'value_picks': '💎 特色价值 - 完整榜单',
+    // 🆕 基于Polygon API数据的新榜单
+    'institutional_focus': '🏛️ 机构关注榜 - 完整榜单',
+    'retail_hot': '👥 散户热门榜 - 完整榜单',
+    'smart_money': '🎯 主力动向榜 - 完整榜单',
+    'high_liquidity': '💧 高流动性榜 - 完整榜单',
+    'unusual_activity': '⚡ 异动榜 - 完整榜单',
+    'momentum_stocks': '🚀 动量榜 - 完整榜单'
   };
   return titles[type] || '榜单详情';
 }

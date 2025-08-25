@@ -4,6 +4,7 @@
 
 import { Pool } from 'pg';
 import 'dotenv/config';
+import { getPreviousDayAggs, getBatchPreviousDayAggs } from './polygon-api.mjs';
 
 const pool = new Pool({ 
     connectionString: process.env.NEON_DATABASE_URL || process.env.DATABASE_URL, 
@@ -119,7 +120,7 @@ async function applyTag(client, stockTicker, tagName) {
     }
 }
 
-// 计算并应用动态标签
+// 计算并应用动态标签（增强版，包含Polygon数据）
 async function calculateAndApplyTags(client, stock) {
     const tags = [];
     
@@ -167,15 +168,76 @@ async function calculateAndApplyTags(client, stock) {
         }
     }
     
+    // 🆕 基于VWAP的主力动向标签
+    if (stock.vwap && stock.last_price) {
+        const priceVsVwap = (stock.last_price - stock.vwap) / stock.vwap;
+        if (priceVsVwap > 0.02) { // 价格高于VWAP 2%以上
+            tags.push('主力拉升');
+        } else if (priceVsVwap < -0.02) { // 价格低于VWAP 2%以上
+            tags.push('主力出货');
+        } else {
+            tags.push('价格平衡');
+        }
+    }
+    
+    // 🆕 基于交易笔数的活跃度标签
+    if (stock.trade_count) {
+        if (stock.trade_count >= 100000) { // >= 10万笔
+            tags.push('超高活跃');
+        } else if (stock.trade_count >= 50000) { // >= 5万笔
+            tags.push('高活跃');
+        } else if (stock.trade_count >= 10000) { // >= 1万笔
+            tags.push('中等活跃');
+        } else {
+            tags.push('低活跃');
+        }
+    }
+    
+    // 🆕 基于成交量的流动性标签
+    if (stock.volume) {
+        if (stock.volume >= 50000000) { // >= 5000万股
+            tags.push('超高流动性');
+        } else if (stock.volume >= 10000000) { // >= 1000万股
+            tags.push('高流动性');
+        } else if (stock.volume >= 1000000) { // >= 100万股
+            tags.push('中等流动性');
+        } else {
+            tags.push('低流动性');
+        }
+    }
+    
+    // 🆕 基于成交额的资金关注度标签
+    if (stock.turnover) {
+        if (stock.turnover >= 1000000000) { // >= 10亿美元
+            tags.push('机构重仓');
+        } else if (stock.turnover >= 100000000) { // >= 1亿美元
+            tags.push('资金关注');
+        } else if (stock.turnover >= 10000000) { // >= 1000万美元
+            tags.push('散户热门');
+        }
+    }
+    
+    // 🆕 基于价格波动的风险标签
+    if (stock.high_price && stock.low_price && stock.last_price) {
+        const dailyRange = (stock.high_price - stock.low_price) / stock.last_price;
+        if (dailyRange >= 0.10) { // >= 10%
+            tags.push('高波动');
+        } else if (dailyRange >= 0.05) { // >= 5%
+            tags.push('中等波动');
+        } else {
+            tags.push('低波动');
+        }
+    }
+    
     // 应用所有标签
     for (const tagName of tags) {
         await applyTag(client, stock.ticker, tagName);
     }
 }
 
-// 更新所有股票的财务数据
+// 更新所有股票的财务数据（Finnhub + Polygon混合策略）
 async function updateAllFinancials(client, apiKey) {
-    console.log("📊 Starting comprehensive financial data update...");
+    console.log("📊 Starting comprehensive financial data update (Finnhub + Polygon)...");
     
     // 获取所有股票
     const { rows: stocks } = await client.query('SELECT ticker FROM stocks ORDER BY ticker');
@@ -185,6 +247,8 @@ async function updateAllFinancials(client, apiKey) {
     const API_DELAY = 1200; // 1.2秒延迟，避免API限制
     let updatedCount = 0;
     let errorCount = 0;
+    let polygonSuccessCount = 0;
+    let finnhubSuccessCount = 0;
     
     for (let i = 0; i < stocks.length; i += BATCH_SIZE) {
         const batch = stocks.slice(i, i + BATCH_SIZE);
@@ -192,49 +256,125 @@ async function updateAllFinancials(client, apiKey) {
         
         for (const stock of batch) {
             try {
-                // 获取财务指标
+                // 1. 获取Polygon日线数据（优先）
+                const polygonData = await getPreviousDayAggs(stock.ticker);
+                
+                // 2. 获取Finnhub财务指标
                 const financialData = await getFinnhubMetrics(stock.ticker, apiKey);
                 
-                // 获取实时报价（用于dividend_yield和market_status）
+                // 3. 获取Finnhub实时报价（用于dividend_yield和market_status）
                 const quoteData = await getFinnhubQuote(stock.ticker, apiKey);
                 
+                // 准备更新数据
+                let updateData = {
+                    market_cap: null,
+                    roe_ttm: null,
+                    pe_ttm: null,
+                    dividend_yield: null,
+                    market_status: 'Unknown',
+                    // Polygon新字段
+                    open_price: null,
+                    high_price: null,
+                    low_price: null,
+                    last_price: null,
+                    volume: null,
+                    vwap: null,
+                    trade_count: null,
+                    turnover: null,
+                    previous_close: null
+                };
+                
+                // 处理Polygon数据
+                if (polygonData) {
+                    updateData.open_price = polygonData.open_price;
+                    updateData.high_price = polygonData.high_price;
+                    updateData.low_price = polygonData.low_price;
+                    updateData.last_price = polygonData.close_price;
+                    updateData.volume = polygonData.volume;
+                    updateData.vwap = polygonData.vwap;
+                    updateData.trade_count = polygonData.trade_count;
+                    updateData.turnover = polygonData.turnover;
+                    updateData.previous_close = polygonData.close_price; // 前一日收盘价
+                    polygonSuccessCount++;
+                }
+                
+                // 处理Finnhub财务数据
                 if (financialData && financialData.metric) {
                     const metrics = financialData.metric;
+                    updateData.market_cap = metrics.marketCapitalization || null;
+                    updateData.roe_ttm = metrics.roeTTM || null;
+                    updateData.pe_ttm = metrics.peTTM || null;
                     
-                    // 计算dividend_yield（如果有股息数据）
-                    let dividendYield = null;
+                    // 计算dividend_yield
                     if (metrics.dividendYieldIndicatedAnnual) {
-                        dividendYield = metrics.dividendYieldIndicatedAnnual / 100; // 转换为小数
+                        updateData.dividend_yield = metrics.dividendYieldIndicatedAnnual / 100;
                     }
-                    
-                    // 计算market_status
-                    let marketStatus = 'Unknown';
-                    if (quoteData && quoteData.t) {
-                        marketStatus = getMarketStatus(quoteData.t);
+                    finnhubSuccessCount++;
+                }
+                
+                // 处理Finnhub实时报价数据
+                if (quoteData && quoteData.t) {
+                    updateData.market_status = getMarketStatus(quoteData.t);
+                    // 如果Polygon没有价格数据，使用Finnhub的
+                    if (!updateData.last_price && quoteData.c) {
+                        updateData.last_price = quoteData.c;
                     }
+                }
+                
+                // 更新数据库
+                await client.query(
+                    `UPDATE stocks SET 
+                     market_cap = $1, 
+                     roe_ttm = $2, 
+                     pe_ttm = $3,
+                     dividend_yield = $4,
+                     market_status = $5,
+                     open_price = $6,
+                     high_price = $7,
+                     low_price = $8,
+                     last_price = $9,
+                     volume = $10,
+                     vwap = $11,
+                     trade_count = $12,
+                     turnover = $13,
+                     previous_close = $14,
+                     last_updated = NOW() 
+                     WHERE ticker = $15`,
+                    [
+                        updateData.market_cap,
+                        updateData.roe_ttm,
+                        updateData.pe_ttm,
+                        updateData.dividend_yield,
+                        updateData.market_status,
+                        updateData.open_price,
+                        updateData.high_price,
+                        updateData.low_price,
+                        updateData.last_price,
+                        updateData.volume,
+                        updateData.vwap,
+                        updateData.trade_count,
+                        updateData.turnover,
+                        updateData.previous_close,
+                        stock.ticker
+                    ]
+                );
                     
-                    // 更新数据库
-                    await client.query(
-                        `UPDATE stocks SET 
-                         market_cap = $1, 
-                         roe_ttm = $2, 
-                         pe_ttm = $3,
-                         dividend_yield = $4,
-                         market_status = $5,
-                         last_updated = NOW() 
-                         WHERE ticker = $6`,
-                        [
-                            metrics.marketCapitalization || null,
-                            metrics.roeTTM || null,
-                            metrics.peTTM || null,
-                            dividendYield,
-                            marketStatus,
-                            stock.ticker
-                        ]
-                    );
-                    
-                    updatedCount++;
-                    console.log(`✅ Updated ${stock.ticker} (${updatedCount}/${stocks.length}) - MC: ${metrics.marketCapitalization ? '$' + (metrics.marketCapitalization/1e9).toFixed(1) + 'B' : 'N/A'}, PE: ${metrics.peTTM || 'N/A'}, ROE: ${metrics.roeTTM ? (metrics.roeTTM*100).toFixed(1) + '%' : 'N/A'}`);
+                updatedCount++;
+                
+                // 构建详细日志
+                const logParts = [];
+                if (polygonData) {
+                    logParts.push(`📊 VWAP: $${polygonData.vwap?.toFixed(2) || 'N/A'}`);
+                    logParts.push(`📈 Vol: ${polygonData.volume ? (polygonData.volume/1e6).toFixed(1) + 'M' : 'N/A'}`);
+                    logParts.push(`🔢 Trades: ${polygonData.trade_count || 'N/A'}`);
+                }
+                if (financialData?.metric) {
+                    const mc = financialData.metric.marketCapitalization;
+                    logParts.push(`💰 MC: ${mc ? '$' + (mc/1e9).toFixed(1) + 'B' : 'N/A'}`);
+                    logParts.push(`📊 PE: ${financialData.metric.peTTM || 'N/A'}`);
+                }
+                
+                console.log(`✅ ${stock.ticker} (${updatedCount}/${stocks.length}) - ${logParts.join(', ')}`);
                 } else {
                     errorCount++;
                     console.warn(`⚠️ No financial data for ${stock.ticker} (${errorCount} errors so far)`);
@@ -250,7 +390,11 @@ async function updateAllFinancials(client, apiKey) {
         }
     }
     
-    console.log(`\n📊 Financial update completed: ${updatedCount} updated, ${errorCount} errors`);
+    console.log(`\n📊 Financial update completed:`);
+    console.log(`   ✅ Total updated: ${updatedCount}/${stocks.length}`);
+    console.log(`   📊 Polygon success: ${polygonSuccessCount}/${stocks.length} (${(polygonSuccessCount/stocks.length*100).toFixed(1)}%)`);
+    console.log(`   💰 Finnhub success: ${finnhubSuccessCount}/${stocks.length} (${(finnhubSuccessCount/stocks.length*100).toFixed(1)}%)`);
+    console.log(`   ❌ Errors: ${errorCount}`);
     return updatedCount;
 }
 
@@ -262,9 +406,12 @@ async function recalculateAllTags(client) {
     await client.query('DELETE FROM stock_tags');
     console.log("🧹 Cleared existing dynamic tags");
     
-    // 获取所有股票的最新财务数据
+    // 获取所有股票的最新财务数据（包含Polygon字段）
     const { rows: stocks } = await client.query(
-        'SELECT ticker, market_cap, roe_ttm, pe_ttm, dividend_yield FROM stocks ORDER BY ticker'
+        `SELECT ticker, market_cap, roe_ttm, pe_ttm, dividend_yield, 
+                vwap, last_price, trade_count, volume, turnover, 
+                high_price, low_price 
+         FROM stocks ORDER BY ticker`
     );
     
     console.log(`📋 Recalculating tags for ${stocks.length} stocks...`);

@@ -141,6 +141,108 @@ module.exports = async function handler(req, res) {
         queryParams = [];
         break;
 
+      // 🆕 基于Polygon API数据的新榜单
+      case 'institutional_focus': // 机构关注榜 - 按VWAP排序，反映机构资金流向
+        query = `
+          SELECT ticker, name_zh, last_price, change_percent, market_cap, 
+                 vwap, turnover, trade_count,
+                 CASE 
+                   WHEN vwap > 0 THEN ((last_price - vwap) / vwap) * 100
+                   ELSE 0
+                 END AS price_vs_vwap_percent
+          FROM stocks 
+          WHERE vwap IS NOT NULL AND vwap > 0 AND turnover IS NOT NULL 
+                AND turnover >= 100000000
+          ORDER BY turnover DESC, vwap DESC
+          LIMIT 25
+        `;
+        queryParams = [];
+        break;
+
+      case 'retail_hot': // 散户热门榜 - 按交易笔数排序
+        query = `
+          SELECT ticker, name_zh, last_price, change_percent, market_cap, 
+                 trade_count, volume, turnover,
+                 CASE 
+                   WHEN volume > 0 THEN trade_count::float / (volume / 1000000.0)
+                   ELSE 0
+                 END AS trades_per_million_shares
+          FROM stocks 
+          WHERE trade_count IS NOT NULL AND trade_count > 0
+                AND volume IS NOT NULL AND volume > 0
+          ORDER BY trade_count DESC 
+          LIMIT 25
+        `;
+        queryParams = [];
+        break;
+
+      case 'smart_money': // 主力动向榜 - 价格高于VWAP且成交额大
+        query = `
+          SELECT ticker, name_zh, last_price, change_percent, market_cap, 
+                 vwap, turnover, volume,
+                 CASE 
+                   WHEN vwap > 0 THEN ((last_price - vwap) / vwap) * 100
+                   ELSE 0
+                 END AS price_vs_vwap_percent
+          FROM stocks 
+          WHERE vwap IS NOT NULL AND vwap > 0 AND last_price IS NOT NULL
+                AND last_price > vwap AND turnover IS NOT NULL
+                AND turnover >= 50000000
+          ORDER BY price_vs_vwap_percent DESC, turnover DESC
+          LIMIT 25
+        `;
+        queryParams = [];
+        break;
+
+      case 'high_liquidity': // 高流动性榜 - 按成交量排序
+        query = `
+          SELECT ticker, name_zh, last_price, change_percent, market_cap, 
+                 volume, turnover, trade_count,
+                 CASE 
+                   WHEN market_cap > 0 THEN (turnover::float / market_cap::float) * 100
+                   ELSE 0
+                 END AS turnover_rate_percent
+          FROM stocks 
+          WHERE volume IS NOT NULL AND volume > 0
+          ORDER BY volume DESC 
+          LIMIT 25
+        `;
+        queryParams = [];
+        break;
+
+      case 'unusual_activity': // 异动榜 - 交易笔数异常高的股票
+        query = `
+          SELECT ticker, name_zh, last_price, change_percent, market_cap, 
+                 trade_count, volume, turnover,
+                 CASE 
+                   WHEN volume > 0 THEN trade_count::float / (volume / 1000000.0)
+                   ELSE 0
+                 END AS trades_per_million_shares
+          FROM stocks 
+          WHERE trade_count IS NOT NULL AND volume IS NOT NULL 
+                AND volume > 0 AND trade_count > 50000
+          ORDER BY trades_per_million_shares DESC 
+          LIMIT 25
+        `;
+        queryParams = [];
+        break;
+
+      case 'momentum_stocks': // 动量榜 - 价格、成交量、交易笔数综合排序
+        query = `
+          SELECT ticker, name_zh, last_price, change_percent, market_cap, 
+                 volume, trade_count, turnover, vwap,
+                 (COALESCE(change_percent, 0) * 0.4 + 
+                  COALESCE(LOG(volume + 1) / 10, 0) * 0.3 + 
+                  COALESCE(LOG(trade_count + 1) / 10, 0) * 0.3) AS momentum_score
+          FROM stocks 
+          WHERE last_price IS NOT NULL AND volume IS NOT NULL 
+                AND trade_count IS NOT NULL
+          ORDER BY momentum_score DESC 
+          LIMIT 25
+        `;
+        queryParams = [];
+        break;
+
       default:
         return res.status(400).json({ error: `Unsupported ranking type: ${type}` });
     }
