@@ -4,7 +4,7 @@
 
 import { Pool } from 'pg';
 import 'dotenv/config';
-import { getPreviousDayAggs, getBatchPreviousDayAggs } from './polygon-api.mjs';
+import { getPreviousDayAggs, getBatchPreviousDayAggs } from './polygon-api.js';
 
 const pool = new Pool({ 
     connectionString: process.env.NEON_DATABASE_URL || process.env.DATABASE_URL, 

@@ -1,5 +1,4 @@
 const { Pool } = require('pg');
-const { getPreviousDayAggs } = require('../../_scripts/polygon-api.js');
 
 const pool = new Pool({
     connectionString: process.env.NEON_DATABASE_URL || process.env.DATABASE_URL,
@@ -87,6 +86,9 @@ module.exports = async function handler(req, res) {
     const finnhubApiKey = process.env.FINNHUB_API_KEY;
     
     try {
+        // 动态导入 Polygon API 模块
+        const { getPreviousDayAggs } = await import('../../_scripts/polygon-api.js');
+        
         // 获取待处理的股票
         const pendingStocks = await client.query(`
             SELECT ticker, company_name 
