@@ -1,4 +1,4 @@
-import dotenv from 'dotenv';
+const dotenv = require('dotenv');
 
 // 加载环境变量
 dotenv.config();
@@ -11,7 +11,7 @@ const BASE_URL = 'https://api.polygon.io';
  * @param {string} ticker - 股票代码
  * @returns {Promise<Object|null>} 返回股票数据或null
  */
-export async function getPreviousDayAggs(ticker) {
+async function getPreviousDayAggs(ticker) {
   if (!POLYGON_API_KEY) {
     console.error('❌ POLYGON_API_KEY not found in environment variables');
     return null;
@@ -64,7 +64,7 @@ export async function getPreviousDayAggs(ticker) {
  * @param {number} delay - 请求间隔(毫秒)，默认200ms
  * @returns {Promise<Object[]>} 返回股票数据数组
  */
-export async function getBatchPreviousDayAggs(tickers, delay = 200) {
+async function getBatchPreviousDayAggs(tickers, delay = 200) {
   const results = [];
   
   console.log(`🚀 Starting batch fetch for ${tickers.length} tickers...`);
@@ -93,7 +93,7 @@ export async function getBatchPreviousDayAggs(tickers, delay = 200) {
 /**
  * 测试Polygon API连接
  */
-export async function testPolygonConnection() {
+async function testPolygonConnection() {
   console.log('🔍 Testing Polygon API connection...');
   
   if (!POLYGON_API_KEY) {
@@ -120,8 +120,15 @@ export async function testPolygonConnection() {
   }
 }
 
+// 导出函数
+module.exports = {
+  getPreviousDayAggs,
+  getBatchPreviousDayAggs,
+  testPolygonConnection
+};
+
 // 如果直接运行此脚本，执行测试
-if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith('polygon-api.mjs')) {
+if (require.main === module) {
   console.log('🚀 Starting Polygon API test...');
   testPolygonConnection().then(() => {
     console.log('✅ Test completed');

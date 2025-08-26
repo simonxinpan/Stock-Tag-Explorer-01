@@ -1,11 +1,11 @@
-import { Pool } from 'pg';
+const { Pool } = require('pg');
 
 const pool = new Pool({
     connectionString: process.env.NEON_DATABASE_URL || process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
 });
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     // 只允许POST请求
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
