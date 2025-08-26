@@ -502,65 +502,6 @@ class TagDetailPage {
     }
 
     /**
-     * 创建股票项元素 - 使用与index.html相同的结构
-     */
-    createStockItem(stock) {
-        const item = document.createElement('div');
-        item.className = 'stock-item';
-        
-        // 处理数据格式兼容性
-        const symbol = stock.symbol || stock.ticker;
-        const name = stock.name || stock.name_zh || stock.company_name || symbol;
-        const price = parseFloat(stock.price || stock.last_price || stock.current_price || 0);
-        const change = parseFloat(stock.change || stock.change_amount || stock.price_change || 0);
-        const changePercent = parseFloat(stock.changePercent || stock.change_percent || 0);
-        const volume = parseInt(stock.volume || stock.trading_volume || 0);
-        const marketCap = parseFloat(stock.marketCap || stock.market_cap || 0);
-        const lastUpdated = stock.lastUpdated || stock.last_updated || new Date().toISOString();
-        
-        const changeClass = change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral';
-        const changeSymbol = change > 0 ? '+' : '';
-        
-        // 使用与index.html中app.js相同的HTML结构
-        item.innerHTML = `
-            <div class="stock-header">
-                <div class="stock-info">
-                    <div class="stock-name">${name}</div>
-                    <div class="stock-symbol">${symbol}</div>
-                </div>
-                <div class="stock-price">
-                    <div class="current-price">$${price.toFixed(2)}</div>
-                    <div class="price-change ${changeClass}">
-                        ${changeSymbol}${change.toFixed(2)} (${changeSymbol}${changePercent.toFixed(2)}%)
-                    </div>
-                </div>
-            </div>
-            <div class="stock-details">
-                <div class="detail-item">
-                    <div class="detail-label">成交量</div>
-                    <div class="detail-value">${this.formatVolume(volume)}</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">市值</div>
-                    <div class="detail-value">${this.formatMarketCap(marketCap)}</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">更新时间</div>
-                    <div class="detail-value">${this.formatTime(lastUpdated)}</div>
-                </div>
-            </div>
-        `;
-        
-        // 添加点击事件，跳转到个股详情页
-        item.style.cursor = 'pointer';
-        item.addEventListener('click', () => {
-            this.navigateToStockDetail(symbol);
-        });
-
-        return item;
-    }
-
-    /**
      * 渲染相关标签
      */
     renderRelatedTags() {
@@ -619,7 +560,9 @@ class TagDetailPage {
             const onPageChange = (newPage) => {
                 this.currentPage = newPage;
                 this.renderStockList();
-                this.showToast(`已切换到第 ${newPage} 页`);
+                if (window.stockRenderer) {
+                    window.stockRenderer.showToast(`已切换到第 ${newPage} 页`);
+                }
             };
             
             window.stockRenderer.renderPagination(pagination, onPageChange, 'pagination');
@@ -645,7 +588,9 @@ class TagDetailPage {
         document.querySelector('.stock-list-section')?.scrollIntoView({ behavior: 'smooth' });
         
         // 显示加载提示
-        this.showToast(`已切换到第 ${page} 页`);
+        if (window.stockRenderer) {
+            window.stockRenderer.showToast(`已切换到第 ${page} 页`);
+        }
     }
 
     /**
@@ -713,16 +658,6 @@ class TagDetailPage {
         }
     }
 
-    /**
-     * 导航到股票详情页
-     */
-    navigateToStockDetail(symbol) {
-        // 这里可以导航到股票详情页
-        // window.location.href = `stock-detail.html?symbol=${symbol}`;
-        this.showToast(`点击了 ${symbol}，股票详情页功能待开发`, 'info');
-    }
-
-
 
     /**
      * 显示加载状态
@@ -784,47 +719,7 @@ class TagDetailPage {
         if (errorMessage) errorMessage.textContent = message;
     }
     
-    /**
-     * 显示提示信息
-     */
-    showToast(message) {
-        // 创建或获取toast元素
-        let toast = document.getElementById('toast-message');
-        if (!toast) {
-            toast = document.createElement('div');
-            toast.id = 'toast-message';
-            toast.className = 'toast-message';
-            document.body.appendChild(toast);
-        }
-        
-        toast.textContent = message;
-        toast.style.display = 'block';
-        toast.classList.add('show');
-        
-        // 2秒后自动隐藏
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => {
-                toast.style.display = 'none';
-            }, 300);
-        }, 2000);
-    }
 
-    /**
-     * 显示Toast通知
-     */
-    showToast(message, type = 'info') {
-        const toast = document.getElementById('toast');
-        if (!toast) return;
-        
-        toast.textContent = message;
-        toast.className = `toast toast-${type}`;
-        toast.classList.remove('hidden');
-        
-        setTimeout(() => {
-            toast.classList.add('hidden');
-        }, 3000);
-    }
 }
 
 // 初始化应用
