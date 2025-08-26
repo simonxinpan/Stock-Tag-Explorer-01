@@ -91,7 +91,7 @@ module.exports = async function handler(req, res) {
         
         // 获取待处理的股票
         const pendingStocks = await client.query(`
-            SELECT ticker, company_name 
+            SELECT ticker, name_zh 
             FROM stocks 
             WHERE daily_data_last_updated IS NULL 
             ORDER BY ticker 
