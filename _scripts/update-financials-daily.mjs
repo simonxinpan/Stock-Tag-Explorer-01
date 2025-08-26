@@ -462,10 +462,10 @@ async function main() {
     }
     
     console.log("🔧 Configuration:");
-    console.log(`   📊 API Delay: ${13000/1000} seconds per stock (Polygon rate limit compliance)\`);
-    console.log(`   📦 Batch Size: 10 stocks per batch\`);
-    console.log(`   ⏱️ Estimated Total Time: ~${Math.ceil(502 * 13 / 60)} minutes for all 502 stocks\`);
-    console.log(`   🔑 APIs: Finnhub ✅, Polygon ${POLYGON_API_KEY ? '✅' : '❌'}\`);
+    console.log(`   📊 API Delay: ${13000/1000} seconds per stock (Polygon rate limit compliance)`);
+    console.log(`   📦 Batch Size: 10 stocks per batch`);
+    console.log(`   ⏱️ Estimated Total Time: ~${Math.ceil(502 * 13 / 60)} minutes for all 502 stocks`);
+    console.log(`   🔑 APIs: Finnhub ✅, Polygon ${POLYGON_API_KEY ? '✅' : '❌'}`);
     
     let client;
     try {
