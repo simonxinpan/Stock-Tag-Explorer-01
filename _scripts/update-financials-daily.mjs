@@ -237,13 +237,28 @@ async function calculateAndApplyTags(client, stock) {
 
 // 更新所有股票的财务数据（Finnhub + Polygon混合策略）
 async function updateAllFinancials(client, apiKey) {
-    console.log("📊 Starting comprehensive financial data update (Finnhub + Polygon)...");
+    console.log("📊 Starting smart batch financial data update (Finnhub + Polygon)...");
     
-    // 获取所有股票
-    const { rows: stocks } = await client.query('SELECT ticker FROM stocks ORDER BY ticker');
-    console.log(`📋 Found ${stocks.length} stocks to update`);
+    // 获取今天的日期
+    const today = new Date().toISOString().split('T')[0];
     
-    const BATCH_SIZE = 10;
+    // 查询未处理的股票（今天还没有更新过的）
+    const { rows: stocks } = await client.query(`
+        SELECT ticker FROM stocks 
+        WHERE daily_data_last_updated IS NULL 
+           OR daily_data_last_updated < $1 
+        ORDER BY ticker 
+        LIMIT 50
+    `, [today]);
+    
+    console.log(`📋 Found ${stocks.length} stocks to process in this batch`);
+    
+    if (stocks.length === 0) {
+        console.log("✅ All stocks are up to date for today!");
+        return 0;
+    }
+    
+    const BATCH_SIZE = 50; // 每批处理50只股票
     const API_DELAY = 13000; // 13秒延迟，遵守Polygon API速率限制(每分钟5次)
     let updatedCount = 0;
     let errorCount = 0;
@@ -338,8 +353,9 @@ async function updateAllFinancials(client, apiKey) {
                      trade_count = $12,
                      turnover = $13,
                      previous_close = $14,
+                     daily_data_last_updated = $15,
                      last_updated = NOW() 
-                     WHERE ticker = $15`,
+                     WHERE ticker = $16`,
                     [
                         updateData.market_cap,
                         updateData.roe_ttm,
@@ -355,6 +371,7 @@ async function updateAllFinancials(client, apiKey) {
                         updateData.trade_count,
                         updateData.turnover,
                         updateData.previous_close,
+                        today, // daily_data_last_updated
                         stock.ticker
                     ]
                 );
@@ -463,8 +480,9 @@ async function main() {
     
     console.log("🔧 Configuration:");
     console.log(`   📊 API Delay: ${13000/1000} seconds per stock (Polygon rate limit compliance)`);
-    console.log(`   📦 Batch Size: 10 stocks per batch`);
-    console.log(`   ⏱️ Estimated Total Time: ~${Math.ceil(502 * 13 / 60)} minutes for all 502 stocks`);
+    console.log(`   📦 Batch Size: 50 stocks per batch`);
+    console.log(`   ⏱️ Estimated Batch Time: ~${Math.ceil(50 * 13 / 60)} minutes per batch`);
+    console.log(`   🔄 Execution: Every 15 minutes until all 502 stocks processed`);
     console.log(`   🔑 APIs: Finnhub ✅, Polygon ${POLYGON_API_KEY ? '✅' : '❌'}`);
     
     let client;

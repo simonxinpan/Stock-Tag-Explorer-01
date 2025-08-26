@@ -1,14 +1,14 @@
-name: Daily ETL Complete Processor
+name: ETL Smart Batch Processor
 
 on:
   schedule:
-    - cron: '0 2 * * *'  # 每日凌晨2点执行一次
+    - cron: '*/15 * * * *'  # 每15分钟执行一次
   workflow_dispatch:  # 允许手动触发
 
 jobs:
-  daily-etl-process:
+  etl-batch-process:
     runs-on: ubuntu-latest
-    timeout-minutes: 150  # 2.5小时超时，处理502只股票
+    timeout-minutes: 15  # 15分钟超时，每批处理50只股票
     
     steps:
       - name: Checkout repository
@@ -23,24 +23,24 @@ jobs:
       - name: Install dependencies
         run: npm ci
         
-      - name: Run Daily ETL Process
+      - name: Run ETL Batch Process
         env:
           POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
         run: |
-          echo "🚀 Starting daily ETL process at $(date)"
-          echo "📋 Processing all 502 stocks with smart batching..."
+          echo "🚀 Starting ETL batch process at $(date)"
+          echo "📋 Processing next batch of up to 50 stocks..."
           
-          # 运行升级后的daily脚本，内置智能分批和延迟机制
+          # 运行智能分批脚本，每次处理50只股票
           node _scripts/update-financials-daily.mjs
           
-          echo "✅ Daily ETL process completed at $(date)"
+          echo "✅ ETL batch process completed at $(date)"
           
       - name: Report completion
         if: always()
         run: |
-          echo "📋 Daily ETL job completed at $(date)"
+          echo "📋 ETL batch job completed at $(date)"
           echo "Status: ${{ job.status }}"
           
           # 如果失败，输出调试信息
