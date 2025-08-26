@@ -82,7 +82,7 @@ module.exports = async function handler(req, res) {
     
     const client = await pool.connect();
     const BATCH_SIZE = 70;
-    const API_DELAY = 200; // 200ms延迟
+    const API_DELAY = 13000; // 13秒延迟，遵守Polygon每分钟5次的速率限制
     const finnhubApiKey = process.env.FINNHUB_API_KEY;
     
     try {
@@ -227,7 +227,8 @@ module.exports = async function handler(req, res) {
                 results.push(logData);
                 console.log(`✅ ${stock.ticker}: VWAP $${logData.vwap}, Vol ${logData.volume}, Trades ${logData.trades}`);
                 
-                // API限制延迟
+                // API限制延迟 - 遵守Polygon每分钟5次的速率限制
+                console.log(`⏳ Waiting 13 seconds to respect API rate limits...`);
                 await new Promise(resolve => setTimeout(resolve, API_DELAY));
                 
             } catch (error) {
