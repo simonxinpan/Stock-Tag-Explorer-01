@@ -24,11 +24,10 @@ export default async function handler(req, res) {
     try {
         console.log('🚀 ETL Start: Resetting daily task queue...');
         
-        // 重置所有股票的处理状态
+        // 重置所有股票的处理状态 - 无条件重置所有股票
         const resetResult = await client.query(`
             UPDATE stocks 
             SET daily_data_last_updated = NULL
-            WHERE daily_data_last_updated IS NOT NULL
         `);
         
         // 获取总股票数量

@@ -34,12 +34,12 @@ jobs:
             echo "✅ ETL task queue reset successfully"
             
             # 解析响应获取重置统计
-            reset_count=$(echo "$response_body" | jq -r '.resetCount // "N/A"')
-            estimated_hours=$(echo "$response_body" | jq -r '.estimatedCompletionHours // "N/A"')
+            reset_count=$(echo "$response_body" | jq -r '.data.resetCount // "N/A"')
+            estimated_minutes=$(echo "$response_body" | jq -r '.data.estimatedMinutes // "N/A"')
             
             echo "📈 Reset Stats:"
             echo "  - Stocks reset: $reset_count"
-            echo "  - Estimated completion: $estimated_hours hours"
+            echo "  - Estimated completion: $estimated_minutes minutes"
             echo "⚡ ETL batch processors will handle the rest every 15 minutes"
           else
             echo "❌ ETL task queue reset failed with HTTP $http_code"
