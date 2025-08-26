@@ -880,8 +880,61 @@
 
 .related-tags-compact {
     display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.related-tags-category {
+    margin-bottom: 12px;
+}
+
+.related-tags-category-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin: 0 0 8px 0;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.related-tags-wrapper {
+    display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
+}
+
+.tag-button-small {
+    display: inline-block;
+    padding: 4px 10px;
+    background: var(--surface-secondary);
+    color: var(--text-primary);
+    text-decoration: none;
+    border-radius: 16px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.tag-button-small:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.tag-button-small.current-tag {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    font-weight: 600;
+}
+
+.tag-button-small.current-tag:hover {
+    background: var(--primary-dark);
+    border-color: var(--primary-dark);
 }
 
 .tag-item {

@@ -30,7 +30,8 @@ class TagDetailPage {
             await this.loadTagFromURL();
             this.showLoading();
             await this.loadTagData();
-            // 相关标签将在loadTagData中一起加载
+            // 独立加载所有标签数据用于相关标签板块
+            await this.loadAllTags();
             this.hideLoading();
         } catch (error) {
             console.error('页面初始化失败:', error);
@@ -154,16 +155,14 @@ class TagDetailPage {
             const result = await response.json();
             
             if (result.success && result.data) {
-                const { stocks, stats, pagination, relatedTags } = result.data;
+                const { stocks, stats, pagination } = result.data;
                 
                 this.stockData = stocks || [];
-                this.relatedTags = relatedTags || [];
                 this.totalPages = pagination?.totalPages || 1;
                 
                 // 直接渲染股票列表，不需要再次过滤排序
                 this.filteredStocks = this.stockData;
                 this.renderStockList();
-                this.renderRelatedTags();
                 this.renderPagination();
                 
                 // 更新股票数量显示和统计信息
@@ -175,11 +174,39 @@ class TagDetailPage {
             }
         } catch (error) {
             console.error('加载标签数据失败:', error);
-            this.showError('加载数据失败，正在使用模拟数据');
-            // 使用模拟数据作为后备
-            this.stockData = this.getMockStockData();
-            this.applyFiltersAndSorting();
-            this.updateStats();
+            this.showError('加载数据失败，请检查网络连接或稍后重试');
+            // 清空数据并显示错误状态
+            this.stockData = [];
+            this.filteredStocks = [];
+            this.renderStockList();
+            this.renderPagination();
+        }
+    }
+
+    /**
+     * 加载所有标签数据用于相关标签板块
+     */
+    async loadAllTags() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/tags`);
+            
+            if (!response.ok) {
+                throw new Error(`标签API请求失败: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            if (result.success && result.data) {
+                this.allTagsData = result.data;
+                this.renderRelatedTags();
+                console.log('成功加载所有标签数据');
+            } else {
+                throw new Error('标签API返回数据格式错误');
+            }
+        } catch (error) {
+            console.error('加载所有标签失败:', error);
+            // 使用空数据作为后备
+            this.allTagsData = {};
         }
     }
 
@@ -540,24 +567,43 @@ class TagDetailPage {
         const relatedTagsEl = document.getElementById('related-tags');
         if (!relatedTagsEl) return;
         
-        if (!this.relatedTags || this.relatedTags.length === 0) {
+        if (!this.allTagsData || Object.keys(this.allTagsData).length === 0) {
             relatedTagsEl.innerHTML = '<p class="no-tags">暂无相关标签</p>';
             return;
         }
         
-        relatedTagsEl.innerHTML = this.relatedTags.map(tag => {
-            // 处理不同的标签数据格式
-            const tagName = typeof tag === 'string' ? tag : tag.name;
-            const tagType = tag.type || 'default';
-            
-            return `
-                <a href="tag-detail.html?tag=${encodeURIComponent(tagName)}" 
-                   class="tag-item tag-${tagType}" 
-                   title="点击查看 ${tagName} 标签详情">
-                    ${tagName}
-                </a>
-            `;
-        }).join('');
+        let html = '';
+        
+        // 循环遍历每一个分类
+        for (const category in this.allTagsData) {
+            if (this.allTagsData[category] && this.allTagsData[category].length > 0) {
+                // 创建分类标题
+                html += `<div class="related-tags-category">`;
+                html += `<h4 class="related-tags-category-title">${category}</h4>`;
+                
+                // 创建该分类下所有标签的容器
+                html += `<div class="related-tags-wrapper">`;
+                
+                // 循环创建每一个标签按钮
+                this.allTagsData[category].forEach(tag => {
+                    const tagName = tag.name;
+                    const isCurrentTag = tagName === this.currentTag;
+                    const tagClass = isCurrentTag ? 'tag-button-small current-tag' : 'tag-button-small';
+                    
+                    html += `
+                        <a href="tag-detail.html?tag=${encodeURIComponent(tagName)}" 
+                           class="${tagClass}" 
+                           title="点击查看 ${tagName} 标签详情">
+                            ${tagName}
+                        </a>
+                    `;
+                });
+                
+                html += `</div></div>`;
+            }
+        }
+        
+        relatedTagsEl.innerHTML = html;
     }
 
     /**
