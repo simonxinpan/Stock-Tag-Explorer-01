@@ -39,9 +39,9 @@ const server = createServer(async (req, res) => {
     try {
       // 🔧 临时使用模拟数据API
       let apiHandler;
-      if (apiPath === './api/trending.js') {
+      if (apiName === 'trending') {
         apiHandler = importAPI('./api/trending-mock.js');
-      } else if (apiPath === './api/market-summary.js') {
+      } else if (apiName === 'market-summary') {
         apiHandler = importAPI('./api/market-summary-mock.js');
       } else {
         apiHandler = importAPI(apiPath);
