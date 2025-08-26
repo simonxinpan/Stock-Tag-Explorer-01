@@ -681,23 +681,14 @@ class StockTagExplorer {
     }
 
     /**
-     * 渲染股票列表
+     * 渲染股票列表 - 使用通用渲染器
      */
     renderStockList() {
-        const container = document.getElementById('stock-list');
-        if (!container) return;
-
-        container.innerHTML = '';
-
-        if (this.stockData.length === 0) {
-            container.innerHTML = '<div class="text-center">暂无数据</div>';
-            return;
+        if (window.stockRenderer) {
+            window.stockRenderer.renderStockList(this.stockData, 'stock-list');
+        } else {
+            console.error('Stock renderer not available');
         }
-
-        this.stockData.forEach(stock => {
-            const stockElement = this.createStockItem(stock);
-            container.appendChild(stockElement);
-        });
     }
 
     /**
@@ -759,49 +750,24 @@ class StockTagExplorer {
     }
 
     /**
-     * 渲染分页
+     * 渲染分页 - 使用通用渲染器
      */
     renderPagination() {
-        const container = document.getElementById('pagination');
-        if (!container) return;
-
-        if (this.totalPages <= 1) {
-            container.classList.add('hidden');
-            return;
+        if (window.stockRenderer) {
+            const pagination = {
+                currentPage: this.currentPage,
+                totalPages: this.totalPages
+            };
+            
+            const onPageChange = (newPage) => {
+                this.currentPage = newPage;
+                this.loadStockData();
+            };
+            
+            window.stockRenderer.renderPagination(pagination, onPageChange, 'pagination');
+        } else {
+            console.error('Stock renderer not available');
         }
-
-        container.classList.remove('hidden');
-        container.innerHTML = '';
-
-        // 上一页按钮
-        const prevBtn = document.createElement('button');
-        prevBtn.textContent = '上一页';
-        prevBtn.disabled = this.currentPage === 1;
-        prevBtn.addEventListener('click', () => {
-            if (this.currentPage > 1) {
-                this.currentPage--;
-                this.loadStockData();
-            }
-        });
-        container.appendChild(prevBtn);
-
-        // 页码信息
-        const pageInfo = document.createElement('span');
-        pageInfo.className = 'pagination-info';
-        pageInfo.textContent = `第 ${this.currentPage} 页，共 ${this.totalPages} 页`;
-        container.appendChild(pageInfo);
-
-        // 下一页按钮
-        const nextBtn = document.createElement('button');
-        nextBtn.textContent = '下一页';
-        nextBtn.disabled = this.currentPage === this.totalPages;
-        nextBtn.addEventListener('click', () => {
-            if (this.currentPage < this.totalPages) {
-                this.currentPage++;
-                this.loadStockData();
-            }
-        });
-        container.appendChild(nextBtn);
     }
 
     /**
