@@ -244,7 +244,7 @@ async function updateAllFinancials(client, apiKey) {
     console.log(`📋 Found ${stocks.length} stocks to update`);
     
     const BATCH_SIZE = 10;
-    const API_DELAY = 1200; // 1.2秒延迟，避免API限制
+    const API_DELAY = 13000; // 13秒延迟，遵守Polygon API速率限制(每分钟5次)
     let updatedCount = 0;
     let errorCount = 0;
     let polygonSuccessCount = 0;
@@ -379,8 +379,12 @@ async function updateAllFinancials(client, apiKey) {
                 // 应用动态标签
                 await calculateAndApplyTags(client, stock);
                 
-                // API限制延迟
-                await new Promise(resolve => setTimeout(resolve, API_DELAY));
+                // API限制延迟 - 遵守Polygon速率限制
+                const remaining = stocks.length - updatedCount;
+                if (remaining > 0) {
+                    console.log(`⏳ Waiting 13 seconds (API rate limit)... ${remaining} stocks remaining`);
+                    await new Promise(resolve => setTimeout(resolve, API_DELAY));
+                }
                 
             } catch (error) {
                 errorCount++;
@@ -431,7 +435,7 @@ async function recalculateAllTags(client) {
 async function main() {
     console.log("===== Starting DAILY Financials & Tags Update Job =====");
     
-    const { NEON_DATABASE_URL, DATABASE_URL, FINNHUB_API_KEY } = process.env;
+    const { NEON_DATABASE_URL, DATABASE_URL, FINNHUB_API_KEY, POLYGON_API_KEY } = process.env;
     const dbUrl = NEON_DATABASE_URL || DATABASE_URL;
     
     // 检查是否为测试模式
@@ -443,6 +447,7 @@ async function main() {
         console.log("📝 To run with real database and API:");
         console.log("   1. Set DATABASE_URL to your Neon database connection string");
         console.log("   2. Set FINNHUB_API_KEY to your Finnhub API key");
+        console.log("   3. Set POLYGON_API_KEY to your Polygon API key");
         console.log("===== Test completed successfully =====");
         return;
     }
@@ -451,6 +456,16 @@ async function main() {
         console.error("FATAL: Missing DATABASE_URL or FINNHUB_API_KEY environment variables.");
         process.exit(1);
     }
+    
+    if (!POLYGON_API_KEY) {
+        console.warn("⚠️ POLYGON_API_KEY not found - Polygon data will be skipped");
+    }
+    
+    console.log("🔧 Configuration:");
+    console.log(`   📊 API Delay: ${13000/1000} seconds per stock (Polygon rate limit compliance)\`);
+    console.log(`   📦 Batch Size: 10 stocks per batch\`);
+    console.log(`   ⏱️ Estimated Total Time: ~${Math.ceil(502 * 13 / 60)} minutes for all 502 stocks\`);
+    console.log(`   🔑 APIs: Finnhub ✅, Polygon ${POLYGON_API_KEY ? '✅' : '❌'}\`);
     
     let client;
     try {

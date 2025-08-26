@@ -1,69 +1,52 @@
-name: ETL Batch Processor (Every 15 minutes)
+name: Daily ETL Complete Processor
 
 on:
   schedule:
-    - cron: '*/15 * * * *'  # 每15分钟执行一次
+    - cron: '0 2 * * *'  # 每日凌晨2点执行一次
   workflow_dispatch:  # 允许手动触发
 
 jobs:
-  etl-batch-process:
+  daily-etl-process:
     runs-on: ubuntu-latest
-    timeout-minutes: 10  # 10分钟超时，处理70只股票应该足够
+    timeout-minutes: 150  # 2.5小时超时，处理502只股票
     
     steps:
-      - name: Call ETL Batch Processor API
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run Daily ETL Process
+        env:
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
         run: |
-          echo "🚀 Starting ETL batch processing at $(date)"
+          echo "🚀 Starting daily ETL process at $(date)"
+          echo "📋 Processing all 502 stocks with smart batching..."
           
-          # 调用Vercel部署的ETL批处理API
-          response=$(curl -s -w "\n%{http_code}" -X POST \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            "https://${{ secrets.VERCEL_DOMAIN }}/api/etl/process-batch")
+          # 运行升级后的daily脚本，内置智能分批和延迟机制
+          node _scripts/update-financials-daily.mjs
           
-          # 分离响应体和状态码
-          http_code=$(echo "$response" | tail -n1)
-          response_body=$(echo "$response" | head -n -1)
-          
-          echo "📊 API Response (HTTP $http_code):"
-          echo "$response_body" | jq '.' 2>/dev/null || echo "$response_body"
-          
-          # 检查HTTP状态码
-          if [ "$http_code" -eq 200 ]; then
-            echo "✅ ETL batch processing completed successfully"
-            
-            # 解析响应获取处理统计
-            processed=$(echo "$response_body" | jq -r '.processed // "N/A"')
-            remaining=$(echo "$response_body" | jq -r '.remaining // "N/A"')
-            estimated_minutes=$(echo "$response_body" | jq -r '.estimatedMinutesLeft // "N/A"')
-            
-            echo "📈 Processing Stats:"
-            echo "  - Processed: $processed stocks"
-            echo "  - Remaining: $remaining stocks"
-            echo "  - Estimated completion: $estimated_minutes minutes"
-            
-            # 如果还有剩余股票，输出进度信息
-            if [ "$remaining" != "0" ] && [ "$remaining" != "N/A" ]; then
-              echo "⏳ ETL process ongoing, next batch in 15 minutes"
-            else
-              echo "🎉 All stocks processed! ETL cycle complete."
-            fi
-          else
-            echo "❌ ETL batch processing failed with HTTP $http_code"
-            echo "Response: $response_body"
-            exit 1
-          fi
+          echo "✅ Daily ETL process completed at $(date)"
           
       - name: Report completion
         if: always()
         run: |
-          echo "📋 ETL batch job completed at $(date)"
+          echo "📋 Daily ETL job completed at $(date)"
           echo "Status: ${{ job.status }}"
           
           # 如果失败，输出调试信息
           if [ "${{ job.status }}" != "success" ]; then
             echo "🔍 Debug Info:"
-            echo "  - VERCEL_DOMAIN: ${{ secrets.VERCEL_DOMAIN }}"
             echo "  - Workflow: ${{ github.workflow }}"
             echo "  - Run ID: ${{ github.run_id }}"
+            echo "  - Check logs above for detailed error information"
           fi
