@@ -53,39 +53,68 @@
         <!-- 主内容区 -->
         <main class="main">
             <div class="container">
+                <!-- 上方过滤器区域 -->
+                <div class="filter-section">
+                    <div class="filter-header">
+                        <h3>筛选与排序</h3>
+                        <div class="filter-stats">
+                            <span id="total-stocks-display" class="stats-display">总计 - 只股票</span>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-controls">
+                        <div class="filter-group">
+                            <label for="sort-select" class="filter-label">排序方式</label>
+                            <select id="sort-select" class="sort-select">
+                                <option value="name-asc">按名称排序 ↑</option>
+                                <option value="name-desc">按名称排序 ↓</option>
+                                <option value="price-desc">按价格排序 ↓</option>
+                                <option value="price-asc">按价格排序 ↑</option>
+                                <option value="change-desc">按涨跌幅排序 ↓</option>
+                                <option value="change-asc">按涨跌幅排序 ↑</option>
+                                <option value="volume-desc">按成交量排序 ↓</option>
+                                <option value="volume-asc">按成交量排序 ↑</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="price-filter" class="filter-label">价格范围</label>
+                            <select id="price-filter" class="price-filter">
+                                <option value="all">全部价格</option>
+                                <option value="0-50">$0 - $50</option>
+                                <option value="50-100">$50 - $100</option>
+                                <option value="100-500">$100 - $500</option>
+                                <option value="500+">$500+</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="change-filter" class="filter-label">涨跌幅</label>
+                            <select id="change-filter" class="change-filter">
+                                <option value="all">全部</option>
+                                <option value="up">上涨</option>
+                                <option value="down">下跌</option>
+                                <option value="flat">平盘</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group view-controls">
+                            <label class="filter-label">视图模式</label>
+                            <div class="view-toggle">
+                                <button id="grid-view" class="view-btn active" title="网格视图">⊞</button>
+                                <button id="list-view" class="view-btn" title="列表视图">☰</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="content-layout">
                     <!-- 左侧股票列表 -->
                     <div class="left-panel">
-                        <!-- 排序控制 -->
-                        <div class="sort-section">
-                            <div class="sort-header">
-                                <h3>排序方式</h3>
-                            </div>
-                            
-                            <div class="sort-group">
-                                <select id="sort-select" class="sort-select">
-                                    <option value="name-asc">按名称排序 ↑</option>
-                                    <option value="name-desc">按名称排序 ↓</option>
-                                    <option value="price-desc">按价格排序 ↓</option>
-                                    <option value="price-asc">按价格排序 ↑</option>
-                                    <option value="change-desc">按涨跌幅排序 ↓</option>
-                                    <option value="change-asc">按涨跌幅排序 ↑</option>
-                                    <option value="volume-desc">按成交量排序 ↓</option>
-                                    <option value="volume-asc">按成交量排序 ↑</option>
-                                </select>
-                            </div>
-                        </div>
-                        
                         <!-- 股票列表 -->
                         <div class="stock-list-section">
                             <div class="stock-list-header">
                                 <h3 id="stock-list-title">股票列表</h3>
-                                <div class="list-controls">
-                                    <div class="view-toggle">
-                                        <button id="grid-view" class="view-btn active" title="网格视图">⊞</button>
-                                        <button id="list-view" class="view-btn" title="列表视图">☰</button>
-                                    </div>
-                                </div>
                             </div>
                             <div id="loading" class="loading">加载中...</div>
                             <div id="error" class="error hidden">加载失败，请刷新重试</div>
@@ -96,36 +125,58 @@
                     
                     <!-- 右侧标签云 -->
                     <div class="right-panel">
-                        <div class="tag-cloud-section">
-                            <div class="tag-cloud-header">
-                                <h3>相关标签</h3>
-                                <p class="tag-cloud-subtitle">点击标签查看其他分类</p>
-                            </div>
-                            <div id="related-tags" class="related-tags"></div>
-                        </div>
-                        
-                        <!-- 标签统计 -->
-                        <div class="tag-stats-section">
+                        <!-- 标签统计卡片 -->
+                        <div class="stats-card">
                             <div class="stats-header">
-                                <h3>标签统计</h3>
+                                <h4>📊 标签统计</h4>
                             </div>
                             <div class="stats-grid">
                                 <div class="stats-item">
+                                    <span class="stats-number" id="total-stocks">-</span>
                                     <span class="stats-label">总股票数</span>
-                                    <span id="total-stocks" class="stats-number">-</span>
                                 </div>
-                                <div class="stats-item">
-                                    <span class="stats-label">上涨股票</span>
-                                    <span id="up-stocks" class="stats-number stats-up">-</span>
+                                <div class="stats-item stats-up">
+                                    <span class="stats-number" id="up-stocks">-</span>
+                                    <span class="stats-label">上涨</span>
                                 </div>
-                                <div class="stats-item">
-                                    <span class="stats-label">下跌股票</span>
-                                    <span id="down-stocks" class="stats-number stats-down">-</span>
+                                <div class="stats-item stats-down">
+                                    <span class="stats-number" id="down-stocks">-</span>
+                                    <span class="stats-label">下跌</span>
                                 </div>
-                                <div class="stats-item">
-                                    <span class="stats-label">平盘股票</span>
-                                    <span id="flat-stocks" class="stats-number stats-flat">-</span>
+                                <div class="stats-item stats-flat">
+                                    <span class="stats-number" id="flat-stocks">-</span>
+                                    <span class="stats-label">平盘</span>
                                 </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 相关标签云 -->
+                        <div class="tag-cloud-card">
+                            <div class="tag-cloud-header">
+                                <h4>🏷️ 相关标签</h4>
+                                <p class="tag-cloud-subtitle">点击探索其他分类</p>
+                            </div>
+                            <div id="related-tags" class="related-tags-compact"></div>
+                        </div>
+                        
+                        <!-- 快速导航 -->
+                        <div class="quick-nav-card">
+                            <div class="quick-nav-header">
+                                <h4>🚀 快速导航</h4>
+                            </div>
+                            <div class="quick-nav-links">
+                                <a href="index.html" class="quick-nav-link">
+                                    <span class="nav-icon">🏠</span>
+                                    <span class="nav-text">标签广场</span>
+                                </a>
+                                <a href="trending.html" class="quick-nav-link">
+                                    <span class="nav-icon">📈</span>
+                                    <span class="nav-text">趋势榜单</span>
+                                </a>
+                                <a href="https://heatmap-dvrckt4gd-simon-pans-projects.vercel.app/" class="quick-nav-link" target="_blank">
+                                    <span class="nav-icon">🔥</span>
+                                    <span class="nav-text">股票热力图</span>
+                                </a>
                             </div>
                         </div>
                     </div>

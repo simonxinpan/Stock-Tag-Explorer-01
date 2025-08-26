@@ -15,7 +15,8 @@ class TagDetailPage {
         this.totalPages = 1;
         this.currentSort = 'name-asc';
         this.currentView = 'grid';
-        // 移除过滤器，只保留排序功能
+        this.priceFilter = 'all';
+        this.changeFilter = 'all';
         
         this.init();
     }
@@ -79,11 +80,27 @@ class TagDetailPage {
         if (sortSelect) {
             sortSelect.addEventListener('change', (e) => {
                 this.currentSort = e.target.value;
-                this.applySorting();
+                this.applyFiltersAndSorting();
             });
         }
 
-        // 移除过滤器相关的事件绑定
+        // 价格过滤器
+        const priceFilter = document.getElementById('price-filter');
+        if (priceFilter) {
+            priceFilter.addEventListener('change', (e) => {
+                this.priceFilter = e.target.value;
+                this.applyFiltersAndSorting();
+            });
+        }
+
+        // 涨跌幅过滤器
+        const changeFilter = document.getElementById('change-filter');
+        if (changeFilter) {
+            changeFilter.addEventListener('change', (e) => {
+                this.changeFilter = e.target.value;
+                this.applyFiltersAndSorting();
+            });
+        }
 
         // 视图切换
         const gridViewBtn = document.getElementById('grid-view');
@@ -139,14 +156,14 @@ class TagDetailPage {
                 this.showToast('使用模拟数据展示', 'warning');
             }
             
-            this.applySorting();
+            this.applyFiltersAndSorting();
             this.updateStats();
             
         } catch (error) {
             console.error('加载标签数据失败:', error);
             // 使用模拟数据作为备用
             this.stockData = this.getMockStockData();
-            this.applySorting();
+            this.applyFiltersAndSorting();
             this.updateStats();
             this.showToast('连接服务器失败，使用模拟数据', 'warning');
         }
@@ -372,19 +389,60 @@ class TagDetailPage {
     }
 
     /**
-     * 应用排序
+     * 应用过滤和排序
      */
-    applySorting() {
+    applyFiltersAndSorting() {
         // 确保stockData是数组
         if (!Array.isArray(this.stockData)) {
             console.warn('stockData is not an array, initializing with empty array');
             this.stockData = [];
         }
         
-        let sorted = [...this.stockData];
+        // 先应用过滤器
+        this.filteredStocks = this.stockData.filter(stock => {
+            // 价格过滤
+            if (this.priceFilter !== 'all') {
+                const price = stock.price;
+                switch (this.priceFilter) {
+                    case 'under-50':
+                        if (price >= 50) return false;
+                        break;
+                    case '50-100':
+                        if (price < 50 || price >= 100) return false;
+                        break;
+                    case '100-200':
+                        if (price < 100 || price >= 200) return false;
+                        break;
+                    case 'over-200':
+                        if (price < 200) return false;
+                        break;
+                }
+            }
+
+            // 涨跌幅过滤
+            if (this.changeFilter !== 'all') {
+                const changePercent = stock.changePercent;
+                switch (this.changeFilter) {
+                    case 'rising':
+                        if (changePercent <= 0) return false;
+                        break;
+                    case 'falling':
+                        if (changePercent >= 0) return false;
+                        break;
+                    case 'strong-rising':
+                        if (changePercent <= 5) return false;
+                        break;
+                    case 'strong-falling':
+                        if (changePercent >= -5) return false;
+                        break;
+                }
+            }
+
+            return true;
+        });
         
-        // 应用排序
-        sorted.sort((a, b) => {
+        // 然后应用排序
+        this.filteredStocks.sort((a, b) => {
             switch (this.currentSort) {
                 case 'name-asc':
                     return a.symbol.localeCompare(b.symbol);
@@ -407,10 +465,16 @@ class TagDetailPage {
             }
         });
         
-        this.filteredStocks = sorted;
         this.currentPage = 1;
         this.updatePagination();
         this.renderStockList();
+    }
+
+    /**
+     * 应用排序（保持向后兼容）
+     */
+    applySorting() {
+        this.applyFiltersAndSorting();
     }
 
 
@@ -592,21 +656,27 @@ class TagDetailPage {
      * 更新统计信息
      */
     updateStats() {
-        const totalStocks = this.stockData.length;
-        const upStocks = this.stockData.filter(stock => stock.change > 0).length;
-        const downStocks = this.stockData.filter(stock => stock.change < 0).length;
-        const flatStocks = this.stockData.filter(stock => stock.change === 0).length;
-        
-        // 更新右侧统计
-        const totalStocksEl = document.getElementById('total-stocks');
-        const upStocksEl = document.getElementById('up-stocks');
-        const downStocksEl = document.getElementById('down-stocks');
-        const flatStocksEl = document.getElementById('flat-stocks');
-        
-        if (totalStocksEl) totalStocksEl.textContent = totalStocks;
-        if (upStocksEl) upStocksEl.textContent = upStocks;
-        if (downStocksEl) downStocksEl.textContent = downStocks;
-        if (flatStocksEl) flatStocksEl.textContent = flatStocks;
+        const totalStocks = this.filteredStocks.length;
+        const risingStocks = this.filteredStocks.filter(stock => stock.changePercent > 0).length;
+        const fallingStocks = this.filteredStocks.filter(stock => stock.changePercent < 0).length;
+        const flatStocks = this.filteredStocks.filter(stock => stock.changePercent === 0).length;
+
+        // 更新过滤器区域的统计显示
+        const statsDisplay = document.querySelector('.stats-display');
+        if (statsDisplay) {
+            statsDisplay.textContent = `共 ${totalStocks} 只股票`;
+        }
+
+        // 更新右侧统计卡片
+        const totalEl = document.getElementById('total-stocks');
+        const risingEl = document.getElementById('rising-stocks');
+        const fallingEl = document.getElementById('falling-stocks');
+        const flatEl = document.getElementById('flat-stocks');
+
+        if (totalEl) totalEl.textContent = totalStocks;
+        if (risingEl) risingEl.textContent = risingStocks;
+        if (fallingEl) fallingEl.textContent = fallingStocks;
+        if (flatEl) flatEl.textContent = flatStocks;
     }
 
     /**

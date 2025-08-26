@@ -430,77 +430,12 @@ class StockTagExplorer {
     async handleTagClick(tag) {
         console.log('标签点击事件:', tag);
         
-        const clickedCard = document.querySelector(`[data-id="${tag.id || tag.name}"]`);
-        if (!clickedCard) {
-            console.error('未找到对应的标签卡片:', tag.id || tag.name);
-            return;
-        }
-
-        // 获取真实的标签ID
-        let realTagId = String(tag.id || tag.name);
+        // 直接跳转到标签详情页，而不是在当前页面显示股票列表
+        const tagName = encodeURIComponent(tag.name || tag.id);
+        const tagDetailUrl = `tag-detail.html?tag=${tagName}`;
         
-        // 切换选中状态
-        if (this.activeTagIds.has(realTagId)) {
-            this.activeTagIds.delete(realTagId);
-            clickedCard.classList.remove('selected');
-            console.log('取消选择标签:', realTagId);
-        } else {
-            this.activeTagIds.add(realTagId);
-            clickedCard.classList.add('selected');
-            console.log('选择标签:', realTagId);
-        }
-
-        // 设置选中的标签用于API调用
-        this.selectedTag = tag;
-        this.currentPage = 1;
-        
-        console.log('当前选中的标签IDs:', Array.from(this.activeTagIds));
-        
-        // 如果有选中的标签，显示股票列表
-        if (this.activeTagIds.size > 0) {
-            this.showStockList();
-            
-            // 更新标题
-            const title = document.getElementById('stock-list-title');
-            if (title) {
-                if (this.activeTagIds.size === 1) {
-                    title.textContent = `${tag.name} - ${tag.stock_count || 0} 只股票`;
-                } else {
-                    title.textContent = `已选择 ${this.activeTagIds.size} 个标签的股票`;
-                }
-            }
-            
-            // 检查是否是动态排名标签
-            // 通过标签ID或名称判断是否为动态排名标签
-            const isDynamicRank = tag.dynamic_rank || 
-                                tag.id.includes('rank_') || 
-                                tag.name.includes('前10%') || 
-                                tag.name.includes('后10%');
-            
-            if (isDynamicRank && tag.metric && tag.percentile) {
-                console.log('调用动态排名API:', tag.metric, tag.percentile);
-                // 调用动态排名API
-                await this.loadDynamicRankStocks(tag);
-            } else if (isDynamicRank) {
-                // 如果是动态排名标签但缺少metric和percentile，从ID中推断
-                const inferredTag = this.inferDynamicRankParams(tag);
-                if (inferredTag.metric && inferredTag.percentile) {
-                    console.log('推断动态排名参数:', inferredTag.metric, inferredTag.percentile);
-                    await this.loadDynamicRankStocks(inferredTag);
-                } else {
-                    console.log('调用普通标签API');
-                    await this.loadStockData();
-                }
-            } else {
-                console.log('调用普通标签API');
-                // 调用普通标签API
-                await this.loadStockData();
-            }
-        } else {
-            // 如果没有选中的标签，隐藏股票列表
-            console.log('没有选中标签，隐藏股票列表');
-            this.hideStockList();
-        }
+        console.log('跳转到标签详情页:', tagDetailUrl);
+        window.location.href = tagDetailUrl;
     }
 
     /**

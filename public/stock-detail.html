@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票详情 - Stock Tag Explorer</title>
+    <link rel="stylesheet" href="./styles/main.css">
+    <link rel="stylesheet" href="./styles/stock-detail.css">
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="index.html" class="brand-link">
+                    <span class="brand-icon">📊</span>
+                    <span class="brand-text">Stock Tag Explorer</span>
+                </a>
+            </div>
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link">标签广场</a>
+                <a href="trends.html" class="nav-link">趋势榜单</a>
+                <a href="heatmap.html" class="nav-link">股票热力图</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <main class="main-content">
+        <!-- 面包屑导航 -->
+        <div class="breadcrumb">
+            <a href="index.html">首页</a>
+            <span class="separator">></span>
+            <span id="stock-symbol">股票详情</span>
+        </div>
+
+        <!-- 股票信息头部 -->
+        <div class="stock-header">
+            <div class="stock-basic-info">
+                <div class="stock-symbol-large" id="stock-symbol-large">AAPL</div>
+                <div class="stock-name" id="stock-name">Apple Inc.</div>
+                <div class="stock-exchange" id="stock-exchange">NASDAQ</div>
+            </div>
+            <div class="stock-price-info">
+                <div class="current-price" id="current-price">$150.25</div>
+                <div class="price-change" id="price-change">
+                    <span class="change-amount" id="change-amount">+2.45</span>
+                    <span class="change-percent" id="change-percent">(+1.66%)</span>
+                </div>
+                <div class="last-updated" id="last-updated">最后更新: 2024-01-15 16:00:00</div>
+            </div>
+        </div>
+
+        <!-- 主要内容区域 -->
+        <div class="content-grid">
+            <!-- 左侧：股票详细信息 -->
+            <div class="left-panel">
+                <!-- 关键指标 -->
+                <div class="info-card">
+                    <div class="card-header">
+                        <span class="card-icon">📈</span>
+                        <h3>关键指标</h3>
+                    </div>
+                    <div class="metrics-grid">
+                        <div class="metric-item">
+                            <span class="metric-label">开盘价</span>
+                            <span class="metric-value" id="open-price">$148.50</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">最高价</span>
+                            <span class="metric-value" id="high-price">$151.20</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">最低价</span>
+                            <span class="metric-value" id="low-price">$147.80</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">成交量</span>
+                            <span class="metric-value" id="volume">45.2M</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">市值</span>
+                            <span class="metric-value" id="market-cap">$2.35T</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">市盈率</span>
+                            <span class="metric-value" id="pe-ratio">28.5</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 公司简介 -->
+                <div class="info-card">
+                    <div class="card-header">
+                        <span class="card-icon">🏢</span>
+                        <h3>公司简介</h3>
+                    </div>
+                    <div class="company-description" id="company-description">
+                        <p>苹果公司是一家美国跨国科技公司，总部位于加利福尼亚州库比蒂诺。公司设计、开发和销售消费电子产品、计算机软件和在线服务。</p>
+                    </div>
+                </div>
+
+                <!-- 相关新闻 -->
+                <div class="info-card">
+                    <div class="card-header">
+                        <span class="card-icon">📰</span>
+                        <h3>相关新闻</h3>
+                    </div>
+                    <div class="news-list" id="news-list">
+                        <div class="news-item">
+                            <div class="news-title">苹果发布最新季度财报</div>
+                            <div class="news-time">2小时前</div>
+                        </div>
+                        <div class="news-item">
+                            <div class="news-title">iPhone销量超预期</div>
+                            <div class="news-time">5小时前</div>
+                        </div>
+                        <div class="news-item">
+                            <div class="news-title">苹果股价创新高</div>
+                            <div class="news-time">1天前</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：标签信息 -->
+            <div class="right-panel">
+                <!-- 所属标签 -->
+                <div class="info-card">
+                    <div class="card-header">
+                        <span class="card-icon">🏷️</span>
+                        <h3>所属标签</h3>
+                        <span class="tag-count" id="tag-count">(6)</span>
+                    </div>
+                    <div class="stock-tags" id="stock-tags">
+                        <!-- 标签将通过JavaScript动态加载 -->
+                    </div>
+                </div>
+
+                <!-- 同类股票 -->
+                <div class="info-card">
+                    <div class="card-header">
+                        <span class="card-icon">🔗</span>
+                        <h3>同类股票</h3>
+                    </div>
+                    <div class="related-stocks" id="related-stocks">
+                        <!-- 相关股票将通过JavaScript动态加载 -->
+                    </div>
+                </div>
+
+                <!-- 快速操作 -->
+                <div class="info-card">
+                    <div class="card-header">
+                        <span class="card-icon">⚡</span>
+                        <h3>快速操作</h3>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="action-btn primary" onclick="addToWatchlist()">
+                            <span class="btn-icon">⭐</span>
+                            加入自选
+                        </button>
+                        <button class="action-btn secondary" onclick="shareStock()">
+                            <span class="btn-icon">📤</span>
+                            分享股票
+                        </button>
+                        <button class="action-btn secondary" onclick="exportData()">
+                            <span class="btn-icon">📊</span>
+                            导出数据
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2024 Stock Tag Explorer. 数据仅供参考，投资有风险。</p>
+        </div>
+    </footer>
+
+    <!-- Toast 通知 -->
+    <div id="toast" class="toast"></div>
+
+    <!-- 加载指示器 -->
+    <div id="loading" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">加载中...</div>
+    </div>
+
+    <script src="./scripts/stock-detail.js"></script>
+</body>
+</html>
