@@ -111,26 +111,41 @@
                 <div class="content-layout">
                     <!-- 左侧股票列表 -->
                     <div class="left-panel">
-                        <!-- 股票列表 -->
-                        <div class="stock-list-section">
+                        <!-- 股票列表区域 -->
+                        <section id="stock-list-section" class="stock-list-section">
                             <div class="stock-list-header">
-                                <h3 id="stock-list-title">股票列表</h3>
-                            </div>
-                            <!-- 加载状态 -->
-                            <div id="loading-indicator" class="loading-indicator" style="display: none;">
-                                <div class="loading-spinner"></div>
-                                <span>正在加载股票数据...</span>
+                                <h3 id="stock-list-title">选中标签的股票</h3>
+                                <div class="stock-list-controls">
+                                    <div class="view-controls">
+                                        <button id="grid-view" class="view-btn active" title="网格视图">
+                                            <span class="view-icon">⊞</span>
+                                        </button>
+                                        <button id="list-view" class="view-btn" title="列表视图">
+                                            <span class="view-icon">☰</span>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                             
-                            <!-- 错误消息 -->
-                            <div id="error-message" class="error-message" style="display: none;"></div>
+                            <!-- 加载状态 -->
+                            <div id="loading" class="loading-state">
+                                <div class="loading-spinner"></div>
+                                <p>正在加载股票数据...</p>
+                            </div>
+                            
+                            <!-- 错误状态 -->
+                            <div id="error" class="error-state hidden">
+                                <div class="error-icon">⚠️</div>
+                                <p id="error-message">加载失败，请重试</p>
+                                <button id="retry-btn" class="retry-btn">重新加载</button>
+                            </div>
                             
                             <!-- 股票列表 -->
                             <div id="stock-list" class="stock-list"></div>
                             
-                            <!-- 分页控件 -->
-                            <div id="pagination-container" class="pagination-container" style="display: none;"></div>
-                        </div>
+                            <!-- 分页 -->
+                            <div id="pagination" class="pagination hidden"></div>
+                        </section>
                     </div>
                     
                     <!-- 右侧侧边栏 -->

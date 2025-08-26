@@ -456,62 +456,95 @@ class TagDetailPage {
      * 渲染股票列表
      */
     renderStockList() {
-        const stockList = document.getElementById('stock-list');
-        if (!stockList) return;
-        
+        const container = document.getElementById('stock-list');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        if (this.filteredStocks.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">📊</div>
+                    <h3>暂无股票数据</h3>
+                    <p>该标签下暂时没有找到符合条件的股票</p>
+                </div>
+            `;
+            return;
+        }
+
+        // 计算分页
         const startIndex = (this.currentPage - 1) * this.pageSize;
         const endIndex = startIndex + this.pageSize;
         const pageStocks = this.filteredStocks.slice(startIndex, endIndex);
-        
-        if (pageStocks.length === 0) {
-            stockList.innerHTML = '<div class="no-results">没有找到符合条件的股票</div>';
-            return;
-        }
-        
-        stockList.innerHTML = pageStocks.map(stock => this.createStockCard(stock)).join('');
-        
-        // 绑定股票卡片点击事件
-        stockList.querySelectorAll('.stock-card').forEach(card => {
-            card.addEventListener('click', () => {
-                const symbol = card.dataset.symbol;
-                this.navigateToStockDetail(symbol);
-            });
+
+        // 渲染股票项
+        pageStocks.forEach(stock => {
+            const stockElement = this.createStockItem(stock);
+            container.appendChild(stockElement);
         });
+
+        // 更新分页
+        this.totalPages = Math.ceil(this.filteredStocks.length / this.pageSize);
+        this.renderPagination();
     }
 
     /**
-     * 创建股票卡片HTML
+     * 创建股票项元素 - 使用与index.html相同的结构
      */
-    createStockCard(stock) {
-        const changeClass = stock.change > 0 ? 'positive' : stock.change < 0 ? 'negative' : 'neutral';
-        const changeSign = stock.change > 0 ? '+' : '';
+    createStockItem(stock) {
+        const item = document.createElement('div');
+        item.className = 'stock-item';
         
-        return `
-            <div class="stock-card" data-symbol="${stock.symbol}">
-                <div class="stock-header">
-                    <div class="stock-info">
-                        <div class="stock-symbol">${stock.symbol}</div>
-                        <div class="stock-name">${stock.name}</div>
-                    </div>
-                    <div class="stock-price">
-                        <div class="current-price">$${stock.price.toFixed(2)}</div>
-                        <div class="price-change ${changeClass}">
-                            ${changeSign}${stock.change.toFixed(2)} (${changeSign}${stock.changePercent.toFixed(2)}%)
-                        </div>
-                    </div>
+        // 处理数据格式兼容性
+        const symbol = stock.symbol || stock.ticker;
+        const name = stock.name || stock.name_zh || stock.company_name || symbol;
+        const price = parseFloat(stock.price || stock.last_price || stock.current_price || 0);
+        const change = parseFloat(stock.change || stock.change_amount || stock.price_change || 0);
+        const changePercent = parseFloat(stock.changePercent || stock.change_percent || 0);
+        const volume = parseInt(stock.volume || stock.trading_volume || 0);
+        const marketCap = parseFloat(stock.marketCap || stock.market_cap || 0);
+        const lastUpdated = stock.lastUpdated || stock.last_updated || new Date().toISOString();
+        
+        const changeClass = change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral';
+        const changeSymbol = change > 0 ? '+' : '';
+        
+        // 使用与index.html中app.js相同的HTML结构
+        item.innerHTML = `
+            <div class="stock-header">
+                <div class="stock-info">
+                    <div class="stock-name">${name}</div>
+                    <div class="stock-symbol">${symbol}</div>
                 </div>
-                <div class="stock-metrics">
-                    <div class="metric">
-                        <span class="metric-label">成交量</span>
-                        <span class="metric-value">${this.formatNumber(stock.volume)}</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">市值</span>
-                        <span class="metric-value">${this.formatMarketCap(stock.marketCap)}</span>
+                <div class="stock-price">
+                    <div class="current-price">$${price.toFixed(2)}</div>
+                    <div class="price-change ${changeClass}">
+                        ${changeSymbol}${change.toFixed(2)} (${changeSymbol}${changePercent.toFixed(2)}%)
                     </div>
                 </div>
             </div>
+            <div class="stock-details">
+                <div class="detail-item">
+                    <div class="detail-label">成交量</div>
+                    <div class="detail-value">${this.formatVolume(volume)}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">市值</div>
+                    <div class="detail-value">${this.formatMarketCap(marketCap)}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">更新时间</div>
+                    <div class="detail-value">${this.formatTime(lastUpdated)}</div>
+                </div>
+            </div>
         `;
+        
+        // 添加点击事件，跳转到个股详情页
+        item.style.cursor = 'pointer';
+        item.addEventListener('click', () => {
+            this.navigateToStockDetail(symbol);
+        });
+
+        return item;
     }
 
     /**
@@ -542,86 +575,51 @@ class TagDetailPage {
     }
 
     /**
-     * 渲染分页控件
+     * 渲染分页控件 - 与index.html保持一致
      */
     renderPagination() {
-        const paginationContainer = document.getElementById('pagination-container');
-        if (!paginationContainer) return;
-        
+        const container = document.getElementById('pagination');
+        if (!container) return;
+
         if (this.totalPages <= 1) {
-            paginationContainer.style.display = 'none';
+            container.classList.add('hidden');
             return;
         }
-        
-        paginationContainer.style.display = 'flex';
-        paginationContainer.innerHTML = '';
-        
+
+        container.classList.remove('hidden');
+        container.innerHTML = '';
+
         // 上一页按钮
         const prevBtn = document.createElement('button');
-        prevBtn.className = 'pagination-btn';
-        prevBtn.innerHTML = '<span>←</span> 上一页';
+        prevBtn.textContent = '上一页';
         prevBtn.disabled = this.currentPage === 1;
-        prevBtn.onclick = () => this.goToPage(this.currentPage - 1);
-        paginationContainer.appendChild(prevBtn);
-        
-        // 页码按钮逻辑
-        const startPage = Math.max(1, this.currentPage - 2);
-        const endPage = Math.min(this.totalPages, this.currentPage + 2);
-        
-        // 如果不是从第1页开始，显示第1页和省略号
-        if (startPage > 1) {
-            const firstPageBtn = document.createElement('button');
-            firstPageBtn.className = 'pagination-btn';
-            firstPageBtn.textContent = '1';
-            firstPageBtn.onclick = () => this.goToPage(1);
-            paginationContainer.appendChild(firstPageBtn);
-            
-            if (startPage > 2) {
-                const ellipsis = document.createElement('span');
-                ellipsis.className = 'pagination-ellipsis';
-                ellipsis.textContent = '...';
-                paginationContainer.appendChild(ellipsis);
+        prevBtn.addEventListener('click', () => {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+                this.renderStockList();
+                this.showToast(`已切换到第 ${this.currentPage} 页`);
             }
-        }
-        
-        // 当前页面附近的页码
-        for (let i = startPage; i <= endPage; i++) {
-            const pageBtn = document.createElement('button');
-            pageBtn.className = `pagination-btn ${i === this.currentPage ? 'active' : ''}`;
-            pageBtn.textContent = i;
-            pageBtn.onclick = () => this.goToPage(i);
-            paginationContainer.appendChild(pageBtn);
-        }
-        
-        // 如果不是到最后一页，显示省略号和最后一页
-        if (endPage < this.totalPages) {
-            if (endPage < this.totalPages - 1) {
-                const ellipsis = document.createElement('span');
-                ellipsis.className = 'pagination-ellipsis';
-                ellipsis.textContent = '...';
-                paginationContainer.appendChild(ellipsis);
-            }
-            
-            const lastPageBtn = document.createElement('button');
-            lastPageBtn.className = 'pagination-btn';
-            lastPageBtn.textContent = this.totalPages;
-            lastPageBtn.onclick = () => this.goToPage(this.totalPages);
-            paginationContainer.appendChild(lastPageBtn);
-        }
-        
-        // 下一页按钮
-        const nextBtn = document.createElement('button');
-        nextBtn.className = 'pagination-btn';
-        nextBtn.innerHTML = '下一页 <span>→</span>';
-        nextBtn.disabled = this.currentPage === this.totalPages;
-        nextBtn.onclick = () => this.goToPage(this.currentPage + 1);
-        paginationContainer.appendChild(nextBtn);
-        
-        // 页面信息
-        const pageInfo = document.createElement('div');
+        });
+        container.appendChild(prevBtn);
+
+        // 页码信息
+        const pageInfo = document.createElement('span');
         pageInfo.className = 'pagination-info';
         pageInfo.textContent = `第 ${this.currentPage} 页，共 ${this.totalPages} 页`;
-        paginationContainer.appendChild(pageInfo);
+        container.appendChild(pageInfo);
+
+        // 下一页按钮
+        const nextBtn = document.createElement('button');
+        nextBtn.textContent = '下一页';
+        nextBtn.disabled = this.currentPage === this.totalPages;
+        nextBtn.addEventListener('click', () => {
+            if (this.currentPage < this.totalPages) {
+                this.currentPage++;
+                this.renderStockList();
+                this.showToast(`已切换到第 ${this.currentPage} 页`);
+            }
+        });
+        container.appendChild(nextBtn);
     }
 
     /**
@@ -719,6 +717,57 @@ class TagDetailPage {
     }
 
     /**
+     * 格式化成交量 - 与index.html中app.js保持一致
+     */
+    formatVolume(volume) {
+        if (!volume || volume === 0) return 'N/A';
+        
+        const num = parseInt(volume);
+        if (num >= 1000000000) {
+            return `${(num / 1000000000).toFixed(1)}B`;
+        } else if (num >= 1000000) {
+            return `${(num / 1000000).toFixed(1)}M`;
+        } else if (num >= 1000) {
+            return `${(num / 1000).toFixed(1)}K`;
+        }
+        return num.toLocaleString();
+    }
+
+    /**
+     * 格式化市值 - 与index.html中app.js保持一致
+     */
+    formatMarketCap(marketCap) {
+        if (!marketCap || marketCap === 0) return 'N/A';
+        
+        const num = parseFloat(marketCap);
+        if (num >= 1000000000000) {
+            return `$${(num / 1000000000000).toFixed(2)}T`;
+        } else if (num >= 1000000000) {
+            return `$${(num / 1000000000).toFixed(2)}B`;
+        } else if (num >= 1000000) {
+            return `$${(num / 1000000).toFixed(2)}M`;
+        }
+        return `$${num.toLocaleString()}`;
+    }
+
+    /**
+     * 格式化时间
+     */
+    formatTime(timeStr) {
+        if (!timeStr) return 'N/A';
+        
+        try {
+            const date = new Date(timeStr);
+            return date.toLocaleTimeString('zh-CN', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (error) {
+            return 'N/A';
+        }
+    }
+
+    /**
      * 格式化数字
      */
     formatNumber(num) {
@@ -728,20 +777,6 @@ class TagDetailPage {
             return (num / 1000).toFixed(1) + 'K';
         }
         return num.toString();
-    }
-
-    /**
-     * 格式化市值
-     */
-    formatMarketCap(marketCap) {
-        if (marketCap >= 1000000000000) {
-            return (marketCap / 1000000000000).toFixed(1) + 'T';
-        } else if (marketCap >= 1000000000) {
-            return (marketCap / 1000000000).toFixed(1) + 'B';
-        } else if (marketCap >= 1000000) {
-            return (marketCap / 1000000).toFixed(1) + 'M';
-        }
-        return marketCap.toString();
     }
 
     /**
@@ -766,51 +801,42 @@ class TagDetailPage {
     }
 
     /**
-     * 显示错误信息
-     */
-    showError(message) {
-        const errorContainer = document.getElementById('error-message');
-        if (errorContainer) {
-            errorContainer.textContent = message;
-            errorContainer.style.display = 'block';
-            
-            // 3秒后自动隐藏
-            setTimeout(() => {
-                errorContainer.style.display = 'none';
-            }, 3000);
-        }
-    }
-    
-    /**
-     * 显示加载状态
+     * 显示加载状态 - 与index.html保持一致
      */
     showLoading() {
-        const loadingEl = document.getElementById('loading-indicator');
-        if (loadingEl) {
-            loadingEl.style.display = 'block';
-        }
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const stockList = document.getElementById('stock-list');
         
-        // 禁用筛选和排序控件
-        const controls = document.querySelectorAll('.filter-select, .sort-select');
-        controls.forEach(control => {
-            control.disabled = true;
-        });
+        if (loading) loading.classList.remove('hidden');
+        if (error) error.classList.add('hidden');
+        if (stockList) stockList.style.display = 'none';
     }
-    
+
     /**
-     * 隐藏加载状态
+     * 隐藏加载状态 - 与index.html保持一致
      */
     hideLoading() {
-        const loadingEl = document.getElementById('loading-indicator');
-        if (loadingEl) {
-            loadingEl.style.display = 'none';
-        }
+        const loading = document.getElementById('loading');
+        const stockList = document.getElementById('stock-list');
         
-        // 启用筛选和排序控件
-        const controls = document.querySelectorAll('.filter-select, .sort-select');
-        controls.forEach(control => {
-            control.disabled = false;
-        });
+        if (loading) loading.classList.add('hidden');
+        if (stockList) stockList.style.display = 'block';
+    }
+
+    /**
+     * 显示错误信息 - 与index.html保持一致
+     */
+    showError(message) {
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const errorMessage = document.getElementById('error-message');
+        const stockList = document.getElementById('stock-list');
+        
+        if (loading) loading.classList.add('hidden');
+        if (stockList) stockList.style.display = 'none';
+        if (error) error.classList.remove('hidden');
+        if (errorMessage) errorMessage.textContent = message;
     }
     
     /**
