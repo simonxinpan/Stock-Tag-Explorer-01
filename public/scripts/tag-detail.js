@@ -722,68 +722,7 @@ class TagDetailPage {
         this.showToast(`点击了 ${symbol}，股票详情页功能待开发`, 'info');
     }
 
-    /**
-     * 格式化成交量 - 与index.html中app.js保持一致
-     */
-    formatVolume(volume) {
-        if (!volume || volume === 0) return 'N/A';
-        
-        const num = parseInt(volume);
-        if (num >= 1000000000) {
-            return `${(num / 1000000000).toFixed(1)}B`;
-        } else if (num >= 1000000) {
-            return `${(num / 1000000).toFixed(1)}M`;
-        } else if (num >= 1000) {
-            return `${(num / 1000).toFixed(1)}K`;
-        }
-        return num.toLocaleString();
-    }
 
-    /**
-     * 格式化市值 - 与index.html中app.js保持一致
-     */
-    formatMarketCap(marketCap) {
-        if (!marketCap || marketCap === 0) return 'N/A';
-        
-        const num = parseFloat(marketCap);
-        if (num >= 1000000000000) {
-            return `$${(num / 1000000000000).toFixed(2)}T`;
-        } else if (num >= 1000000000) {
-            return `$${(num / 1000000000).toFixed(2)}B`;
-        } else if (num >= 1000000) {
-            return `$${(num / 1000000).toFixed(2)}M`;
-        }
-        return `$${num.toLocaleString()}`;
-    }
-
-    /**
-     * 格式化时间
-     */
-    formatTime(timeStr) {
-        if (!timeStr) return 'N/A';
-        
-        try {
-            const date = new Date(timeStr);
-            return date.toLocaleTimeString('zh-CN', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        } catch (error) {
-            return 'N/A';
-        }
-    }
-
-    /**
-     * 格式化数字
-     */
-    formatNumber(num) {
-        if (num >= 1000000) {
-            return (num / 1000000).toFixed(1) + 'M';
-        } else if (num >= 1000) {
-            return (num / 1000).toFixed(1) + 'K';
-        }
-        return num.toString();
-    }
 
     /**
      * 显示加载状态

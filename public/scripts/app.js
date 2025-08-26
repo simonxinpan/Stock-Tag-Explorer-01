@@ -684,69 +684,13 @@ class StockTagExplorer {
      * 渲染股票列表 - 使用通用渲染器
      */
     renderStockList() {
-        if (window.stockRenderer) {
-            window.stockRenderer.renderStockList(this.stockData, 'stock-list');
-        } else {
+        if (!window.stockRenderer) {
             console.error('Stock renderer not available');
+            return;
         }
-    }
 
-    /**
-     * 创建股票项
-     */
-    createStockItem(stock) {
-        const item = document.createElement('div');
-        item.className = 'stock-item';
-        
-        // 处理数据格式兼容性
-        const symbol = stock.symbol || stock.ticker;
-        const name = stock.name || stock.company_name || symbol;
-        const price = stock.price || stock.current_price || 0;
-        const change = stock.change || stock.price_change || 0;
-        const changePercent = stock.changePercent || stock.change_percent || 0;
-        const volume = stock.volume || stock.trading_volume || 0;
-        const marketCap = stock.marketCap || stock.market_cap || 0;
-        const lastUpdated = stock.lastUpdated || stock.last_updated || new Date().toISOString();
-        
-        const changeClass = change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral';
-        const changeSymbol = change > 0 ? '+' : '';
-        
-        item.innerHTML = `
-            <div class="stock-header">
-                <div class="stock-info">
-                    <div class="stock-name">${name}</div>
-                    <div class="stock-symbol">${symbol}</div>
-                </div>
-                <div class="stock-price">
-                    <div class="current-price">$${price.toFixed(2)}</div>
-                    <div class="price-change ${changeClass}">
-                        ${changeSymbol}${change.toFixed(2)} (${changeSymbol}${changePercent.toFixed(2)}%)
-                    </div>
-                </div>
-            </div>
-            <div class="stock-details">
-                <div class="detail-item">
-                    <div class="detail-label">成交量</div>
-                    <div class="detail-value">${this.formatVolume(volume)}</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">市值</div>
-                    <div class="detail-value">${this.formatMarketCap(marketCap)}</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">更新时间</div>
-                    <div class="detail-value">${this.formatTime(lastUpdated)}</div>
-                </div>
-            </div>
-        `;
-        
-        // 添加点击事件，跳转到个股详情页
-        item.style.cursor = 'pointer';
-        item.addEventListener('click', () => {
-            this.navigateToStockDetail(symbol);
-        });
-
-        return item;
+        // 使用通用渲染器渲染股票列表
+        window.stockRenderer.renderStockList(this.stockData, 'stock-list');
     }
 
     /**
@@ -768,67 +712,6 @@ class StockTagExplorer {
         } else {
             console.error('Stock renderer not available');
         }
-    }
-
-    /**
-     * 格式化成交量
-     */
-    formatVolume(volume) {
-        if (volume >= 1000000000) {
-            return (volume / 1000000000).toFixed(1) + 'B';
-        } else if (volume >= 1000000) {
-            return (volume / 1000000).toFixed(1) + 'M';
-        } else if (volume >= 1000) {
-            return (volume / 1000).toFixed(1) + 'K';
-        }
-        return volume.toString();
-    }
-
-    /**
-     * 格式化市值
-     */
-    formatMarketCap(marketCap) {
-        if (marketCap >= 1000000000000) {
-            return (marketCap / 1000000000000).toFixed(2) + 'T';
-        } else if (marketCap >= 1000000000) {
-            return (marketCap / 1000000000).toFixed(1) + 'B';
-        } else if (marketCap >= 1000000) {
-            return (marketCap / 1000000).toFixed(1) + 'M';
-        }
-        return marketCap.toString();
-    }
-
-    /**
-     * 格式化时间
-     */
-    formatTime(timestamp) {
-        const date = new Date(timestamp);
-        const now = new Date();
-        const diff = now - date;
-        
-        if (diff < 60000) { // 1分钟内
-            return '刚刚';
-        } else if (diff < 3600000) { // 1小时内
-            return Math.floor(diff / 60000) + '分钟前';
-        } else if (diff < 86400000) { // 24小时内
-            return Math.floor(diff / 3600000) + '小时前';
-        } else {
-            return date.toLocaleDateString('zh-CN');
-        }
-    }
-
-    /**
-     * 跳转到个股详情页
-     */
-    navigateToStockDetail(symbol) {
-        // 构建详情页URL
-        const detailUrl = `https://stock-details-final-1e1vcxew3-simon-pans-projects.vercel.app/?symbol=${symbol}`;
-        
-        // 在新标签页中打开
-        window.open(detailUrl, '_blank');
-        
-        // 显示提示
-        this.showToast(`正在打开 ${symbol} 的详情页...`, 'info');
     }
 
     /**
