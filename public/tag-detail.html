@@ -116,15 +116,34 @@
                             <div class="stock-list-header">
                                 <h3 id="stock-list-title">股票列表</h3>
                             </div>
-                            <div id="loading" class="loading">加载中...</div>
-                            <div id="error" class="error hidden">加载失败，请刷新重试</div>
+                            <!-- 加载状态 -->
+                            <div id="loading-indicator" class="loading-indicator" style="display: none;">
+                                <div class="loading-spinner"></div>
+                                <span>正在加载股票数据...</span>
+                            </div>
+                            
+                            <!-- 错误消息 -->
+                            <div id="error-message" class="error-message" style="display: none;"></div>
+                            
+                            <!-- 股票列表 -->
                             <div id="stock-list" class="stock-list"></div>
-                            <div id="pagination" class="pagination hidden"></div>
+                            
+                            <!-- 分页控件 -->
+                            <div id="pagination-container" class="pagination-container" style="display: none;"></div>
                         </div>
                     </div>
                     
-                    <!-- 右侧标签云 -->
+                    <!-- 右侧侧边栏 -->
                     <div class="right-panel">
+                        <!-- 相关标签云 (移到顶部) -->
+                        <div class="tag-cloud-card">
+                            <div class="tag-cloud-header">
+                                <h4>🏷️ 相关标签</h4>
+                                <p class="tag-cloud-subtitle">点击探索其他分类</p>
+                            </div>
+                            <div id="related-tags" class="related-tags-compact"></div>
+                        </div>
+                        
                         <!-- 标签统计卡片 -->
                         <div class="stats-card">
                             <div class="stats-header">
@@ -136,11 +155,11 @@
                                     <span class="stats-label">总股票数</span>
                                 </div>
                                 <div class="stats-item stats-up">
-                                    <span class="stats-number" id="up-stocks">-</span>
+                                    <span class="stats-number" id="rising-stocks">-</span>
                                     <span class="stats-label">上涨</span>
                                 </div>
                                 <div class="stats-item stats-down">
-                                    <span class="stats-number" id="down-stocks">-</span>
+                                    <span class="stats-number" id="falling-stocks">-</span>
                                     <span class="stats-label">下跌</span>
                                 </div>
                                 <div class="stats-item stats-flat">
@@ -148,15 +167,6 @@
                                     <span class="stats-label">平盘</span>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <!-- 相关标签云 -->
-                        <div class="tag-cloud-card">
-                            <div class="tag-cloud-header">
-                                <h4>🏷️ 相关标签</h4>
-                                <p class="tag-cloud-subtitle">点击探索其他分类</p>
-                            </div>
-                            <div id="related-tags" class="related-tags-compact"></div>
                         </div>
                         
                         <!-- 快速导航 -->
@@ -193,6 +203,9 @@
         
         <!-- Toast 通知 -->
         <div id="toast" class="toast hidden"></div>
+        
+        <!-- 全局Toast消息 -->
+        <div id="toast-message" class="toast-message" style="display: none;"></div>
     </div>
     
     <script src="./scripts/tag-detail.js"></script>

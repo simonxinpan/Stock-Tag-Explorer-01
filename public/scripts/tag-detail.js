@@ -30,7 +30,7 @@ class TagDetailPage {
             await this.loadTagFromURL();
             this.showLoading();
             await this.loadTagData();
-            await this.loadRelatedTags();
+            // 相关标签将在loadTagData中一起加载
             this.hideLoading();
         } catch (error) {
             console.error('页面初始化失败:', error);
@@ -78,27 +78,32 @@ class TagDetailPage {
         // 排序选择器
         const sortSelect = document.getElementById('sort-select');
         if (sortSelect) {
-            sortSelect.addEventListener('change', (e) => {
+            sortSelect.addEventListener('change', async (e) => {
                 this.currentSort = e.target.value;
-                this.applyFiltersAndSorting();
+                await this.applyFiltersAndSorting();
+                this.showToast(`已按「${e.target.selectedOptions[0].text}」排序`);
             });
         }
 
         // 价格过滤器
         const priceFilter = document.getElementById('price-filter');
         if (priceFilter) {
-            priceFilter.addEventListener('change', (e) => {
+            priceFilter.addEventListener('change', async (e) => {
                 this.priceFilter = e.target.value;
-                this.applyFiltersAndSorting();
+                await this.applyFiltersAndSorting();
+                const filterText = e.target.selectedOptions[0].text;
+                this.showToast(`已筛选「${filterText}」价格区间`);
             });
         }
 
         // 涨跌幅过滤器
         const changeFilter = document.getElementById('change-filter');
         if (changeFilter) {
-            changeFilter.addEventListener('change', (e) => {
+            changeFilter.addEventListener('change', async (e) => {
                 this.changeFilter = e.target.value;
-                this.applyFiltersAndSorting();
+                await this.applyFiltersAndSorting();
+                const filterText = e.target.selectedOptions[0].text;
+                this.showToast(`已筛选「${filterText}」股票`);
             });
         }
 
@@ -139,48 +144,46 @@ class TagDetailPage {
      */
     async loadTagData() {
         try {
-            // 调用标签股票API
-            const response = await fetch(`${this.apiBaseUrl}/api/tag-stocks?tag=${encodeURIComponent(this.currentTag)}`);
+            // 调用新的智能路由API
+            const response = await fetch(`${this.apiBaseUrl}/api/stocks-by-tag?tag=${encodeURIComponent(this.currentTag)}&page=${this.currentPage}&limit=${this.pageSize}&sort=${this.currentSort}`);
             
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                throw new Error(`API请求失败: ${response.status}`);
             }
             
-            const data = await response.json();
+            const result = await response.json();
             
-            if (data.success && data.data) {
-                this.stockData = data.data;
+            if (result.success && result.data) {
+                const { stocks, stats, pagination, relatedTags } = result.data;
+                
+                this.stockData = stocks || [];
+                this.relatedTags = relatedTags || [];
+                this.totalPages = pagination?.totalPages || 1;
+                
+                // 直接渲染股票列表，不需要再次过滤排序
+                this.filteredStocks = this.stockData;
+                this.renderStockList();
+                this.renderRelatedTags();
+                this.renderPagination();
+                
+                // 更新股票数量显示和统计信息
+                this.updateStatsFromAPI(stats);
+                
+                console.log(`成功加载「${this.currentTag}」标签数据: ${stocks.length} 只股票`);
             } else {
-                // 使用模拟数据
-                this.stockData = this.getMockStockData();
-                this.showToast('使用模拟数据展示', 'warning');
+                throw new Error('API返回数据格式错误');
             }
-            
-            this.applyFiltersAndSorting();
-            this.updateStats();
-            
         } catch (error) {
             console.error('加载标签数据失败:', error);
-            // 使用模拟数据作为备用
+            this.showError('加载数据失败，正在使用模拟数据');
+            // 使用模拟数据作为后备
             this.stockData = this.getMockStockData();
             this.applyFiltersAndSorting();
             this.updateStats();
-            this.showToast('连接服务器失败，使用模拟数据', 'warning');
         }
     }
 
-    /**
-     * 加载相关标签
-     */
-    async loadRelatedTags() {
-        try {
-            // 模拟相关标签数据
-            this.relatedTags = this.getMockRelatedTags();
-            this.renderRelatedTags();
-        } catch (error) {
-            console.error('加载相关标签失败:', error);
-        }
-    }
+
 
     /**
      * 获取模拟股票数据
@@ -389,85 +392,24 @@ class TagDetailPage {
     }
 
     /**
-     * 应用过滤和排序
+     * 应用过滤和排序（重新调用API）
      */
-    applyFiltersAndSorting() {
-        // 确保stockData是数组
-        if (!Array.isArray(this.stockData)) {
-            console.warn('stockData is not an array, initializing with empty array');
-            this.stockData = [];
-        }
-        
-        // 先应用过滤器
-        this.filteredStocks = this.stockData.filter(stock => {
-            // 价格过滤
-            if (this.priceFilter !== 'all') {
-                const price = stock.price;
-                switch (this.priceFilter) {
-                    case 'under-50':
-                        if (price >= 50) return false;
-                        break;
-                    case '50-100':
-                        if (price < 50 || price >= 100) return false;
-                        break;
-                    case '100-200':
-                        if (price < 100 || price >= 200) return false;
-                        break;
-                    case 'over-200':
-                        if (price < 200) return false;
-                        break;
-                }
-            }
-
-            // 涨跌幅过滤
-            if (this.changeFilter !== 'all') {
-                const changePercent = stock.changePercent;
-                switch (this.changeFilter) {
-                    case 'rising':
-                        if (changePercent <= 0) return false;
-                        break;
-                    case 'falling':
-                        if (changePercent >= 0) return false;
-                        break;
-                    case 'strong-rising':
-                        if (changePercent <= 5) return false;
-                        break;
-                    case 'strong-falling':
-                        if (changePercent >= -5) return false;
-                        break;
-                }
-            }
-
-            return true;
-        });
-        
-        // 然后应用排序
-        this.filteredStocks.sort((a, b) => {
-            switch (this.currentSort) {
-                case 'name-asc':
-                    return a.symbol.localeCompare(b.symbol);
-                case 'name-desc':
-                    return b.symbol.localeCompare(a.symbol);
-                case 'price-asc':
-                    return a.price - b.price;
-                case 'price-desc':
-                    return b.price - a.price;
-                case 'change-asc':
-                    return a.changePercent - b.changePercent;
-                case 'change-desc':
-                    return b.changePercent - a.changePercent;
-                case 'volume-asc':
-                    return a.volume - b.volume;
-                case 'volume-desc':
-                    return b.volume - a.volume;
-                default:
-                    return 0;
-            }
-        });
-        
+    async applyFiltersAndSorting() {
+        // 重置到第一页
         this.currentPage = 1;
-        this.updatePagination();
-        this.renderStockList();
+        
+        // 显示加载状态
+        this.showLoading();
+        
+        try {
+            // 重新加载数据
+            await this.loadTagData();
+        } catch (error) {
+            console.error('应用筛选排序失败:', error);
+            this.showError('筛选排序失败，请重试');
+        } finally {
+            this.hideLoading();
+        }
     }
 
     /**
@@ -579,77 +521,127 @@ class TagDetailPage {
         const relatedTagsEl = document.getElementById('related-tags');
         if (!relatedTagsEl) return;
         
-        relatedTagsEl.innerHTML = this.relatedTags.map(tag => `
-            <a href="tag-detail.html?tag=${encodeURIComponent(tag.name)}" class="tag-item">
-                ${tag.name}
-            </a>
-        `).join('');
-    }
-
-    /**
-     * 渲染分页
-     */
-    renderPagination() {
-        const pagination = document.getElementById('pagination');
-        if (!pagination) return;
-        
-        if (this.totalPages <= 1) {
-            pagination.classList.add('hidden');
+        if (!this.relatedTags || this.relatedTags.length === 0) {
+            relatedTagsEl.innerHTML = '<p class="no-tags">暂无相关标签</p>';
             return;
         }
         
-        pagination.classList.remove('hidden');
+        relatedTagsEl.innerHTML = this.relatedTags.map(tag => {
+            // 处理不同的标签数据格式
+            const tagName = typeof tag === 'string' ? tag : tag.name;
+            const tagType = tag.type || 'default';
+            
+            return `
+                <a href="tag-detail.html?tag=${encodeURIComponent(tagName)}" 
+                   class="tag-item tag-${tagType}" 
+                   title="点击查看 ${tagName} 标签详情">
+                    ${tagName}
+                </a>
+            `;
+        }).join('');
+    }
+
+    /**
+     * 渲染分页控件
+     */
+    renderPagination() {
+        const paginationContainer = document.getElementById('pagination-container');
+        if (!paginationContainer) return;
         
-        let paginationHTML = '';
+        if (this.totalPages <= 1) {
+            paginationContainer.style.display = 'none';
+            return;
+        }
+        
+        paginationContainer.style.display = 'flex';
+        paginationContainer.innerHTML = '';
         
         // 上一页按钮
-        paginationHTML += `
-            <button class="pagination-btn" ${this.currentPage === 1 ? 'disabled' : ''} onclick="tagDetailPage.goToPage(${this.currentPage - 1})">
-                ← 上一页
-            </button>
-        `;
+        const prevBtn = document.createElement('button');
+        prevBtn.className = 'pagination-btn';
+        prevBtn.innerHTML = '<span>←</span> 上一页';
+        prevBtn.disabled = this.currentPage === 1;
+        prevBtn.onclick = () => this.goToPage(this.currentPage - 1);
+        paginationContainer.appendChild(prevBtn);
         
-        // 页码按钮
+        // 页码按钮逻辑
         const startPage = Math.max(1, this.currentPage - 2);
         const endPage = Math.min(this.totalPages, this.currentPage + 2);
         
+        // 如果不是从第1页开始，显示第1页和省略号
+        if (startPage > 1) {
+            const firstPageBtn = document.createElement('button');
+            firstPageBtn.className = 'pagination-btn';
+            firstPageBtn.textContent = '1';
+            firstPageBtn.onclick = () => this.goToPage(1);
+            paginationContainer.appendChild(firstPageBtn);
+            
+            if (startPage > 2) {
+                const ellipsis = document.createElement('span');
+                ellipsis.className = 'pagination-ellipsis';
+                ellipsis.textContent = '...';
+                paginationContainer.appendChild(ellipsis);
+            }
+        }
+        
+        // 当前页面附近的页码
         for (let i = startPage; i <= endPage; i++) {
-            paginationHTML += `
-                <button class="pagination-btn ${i === this.currentPage ? 'active' : ''}" onclick="tagDetailPage.goToPage(${i})">
-                    ${i}
-                </button>
-            `;
+            const pageBtn = document.createElement('button');
+            pageBtn.className = `pagination-btn ${i === this.currentPage ? 'active' : ''}`;
+            pageBtn.textContent = i;
+            pageBtn.onclick = () => this.goToPage(i);
+            paginationContainer.appendChild(pageBtn);
+        }
+        
+        // 如果不是到最后一页，显示省略号和最后一页
+        if (endPage < this.totalPages) {
+            if (endPage < this.totalPages - 1) {
+                const ellipsis = document.createElement('span');
+                ellipsis.className = 'pagination-ellipsis';
+                ellipsis.textContent = '...';
+                paginationContainer.appendChild(ellipsis);
+            }
+            
+            const lastPageBtn = document.createElement('button');
+            lastPageBtn.className = 'pagination-btn';
+            lastPageBtn.textContent = this.totalPages;
+            lastPageBtn.onclick = () => this.goToPage(this.totalPages);
+            paginationContainer.appendChild(lastPageBtn);
         }
         
         // 下一页按钮
-        paginationHTML += `
-            <button class="pagination-btn" ${this.currentPage === this.totalPages ? 'disabled' : ''} onclick="tagDetailPage.goToPage(${this.currentPage + 1})">
-                下一页 →
-            </button>
-        `;
+        const nextBtn = document.createElement('button');
+        nextBtn.className = 'pagination-btn';
+        nextBtn.innerHTML = '下一页 <span>→</span>';
+        nextBtn.disabled = this.currentPage === this.totalPages;
+        nextBtn.onclick = () => this.goToPage(this.currentPage + 1);
+        paginationContainer.appendChild(nextBtn);
         
         // 页面信息
-        paginationHTML += `
-            <span class="pagination-info">
-                第 ${this.currentPage} 页，共 ${this.totalPages} 页
-            </span>
-        `;
-        
-        pagination.innerHTML = paginationHTML;
+        const pageInfo = document.createElement('div');
+        pageInfo.className = 'pagination-info';
+        pageInfo.textContent = `第 ${this.currentPage} 页，共 ${this.totalPages} 页`;
+        paginationContainer.appendChild(pageInfo);
     }
 
     /**
      * 跳转到指定页面
      */
-    goToPage(page) {
+    async goToPage(page) {
         if (page < 1 || page > this.totalPages || page === this.currentPage) return;
         
         this.currentPage = page;
-        this.renderStockList();
-        this.renderPagination();
+        
+        // 重新加载数据
+        this.showLoading();
+        await this.loadTagData();
+        this.hideLoading();
         
         // 滚动到顶部
-        document.querySelector('.stock-list-section').scrollIntoView({ behavior: 'smooth' });
+        document.querySelector('.stock-list-section')?.scrollIntoView({ behavior: 'smooth' });
+        
+        // 显示加载提示
+        this.showToast(`已切换到第 ${page} 页`);
     }
 
     /**
@@ -677,6 +669,44 @@ class TagDetailPage {
         if (risingEl) risingEl.textContent = risingStocks;
         if (fallingEl) fallingEl.textContent = fallingStocks;
         if (flatEl) flatEl.textContent = flatStocks;
+    }
+
+    /**
+     * 从API数据更新统计信息
+     */
+    updateStatsFromAPI(stats) {
+        if (!stats) {
+            this.updateStats();
+            return;
+        }
+        
+        // 更新统计显示
+        const totalStocksEl = document.getElementById('total-stocks');
+        const risingStocksEl = document.getElementById('rising-stocks');
+        const fallingStocksEl = document.getElementById('falling-stocks');
+        const flatStocksEl = document.getElementById('flat-stocks');
+        
+        if (totalStocksEl) totalStocksEl.textContent = stats.total || 0;
+        if (risingStocksEl) risingStocksEl.textContent = stats.upCount || 0;
+        if (fallingStocksEl) fallingStocksEl.textContent = stats.downCount || 0;
+        if (flatStocksEl) flatStocksEl.textContent = stats.flatCount || 0;
+        
+        // 更新标签名称和描述
+        const tagNameEl = document.getElementById('tag-name');
+        const tagDescriptionEl = document.getElementById('tag-description');
+        
+        if (tagNameEl) tagNameEl.textContent = this.currentTag;
+        if (tagDescriptionEl) {
+            tagDescriptionEl.textContent = `共找到 ${stats.total || 0} 只「${this.currentTag}」相关股票`;
+        }
+        
+        // 显示平均指标（如果有）
+        if (stats.avgPE && stats.avgPE > 0) {
+            console.log(`平均PE: ${stats.avgPE.toFixed(2)}`);
+        }
+        if (stats.avgROE && stats.avgROE > 0) {
+            console.log(`平均ROE: ${(stats.avgROE * 100).toFixed(2)}%`);
+        }
     }
 
     /**
@@ -739,14 +769,74 @@ class TagDetailPage {
      * 显示错误信息
      */
     showError(message) {
-        const loading = document.getElementById('loading');
-        const error = document.getElementById('error');
-        
-        if (loading) loading.classList.add('hidden');
-        if (error) {
-            error.textContent = message;
-            error.classList.remove('hidden');
+        const errorContainer = document.getElementById('error-message');
+        if (errorContainer) {
+            errorContainer.textContent = message;
+            errorContainer.style.display = 'block';
+            
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                errorContainer.style.display = 'none';
+            }, 3000);
         }
+    }
+    
+    /**
+     * 显示加载状态
+     */
+    showLoading() {
+        const loadingEl = document.getElementById('loading-indicator');
+        if (loadingEl) {
+            loadingEl.style.display = 'block';
+        }
+        
+        // 禁用筛选和排序控件
+        const controls = document.querySelectorAll('.filter-select, .sort-select');
+        controls.forEach(control => {
+            control.disabled = true;
+        });
+    }
+    
+    /**
+     * 隐藏加载状态
+     */
+    hideLoading() {
+        const loadingEl = document.getElementById('loading-indicator');
+        if (loadingEl) {
+            loadingEl.style.display = 'none';
+        }
+        
+        // 启用筛选和排序控件
+        const controls = document.querySelectorAll('.filter-select, .sort-select');
+        controls.forEach(control => {
+            control.disabled = false;
+        });
+    }
+    
+    /**
+     * 显示提示信息
+     */
+    showToast(message) {
+        // 创建或获取toast元素
+        let toast = document.getElementById('toast-message');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'toast-message';
+            toast.className = 'toast-message';
+            document.body.appendChild(toast);
+        }
+        
+        toast.textContent = message;
+        toast.style.display = 'block';
+        toast.classList.add('show');
+        
+        // 2秒后自动隐藏
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 300);
+        }, 2000);
     }
 
     /**
