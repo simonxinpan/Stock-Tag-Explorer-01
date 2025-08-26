@@ -15,11 +15,7 @@ class TagDetailPage {
         this.totalPages = 1;
         this.currentSort = 'name-asc';
         this.currentView = 'grid';
-        this.filters = {
-            minPrice: null,
-            maxPrice: null,
-            changeFilter: 'all'
-        };
+        // 移除过滤器，只保留排序功能
         
         this.init();
     }
@@ -83,46 +79,11 @@ class TagDetailPage {
         if (sortSelect) {
             sortSelect.addEventListener('change', (e) => {
                 this.currentSort = e.target.value;
-                this.applyFiltersAndSort();
+                this.applySorting();
             });
         }
 
-        // 价格过滤器
-        const minPriceInput = document.getElementById('min-price');
-        const maxPriceInput = document.getElementById('max-price');
-        
-        if (minPriceInput) {
-            minPriceInput.addEventListener('input', this.debounce(() => {
-                this.filters.minPrice = minPriceInput.value ? parseFloat(minPriceInput.value) : null;
-                this.applyFiltersAndSort();
-            }, 500));
-        }
-        
-        if (maxPriceInput) {
-            maxPriceInput.addEventListener('input', this.debounce(() => {
-                this.filters.maxPrice = maxPriceInput.value ? parseFloat(maxPriceInput.value) : null;
-                this.applyFiltersAndSort();
-            }, 500));
-        }
-
-        // 涨跌幅过滤器
-        const changeBtns = document.querySelectorAll('.change-btn');
-        changeBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                changeBtns.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                this.filters.changeFilter = btn.dataset.filter;
-                this.applyFiltersAndSort();
-            });
-        });
-
-        // 重置过滤器
-        const resetBtn = document.getElementById('reset-filters');
-        if (resetBtn) {
-            resetBtn.addEventListener('click', () => {
-                this.resetFilters();
-            });
-        }
+        // 移除过滤器相关的事件绑定
 
         // 视图切换
         const gridViewBtn = document.getElementById('grid-view');
@@ -178,14 +139,14 @@ class TagDetailPage {
                 this.showToast('使用模拟数据展示', 'warning');
             }
             
-            this.applyFiltersAndSort();
+            this.applySorting();
             this.updateStats();
             
         } catch (error) {
             console.error('加载标签数据失败:', error);
             // 使用模拟数据作为备用
             this.stockData = this.getMockStockData();
-            this.applyFiltersAndSort();
+            this.applySorting();
             this.updateStats();
             this.showToast('连接服务器失败，使用模拟数据', 'warning');
         }
@@ -262,6 +223,132 @@ class TagDetailPage {
                 changePercent: 1.82,
                 volume: 45678901,
                 marketCap: 2200000000000
+            },
+            {
+                symbol: 'META',
+                name: 'Meta Platforms Inc.',
+                price: 485.32,
+                change: 8.45,
+                changePercent: 1.77,
+                volume: 18765432,
+                marketCap: 1200000000000
+            },
+            {
+                symbol: 'NFLX',
+                name: 'Netflix Inc.',
+                price: 425.67,
+                change: -3.21,
+                changePercent: -0.75,
+                volume: 12345678,
+                marketCap: 190000000000
+            },
+            {
+                symbol: 'CRM',
+                name: 'Salesforce Inc.',
+                price: 245.89,
+                change: 4.56,
+                changePercent: 1.89,
+                volume: 8765432,
+                marketCap: 240000000000
+            },
+            {
+                symbol: 'ORCL',
+                name: 'Oracle Corporation',
+                price: 112.34,
+                change: -0.87,
+                changePercent: -0.77,
+                volume: 15432109,
+                marketCap: 310000000000
+            },
+            {
+                symbol: 'ADBE',
+                name: 'Adobe Inc.',
+                price: 567.89,
+                change: 12.45,
+                changePercent: 2.24,
+                volume: 6543210,
+                marketCap: 260000000000
+            },
+            {
+                symbol: 'INTC',
+                name: 'Intel Corporation',
+                price: 43.21,
+                change: -1.23,
+                changePercent: -2.77,
+                volume: 32109876,
+                marketCap: 180000000000
+            },
+            {
+                symbol: 'AMD',
+                name: 'Advanced Micro Devices',
+                price: 156.78,
+                change: 5.67,
+                changePercent: 3.75,
+                volume: 28765432,
+                marketCap: 250000000000
+            },
+            {
+                symbol: 'PYPL',
+                name: 'PayPal Holdings Inc.',
+                price: 78.45,
+                change: 2.34,
+                changePercent: 3.08,
+                volume: 19876543,
+                marketCap: 85000000000
+            },
+            {
+                symbol: 'UBER',
+                name: 'Uber Technologies Inc.',
+                price: 65.32,
+                change: -1.45,
+                changePercent: -2.17,
+                volume: 24567890,
+                marketCap: 130000000000
+            },
+            {
+                symbol: 'ZOOM',
+                name: 'Zoom Video Communications',
+                price: 89.67,
+                change: 3.21,
+                changePercent: 3.71,
+                volume: 7654321,
+                marketCap: 27000000000
+            },
+            {
+                symbol: 'SHOP',
+                name: 'Shopify Inc.',
+                price: 78.90,
+                change: 4.32,
+                changePercent: 5.79,
+                volume: 9876543,
+                marketCap: 98000000000
+            },
+            {
+                symbol: 'SQ',
+                name: 'Block Inc.',
+                price: 87.65,
+                change: -2.10,
+                changePercent: -2.34,
+                volume: 13456789,
+                marketCap: 50000000000
+            },
+            {
+                symbol: 'TWTR',
+                name: 'Twitter Inc.',
+                price: 54.20,
+                change: 0.00,
+                changePercent: 0.00,
+                volume: 5432109,
+                marketCap: 41000000000
+            },
+            {
+                symbol: 'SNAP',
+                name: 'Snap Inc.',
+                price: 12.45,
+                change: 0.67,
+                changePercent: 5.69,
+                volume: 18765432,
+                marketCap: 20000000000
             }
         ];
         
@@ -273,49 +360,31 @@ class TagDetailPage {
      */
     getMockRelatedTags() {
         return [
-            { name: '大型科技股', count: 25 },
-            { name: '人工智能', count: 18 },
-            { name: '云计算', count: 15 },
-            { name: '电动汽车', count: 12 },
-            { name: '半导体', count: 20 },
-            { name: '消费电子', count: 14 },
-            { name: '软件服务', count: 22 },
-            { name: '互联网', count: 16 }
+            { name: '大型科技股' },
+            { name: '人工智能' },
+            { name: '云计算' },
+            { name: '电动汽车' },
+            { name: '半导体' },
+            { name: '消费电子' },
+            { name: '软件服务' },
+            { name: '互联网' }
         ];
     }
 
     /**
-     * 应用过滤器和排序
+     * 应用排序
      */
-    applyFiltersAndSort() {
-        let filtered = [...this.stockData];
-        
-        // 应用价格过滤器
-        if (this.filters.minPrice !== null) {
-            filtered = filtered.filter(stock => stock.price >= this.filters.minPrice);
+    applySorting() {
+        // 确保stockData是数组
+        if (!Array.isArray(this.stockData)) {
+            console.warn('stockData is not an array, initializing with empty array');
+            this.stockData = [];
         }
         
-        if (this.filters.maxPrice !== null) {
-            filtered = filtered.filter(stock => stock.price <= this.filters.maxPrice);
-        }
-        
-        // 应用涨跌幅过滤器
-        if (this.filters.changeFilter !== 'all') {
-            switch (this.filters.changeFilter) {
-                case 'up':
-                    filtered = filtered.filter(stock => stock.change > 0);
-                    break;
-                case 'down':
-                    filtered = filtered.filter(stock => stock.change < 0);
-                    break;
-                case 'flat':
-                    filtered = filtered.filter(stock => stock.change === 0);
-                    break;
-            }
-        }
+        let sorted = [...this.stockData];
         
         // 应用排序
-        filtered.sort((a, b) => {
+        sorted.sort((a, b) => {
             switch (this.currentSort) {
                 case 'name-asc':
                     return a.symbol.localeCompare(b.symbol);
@@ -338,40 +407,13 @@ class TagDetailPage {
             }
         });
         
-        this.filteredStocks = filtered;
+        this.filteredStocks = sorted;
         this.currentPage = 1;
         this.updatePagination();
         this.renderStockList();
     }
 
-    /**
-     * 重置过滤器
-     */
-    resetFilters() {
-        // 重置过滤器状态
-        this.filters = {
-            minPrice: null,
-            maxPrice: null,
-            changeFilter: 'all'
-        };
-        
-        // 重置UI
-        const minPriceInput = document.getElementById('min-price');
-        const maxPriceInput = document.getElementById('max-price');
-        const changeBtns = document.querySelectorAll('.change-btn');
-        
-        if (minPriceInput) minPriceInput.value = '';
-        if (maxPriceInput) maxPriceInput.value = '';
-        
-        changeBtns.forEach(btn => {
-            btn.classList.remove('active');
-            if (btn.dataset.filter === 'all') {
-                btn.classList.add('active');
-            }
-        });
-        
-        this.applyFiltersAndSort();
-    }
+
 
     /**
      * 切换视图模式
@@ -476,7 +518,6 @@ class TagDetailPage {
         relatedTagsEl.innerHTML = this.relatedTags.map(tag => `
             <a href="tag-detail.html?tag=${encodeURIComponent(tag.name)}" class="tag-item">
                 ${tag.name}
-                <span class="tag-count">${tag.count}</span>
             </a>
         `).join('');
     }
@@ -555,18 +596,6 @@ class TagDetailPage {
         const upStocks = this.stockData.filter(stock => stock.change > 0).length;
         const downStocks = this.stockData.filter(stock => stock.change < 0).length;
         const flatStocks = this.stockData.filter(stock => stock.change === 0).length;
-        const avgChange = this.stockData.reduce((sum, stock) => sum + stock.changePercent, 0) / totalStocks;
-        
-        // 更新头部统计
-        const stockCountEl = document.getElementById('stock-count');
-        const avgChangeEl = document.getElementById('avg-change');
-        
-        if (stockCountEl) stockCountEl.textContent = totalStocks;
-        if (avgChangeEl) {
-            const changeClass = avgChange > 0 ? 'stats-up' : avgChange < 0 ? 'stats-down' : 'stats-flat';
-            avgChangeEl.textContent = `${avgChange > 0 ? '+' : ''}${avgChange.toFixed(2)}%`;
-            avgChangeEl.className = `stat-value ${changeClass}`;
-        }
         
         // 更新右侧统计
         const totalStocksEl = document.getElementById('total-stocks');
