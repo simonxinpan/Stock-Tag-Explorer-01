@@ -409,6 +409,17 @@ module.exports = async function handler(req, res) {
               queryResult = result.rows;
             }
           }
+          // 处理S&P 500特殊标签
+          else if (tag === 'sp500_all') {
+            const sp500Query = `
+              SELECT DISTINCT s.*
+              FROM stocks s
+              ORDER BY s.ticker
+            `;
+            console.log('Executing S&P 500 query:', sp500Query);
+            const result = await client.query(sp500Query);
+            queryResult = result.rows;
+          }
           // 处理special_前缀的特殊名单标签
           else if (tag.startsWith('special_')) {
             if (tag === 'special_sp500') {

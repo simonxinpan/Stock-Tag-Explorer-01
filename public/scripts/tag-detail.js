@@ -70,20 +70,21 @@ class TagDetailPage {
      * 从tagId提取显示名称
      */
     extractDisplayNameFromTagId(tagId) {
+        // 行业标签
         if (tagId.startsWith('sector_')) {
             return tagId.replace('sector_', '');
         }
-        if (tagId.startsWith('marketcap_')) {
-            return tagId.replace('marketcap_', '');
+        
+        // 特殊名单
+        if (tagId === 'sp500_all') {
+            return 'S&P 500';
         }
         
-        // 排名标签的映射
+        // 趋势排名标签的映射
         const rankingMap = {
-            'rank_roe_ttm_top10': '高ROE',
-            'rank_pe_ttm_bottom10': '低市盈率',
-            'rank_dividend_yield_top10': '高股息率',
-            'rank_revenue_growth_top10': '高增长率',
-            'rank_debt_ratio_bottom10': '低负债率'
+            'rank_revenue_growth_top10': '营收增长前10%',
+            'rank_market_cap_top10': '市值前10%',
+            'rank_gross_margin_top10': '高毛利率前10%'
         };
         
         return rankingMap[tagId] || tagId;
@@ -93,25 +94,39 @@ class TagDetailPage {
      * 将标签名称转换为API需要的格式（兼容旧格式）
      */
     convertTagNameToApiFormat(tagName) {
-        // 行业标签
-        const sectorTags = ['科技', '金融', '医疗', '消费', '工业', '能源', '材料', '房地产', '公用事业', '通信', '原材料'];
-        if (sectorTags.includes(tagName)) {
-            return `sector_${tagName}`;
+        // 行业标签 - 对应数据库sector_zh字段
+        const sectorTags = {
+            '信息技术': 'sector_信息技术',
+            '工业': 'sector_工业', 
+            '医疗保健': 'sector_医疗保健',
+            '非必需消费品': 'sector_非必需消费品',
+            '金融': 'sector_金融',
+            '其他': 'sector_其他',
+            '公用事业': 'sector_公用事业',
+            '房地产': 'sector_房地产',
+            '日常消费品': 'sector_日常消费品',
+            '能源': 'sector_能源',
+            '金融服务': 'sector_金融服务',
+            '原材料': 'sector_原材料',
+            '半导体': 'sector_半导体',
+            '媒体娱乐': 'sector_媒体娱乐',
+            '通讯服务': 'sector_通讯服务'
+        };
+        
+        if (sectorTags[tagName]) {
+            return sectorTags[tagName];
         }
         
-        // 市值标签
-        const marketCapTags = ['大盘股', '中盘股', '小盘股'];
-        if (marketCapTags.includes(tagName)) {
-            return `marketcap_${tagName}`;
+        // 特殊名单
+        if (tagName === 'S&P 500') {
+            return 'sp500_all';
         }
         
-        // 排名标签
+        // 趋势排名标签
         const rankingMap = {
-            '高ROE': 'rank_roe_ttm_top10',
-            '低市盈率': 'rank_pe_ttm_bottom10',
-            '高股息率': 'rank_dividend_yield_top10',
-            '高增长率': 'rank_revenue_growth_top10',
-            '低负债率': 'rank_debt_ratio_bottom10'
+            '营收增长前10%': 'rank_revenue_growth_top10',
+            '市值前10%': 'rank_market_cap_top10',
+            '高毛利率前10%': 'rank_gross_margin_top10'
         };
         
         if (rankingMap[tagName]) {
