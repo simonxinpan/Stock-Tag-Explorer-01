@@ -145,45 +145,36 @@ class TagDetailPage {
      */
     async loadTagData() {
         try {
-            // 使用本地模拟数据
-            const mockData = this.getMockStocksByTag(this.currentTag);
+            // 调用真实API获取数据
+            const response = await fetch(`${this.apiBaseUrl}/api/stocks-by-tag?tag=${encodeURIComponent(this.currentTag)}&page=${this.currentPage}&limit=${this.pageSize}&sort=${this.currentSort}`);
             
-            // 模拟排序
-            let sortedStocks = [...mockData];
-            if (this.currentSort === 'market_cap') {
-                sortedStocks.sort((a, b) => b.marketCap - a.marketCap);
-            } else if (this.currentSort === 'price') {
-                sortedStocks.sort((a, b) => b.price - a.price);
-            } else if (this.currentSort === 'change_percent') {
-                sortedStocks.sort((a, b) => b.changePercent - a.changePercent);
+            if (!response.ok) {
+                throw new Error(`API请求失败: ${response.status}`);
             }
             
-            // 模拟分页
-            const startIndex = (this.currentPage - 1) * this.pageSize;
-            const endIndex = startIndex + this.pageSize;
-            const paginatedStocks = sortedStocks.slice(startIndex, endIndex);
+            const result = await response.json();
             
-            this.stockData = paginatedStocks;
-            this.totalPages = Math.ceil(sortedStocks.length / this.pageSize);
-            
-            // 直接渲染股票列表，不需要再次过滤排序
-            this.filteredStocks = this.stockData;
-            this.renderStockList();
-            this.renderPagination();
-            
-            // 更新股票数量显示和统计信息
-            const stats = {
-                total: sortedStocks.length,
-                upCount: sortedStocks.filter(s => s.changePercent > 0).length,
-                downCount: sortedStocks.filter(s => s.changePercent < 0).length,
-                flatCount: sortedStocks.filter(s => s.changePercent === 0).length
-            };
-            this.updateStatsFromAPI(stats);
-            
-            console.log(`成功加载「${this.currentTag}」标签数据: ${paginatedStocks.length} 只股票`);
+            if (result.success && result.data) {
+                const { stocks, stats, pagination } = result.data;
+                
+                this.stockData = stocks || [];
+                this.totalPages = pagination?.totalPages || 1;
+                
+                // 直接渲染股票列表，不需要再次过滤排序
+                this.filteredStocks = this.stockData;
+                this.renderStockList();
+                this.renderPagination();
+                
+                // 更新股票数量显示和统计信息
+                this.updateStatsFromAPI(stats);
+                
+                console.log(`成功加载「${this.currentTag}」标签数据: ${stocks.length} 只股票`);
+            } else {
+                throw new Error('API返回数据格式错误');
+            }
         } catch (error) {
             console.error('加载标签数据失败:', error);
-            this.showError('加载数据失败，请检查网络连接或稍后重试');
+            this.showError('加载数据失败，请稍后重试');
             // 清空数据并显示错误状态
             this.stockData = [];
             this.filteredStocks = [];
@@ -197,10 +188,21 @@ class TagDetailPage {
      */
     async loadAllTags() {
         try {
-            // 使用本地模拟标签数据
-            this.allTagsData = this.getMockAllTags();
-            this.renderRelatedTags();
-            console.log('成功加载所有标签数据');
+            const response = await fetch(`${this.apiBaseUrl}/api/tags`);
+            
+            if (!response.ok) {
+                throw new Error(`标签API请求失败: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            if (result.success && result.data) {
+                this.allTagsData = result.data;
+                this.renderRelatedTags();
+                console.log('成功加载所有标签数据');
+            } else {
+                throw new Error('标签API返回数据格式错误');
+            }
         } catch (error) {
             console.error('加载所有标签失败:', error);
             // 使用空数据作为后备

@@ -8,14 +8,74 @@ const { Pool } = require('pg');
 // 数据库连接配置
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false
-    }
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
 // 备用模拟数据
 const getMockStocksByTag = (tagName) => {
     const mockData = {
+        '大盘股': [
+            {
+                symbol: 'AAPL',
+                name: 'Apple Inc.',
+                price: 175.43,
+                change: 2.15,
+                change_percent: 1.24,
+                volume: 45678900,
+                market_cap: 2800000000000,
+                pe_ttm: 28.5,
+                roe_ttm: 0.26,
+                sector: '科技'
+            },
+            {
+                symbol: 'MSFT',
+                name: 'Microsoft Corporation',
+                price: 378.85,
+                change: -1.23,
+                change_percent: -0.32,
+                volume: 23456789,
+                market_cap: 2900000000000,
+                pe_ttm: 32.1,
+                roe_ttm: 0.31,
+                sector: '科技'
+            },
+            {
+                symbol: 'GOOGL',
+                name: 'Alphabet Inc.',
+                price: 142.56,
+                change: 1.87,
+                change_percent: 1.33,
+                volume: 28901234,
+                market_cap: 1800000000000,
+                pe_ttm: 25.8,
+                roe_ttm: 0.28,
+                sector: '科技'
+            },
+            {
+                symbol: 'AMZN',
+                name: 'Amazon.com Inc.',
+                price: 155.89,
+                change: -2.45,
+                change_percent: -1.55,
+                volume: 34567890,
+                market_cap: 1600000000000,
+                pe_ttm: 45.2,
+                roe_ttm: 0.15,
+                sector: '消费'
+            },
+            {
+                symbol: 'TSLA',
+                name: 'Tesla Inc.',
+                price: 248.42,
+                change: 12.34,
+                change_percent: 5.23,
+                volume: 78901234,
+                market_cap: 800000000000,
+                pe_ttm: 65.4,
+                roe_ttm: 0.19,
+                sector: '汽车'
+            }
+        ],
         '大型科技股': [
             {
                 symbol: 'AAPL',
@@ -300,10 +360,21 @@ module.exports = async (req, res) => {
         } catch (dbError) {
             console.error('数据库查询失败，使用模拟数据:', dbError);
             
-            // 使用模拟数据作为备用
+            // 使用备用模拟数据
             const mockData = getMockStocksByTag(tag);
-            stocks = mockData.slice(offset, offset + limitNum);
-            totalCount = mockData.length;
+            
+            // 应用排序
+            let sortedMockData = [...mockData];
+            if (sort === 'market_cap') {
+                sortedMockData.sort((a, b) => b.market_cap - a.market_cap);
+            } else if (sort === 'price') {
+                sortedMockData.sort((a, b) => b.price - a.price);
+            } else if (sort === 'change_percent') {
+                sortedMockData.sort((a, b) => b.change_percent - a.change_percent);
+            }
+            
+            stocks = sortedMockData.slice(offset, offset + limitNum);
+            totalCount = sortedMockData.length;
             
             // 模拟相关标签
             relatedTags = [
