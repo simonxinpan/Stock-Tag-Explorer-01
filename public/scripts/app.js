@@ -430,77 +430,62 @@ class StockTagExplorer {
     async handleTagClick(tag) {
         console.log('标签点击事件:', tag);
         
-        const clickedCard = document.querySelector(`[data-id="${tag.id || tag.name}"]`);
-        if (!clickedCard) {
-            console.error('未找到对应的标签卡片:', tag.id || tag.name);
-            return;
-        }
+        // 获取标签的API格式ID
+        const tagId = tag.id || this.convertTagNameToApiFormat(tag.name || tag.displayName);
+        const encodedTagId = encodeURIComponent(tagId);
+        const detailUrl = `tag-detail.html?tagId=${encodedTagId}`;
+        
+        console.log('跳转到标签详情页:', detailUrl);
+        console.log('使用的tagId:', tagId);
+        
+        // 跳转到标签详情页
+        window.location.href = detailUrl;
+    }
 
-        // 获取真实的标签ID
-        let realTagId = String(tag.id || tag.name);
+    /**
+     * 将标签名称转换为API需要的格式
+     */
+    convertTagNameToApiFormat(tagName) {
+        // 行业标签 - 对应数据库sector_zh字段
+        const sectorTags = {
+            '信息技术': 'sector_信息技术',
+            '工业': 'sector_工业', 
+            '医疗保健': 'sector_医疗保健',
+            '非必需消费品': 'sector_非必需消费品',
+            '金融': 'sector_金融',
+            '其他': 'sector_其他',
+            '公用事业': 'sector_公用事业',
+            '房地产': 'sector_房地产',
+            '日常消费品': 'sector_日常消费品',
+            '能源': 'sector_能源',
+            '金融服务': 'sector_金融服务',
+            '原材料': 'sector_原材料',
+            '半导体': 'sector_半导体',
+            '媒体娱乐': 'sector_媒体娱乐',
+            '通讯服务': 'sector_通讯服务'
+        };
         
-        // 切换选中状态
-        if (this.activeTagIds.has(realTagId)) {
-            this.activeTagIds.delete(realTagId);
-            clickedCard.classList.remove('selected');
-            console.log('取消选择标签:', realTagId);
-        } else {
-            this.activeTagIds.add(realTagId);
-            clickedCard.classList.add('selected');
-            console.log('选择标签:', realTagId);
+        if (sectorTags[tagName]) {
+            return sectorTags[tagName];
         }
-
-        // 设置选中的标签用于API调用
-        this.selectedTag = tag;
-        this.currentPage = 1;
         
-        console.log('当前选中的标签IDs:', Array.from(this.activeTagIds));
-        
-        // 如果有选中的标签，显示股票列表
-        if (this.activeTagIds.size > 0) {
-            this.showStockList();
-            
-            // 更新标题
-            const title = document.getElementById('stock-list-title');
-            if (title) {
-                if (this.activeTagIds.size === 1) {
-                    title.textContent = `${tag.name} - ${tag.stock_count || 0} 只股票`;
-                } else {
-                    title.textContent = `已选择 ${this.activeTagIds.size} 个标签的股票`;
-                }
-            }
-            
-            // 检查是否是动态排名标签
-            // 通过标签ID或名称判断是否为动态排名标签
-            const isDynamicRank = tag.dynamic_rank || 
-                                tag.id.includes('rank_') || 
-                                tag.name.includes('前10%') || 
-                                tag.name.includes('后10%');
-            
-            if (isDynamicRank && tag.metric && tag.percentile) {
-                console.log('调用动态排名API:', tag.metric, tag.percentile);
-                // 调用动态排名API
-                await this.loadDynamicRankStocks(tag);
-            } else if (isDynamicRank) {
-                // 如果是动态排名标签但缺少metric和percentile，从ID中推断
-                const inferredTag = this.inferDynamicRankParams(tag);
-                if (inferredTag.metric && inferredTag.percentile) {
-                    console.log('推断动态排名参数:', inferredTag.metric, inferredTag.percentile);
-                    await this.loadDynamicRankStocks(inferredTag);
-                } else {
-                    console.log('调用普通标签API');
-                    await this.loadStockData();
-                }
-            } else {
-                console.log('调用普通标签API');
-                // 调用普通标签API
-                await this.loadStockData();
-            }
-        } else {
-            // 如果没有选中的标签，隐藏股票列表
-            console.log('没有选中标签，隐藏股票列表');
-            this.hideStockList();
+        // 特殊名单
+        if (tagName === 'S&P 500') {
+            return 'sp500_all';
         }
+        
+        // 趋势排名标签
+        const rankingMap = {
+            '营收增长前10%': 'rank_revenue_growth_top10',
+            '市值前10%': 'rank_market_cap_top10',
+            '高毛利率前10%': 'rank_gross_margin_top10'
+        };
+        
+        if (rankingMap[tagName]) {
+            return rankingMap[tagName];
+        }
+        
+        return tagName;
     }
 
     /**
@@ -746,188 +731,37 @@ class StockTagExplorer {
     }
 
     /**
-     * 渲染股票列表
+     * 渲染股票列表 - 使用通用渲染器
      */
     renderStockList() {
-        const container = document.getElementById('stock-list');
-        if (!container) return;
-
-        container.innerHTML = '';
-
-        if (this.stockData.length === 0) {
-            container.innerHTML = '<div class="text-center">暂无数据</div>';
+        if (!window.stockRenderer) {
+            console.error('Stock renderer not available');
             return;
         }
 
-        this.stockData.forEach(stock => {
-            const stockElement = this.createStockItem(stock);
-            container.appendChild(stockElement);
-        });
+        // 使用通用渲染器渲染股票列表
+        window.stockRenderer.renderStockList(this.stockData, 'stock-list');
     }
 
     /**
-     * 创建股票项
-     */
-    createStockItem(stock) {
-        const item = document.createElement('div');
-        item.className = 'stock-item';
-        
-        // 处理数据格式兼容性
-        const symbol = stock.symbol || stock.ticker;
-        const name = stock.name || stock.company_name || symbol;
-        const price = stock.price || stock.current_price || 0;
-        const change = stock.change || stock.price_change || 0;
-        const changePercent = stock.changePercent || stock.change_percent || 0;
-        const volume = stock.volume || stock.trading_volume || 0;
-        const marketCap = stock.marketCap || stock.market_cap || 0;
-        const lastUpdated = stock.lastUpdated || stock.last_updated || new Date().toISOString();
-        
-        const changeClass = change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral';
-        const changeSymbol = change > 0 ? '+' : '';
-        
-        item.innerHTML = `
-            <div class="stock-header">
-                <div class="stock-info">
-                    <div class="stock-name">${name}</div>
-                    <div class="stock-symbol">${symbol}</div>
-                </div>
-                <div class="stock-price">
-                    <div class="current-price">$${price.toFixed(2)}</div>
-                    <div class="price-change ${changeClass}">
-                        ${changeSymbol}${change.toFixed(2)} (${changeSymbol}${changePercent.toFixed(2)}%)
-                    </div>
-                </div>
-            </div>
-            <div class="stock-details">
-                <div class="detail-item">
-                    <div class="detail-label">成交量</div>
-                    <div class="detail-value">${this.formatVolume(volume)}</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">市值</div>
-                    <div class="detail-value">${this.formatMarketCap(marketCap)}</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">更新时间</div>
-                    <div class="detail-value">${this.formatTime(lastUpdated)}</div>
-                </div>
-            </div>
-        `;
-        
-        // 添加点击事件，跳转到个股详情页
-        item.style.cursor = 'pointer';
-        item.addEventListener('click', () => {
-            this.navigateToStockDetail(symbol);
-        });
-
-        return item;
-    }
-
-    /**
-     * 渲染分页
+     * 渲染分页 - 使用通用渲染器
      */
     renderPagination() {
-        const container = document.getElementById('pagination');
-        if (!container) return;
-
-        if (this.totalPages <= 1) {
-            container.classList.add('hidden');
-            return;
-        }
-
-        container.classList.remove('hidden');
-        container.innerHTML = '';
-
-        // 上一页按钮
-        const prevBtn = document.createElement('button');
-        prevBtn.textContent = '上一页';
-        prevBtn.disabled = this.currentPage === 1;
-        prevBtn.addEventListener('click', () => {
-            if (this.currentPage > 1) {
-                this.currentPage--;
+        if (window.stockRenderer) {
+            const pagination = {
+                currentPage: this.currentPage,
+                totalPages: this.totalPages
+            };
+            
+            const onPageChange = (newPage) => {
+                this.currentPage = newPage;
                 this.loadStockData();
-            }
-        });
-        container.appendChild(prevBtn);
-
-        // 页码信息
-        const pageInfo = document.createElement('span');
-        pageInfo.className = 'pagination-info';
-        pageInfo.textContent = `第 ${this.currentPage} 页，共 ${this.totalPages} 页`;
-        container.appendChild(pageInfo);
-
-        // 下一页按钮
-        const nextBtn = document.createElement('button');
-        nextBtn.textContent = '下一页';
-        nextBtn.disabled = this.currentPage === this.totalPages;
-        nextBtn.addEventListener('click', () => {
-            if (this.currentPage < this.totalPages) {
-                this.currentPage++;
-                this.loadStockData();
-            }
-        });
-        container.appendChild(nextBtn);
-    }
-
-    /**
-     * 格式化成交量
-     */
-    formatVolume(volume) {
-        if (volume >= 1000000000) {
-            return (volume / 1000000000).toFixed(1) + 'B';
-        } else if (volume >= 1000000) {
-            return (volume / 1000000).toFixed(1) + 'M';
-        } else if (volume >= 1000) {
-            return (volume / 1000).toFixed(1) + 'K';
-        }
-        return volume.toString();
-    }
-
-    /**
-     * 格式化市值
-     */
-    formatMarketCap(marketCap) {
-        if (marketCap >= 1000000000000) {
-            return (marketCap / 1000000000000).toFixed(2) + 'T';
-        } else if (marketCap >= 1000000000) {
-            return (marketCap / 1000000000).toFixed(1) + 'B';
-        } else if (marketCap >= 1000000) {
-            return (marketCap / 1000000).toFixed(1) + 'M';
-        }
-        return marketCap.toString();
-    }
-
-    /**
-     * 格式化时间
-     */
-    formatTime(timestamp) {
-        const date = new Date(timestamp);
-        const now = new Date();
-        const diff = now - date;
-        
-        if (diff < 60000) { // 1分钟内
-            return '刚刚';
-        } else if (diff < 3600000) { // 1小时内
-            return Math.floor(diff / 60000) + '分钟前';
-        } else if (diff < 86400000) { // 24小时内
-            return Math.floor(diff / 3600000) + '小时前';
+            };
+            
+            window.stockRenderer.renderPagination(pagination, onPageChange, 'pagination');
         } else {
-            return date.toLocaleDateString('zh-CN');
+            console.error('Stock renderer not available');
         }
-    }
-
-    /**
-     * 跳转到个股详情页
-     */
-    navigateToStockDetail(symbol) {
-        // 构建详情页URL
-        const detailUrl = `https://stock-details-final-1e1vcxew3-simon-pans-projects.vercel.app/?symbol=${symbol}`;
-        
-        // 在新标签页中打开
-        window.open(detailUrl, '_blank');
-        
-        // 显示提示
-        this.showToast(`正在打开 ${symbol} 的详情页...`, 'info');
     }
 
     /**
