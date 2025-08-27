@@ -267,10 +267,13 @@ module.exports = async (req, res) => {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { tag, page = 1, limit = 20, sort = 'market_cap' } = req.query;
+    const { tag, tagId, page = 1, limit = 100, sort = 'market_cap' } = req.query;
 
-    if (!tag) {
-        return res.status(400).json({ error: 'Tag parameter is required' });
+    // 优先使用tagId，如果没有则使用tag（兼容旧格式）
+    const currentTag = tagId || tag;
+    
+    if (!currentTag) {
+        return res.status(400).json({ error: 'Tag or tagId parameter is required' });
     }
 
     try {
@@ -278,7 +281,7 @@ module.exports = async (req, res) => {
         const limitNum = parseInt(limit);
         const offset = (pageNum - 1) * limitNum;
 
-        console.log(`标签股票查询: ${tag}, 页码: ${pageNum}, 限制: ${limitNum}`);
+        console.log(`标签股票查询: ${currentTag}, 页码: ${pageNum}, 限制: ${limitNum}`);
 
         let stocks = [];
         let totalCount = 0;
@@ -288,7 +291,7 @@ module.exports = async (req, res) => {
             let stockQuery, countQuery, queryParams;
             
             // 根据标签类型构建不同的查询
-            if (tag === '大盘股') {
+            if (currentTag === '大盘股' || currentTag === 'marketcap_大盘股') {
                 stockQuery = `
                     SELECT 
                         s.symbol,
@@ -317,7 +320,7 @@ module.exports = async (req, res) => {
                     WHERE s.market_cap >= 200000000000
                 `;
                 queryParams = [sort, limitNum, offset];
-            } else if (tag === '中盘股') {
+            } else if (currentTag === '中盘股' || currentTag === 'marketcap_中盘股') {
                 stockQuery = `
                     SELECT 
                         s.symbol,
@@ -346,7 +349,7 @@ module.exports = async (req, res) => {
                     WHERE s.market_cap >= 10000000000 AND s.market_cap < 200000000000
                 `;
                 queryParams = [sort, limitNum, offset];
-            } else if (tag === '小盘股') {
+            } else if (currentTag === '小盘股' || currentTag === 'marketcap_小盘股') {
                 stockQuery = `
                     SELECT 
                         s.symbol,
@@ -375,7 +378,7 @@ module.exports = async (req, res) => {
                     WHERE s.market_cap < 10000000000 AND s.market_cap > 0
                 `;
                 queryParams = [sort, limitNum, offset];
-            } else if (tag === '高ROE') {
+            } else if (currentTag === '高ROE' || currentTag === 'rank_roe_top10') {
                 stockQuery = `
                     SELECT 
                         s.symbol,
@@ -400,7 +403,7 @@ module.exports = async (req, res) => {
                     WHERE s.roe_ttm IS NOT NULL AND s.roe_ttm > 0
                 `;
                 queryParams = [limitNum, offset];
-            } else if (tag === '低PE') {
+            } else if (currentTag === '低PE' || currentTag === 'rank_pe_low') {
                 stockQuery = `
                     SELECT 
                         s.symbol,
@@ -458,12 +461,16 @@ module.exports = async (req, res) => {
                     JOIN tags t ON st.tag_id = t.id
                     WHERE t.tag_name = $1
                 `;
-                queryParams = [tag, sort, limitNum, offset];
+                queryParams = [currentTag, sort, limitNum, offset];
             }
 
             let stockResult, countResult;
             
-            if (tag === '大盘股' || tag === '中盘股' || tag === '小盘股' || tag === '高ROE' || tag === '低PE') {
+            if (currentTag === '大盘股' || currentTag === 'marketcap_大盘股' || 
+                currentTag === '中盘股' || currentTag === 'marketcap_中盘股' || 
+                currentTag === '小盘股' || currentTag === 'marketcap_小盘股' || 
+                currentTag === '高ROE' || currentTag === 'rank_roe_top10' || 
+                currentTag === '低PE' || currentTag === 'rank_pe_low') {
                 [stockResult, countResult] = await Promise.all([
                     pool.query(stockQuery, queryParams),
                     pool.query(countQuery)
@@ -471,7 +478,7 @@ module.exports = async (req, res) => {
             } else {
                 [stockResult, countResult] = await Promise.all([
                     pool.query(stockQuery, queryParams),
-                    pool.query(countQuery, [tag])
+                    pool.query(countQuery, [currentTag])
                 ]);
             }
 
@@ -479,7 +486,7 @@ module.exports = async (req, res) => {
             totalCount = parseInt(countResult.rows[0]?.total || 0);
 
             // 获取相关标签
-            relatedTags = await getRelatedTags(tag);
+            relatedTags = await getRelatedTags(currentTag);
 
             console.log(`数据库查询成功: 找到 ${stocks.length} 只股票，总计 ${totalCount} 只`);
 
@@ -487,7 +494,7 @@ module.exports = async (req, res) => {
             console.error('数据库查询失败，使用模拟数据:', dbError);
             
             // 使用备用模拟数据
-            const mockData = getMockStocksByTag(tag);
+            const mockData = getMockStocksByTag(currentTag);
             
             // 应用排序
             let sortedMockData = [...mockData];
@@ -509,7 +516,7 @@ module.exports = async (req, res) => {
                 { name: '云计算', count: 15 },
                 { name: '电动汽车', count: 12 },
                 { name: '半导体', count: 20 }
-            ].filter(t => t.name !== tag);
+            ].filter(t => t.name !== currentTag);
         }
 
         // 格式化股票数据

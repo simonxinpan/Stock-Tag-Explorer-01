@@ -728,11 +728,12 @@ class TagDetailPage {
                 // 循环创建每一个标签按钮
                 this.allTagsData[category].forEach(tag => {
                     const tagName = tag.name;
+                    const tagId = tag.id || this.convertTagNameToApiFormat(tagName);
                     const isCurrentTag = tagName === this.currentTag;
                     const tagClass = isCurrentTag ? 'tag-button-small current-tag' : 'tag-button-small';
                     
                     html += `
-                        <a href="tag-detail.html?tag=${encodeURIComponent(tagName)}" 
+                        <a href="tag-detail.html?tagId=${encodeURIComponent(tagId)}" 
                            class="${tagClass}" 
                            title="点击查看 ${tagName} 标签详情">
                             ${tagName}
