@@ -44,16 +44,81 @@ class TagDetailPage {
      */
     loadTagFromURL() {
         const urlParams = new URLSearchParams(window.location.search);
-        const tagName = urlParams.get('tag');
+        const tagId = urlParams.get('tagId');
+        const tagName = urlParams.get('tag'); // 兼容旧格式
         
-        if (!tagName) {
+        if (!tagId && !tagName) {
             // 如果没有标签参数，重定向到首页
             window.location.href = 'index.html';
             return;
         }
         
-        this.currentTag = decodeURIComponent(tagName);
+        // 优先使用新的tagId格式
+        if (tagId) {
+            this.currentTagId = decodeURIComponent(tagId);
+            this.currentTag = this.extractDisplayNameFromTagId(this.currentTagId);
+        } else {
+            // 兼容旧格式，尝试转换
+            this.currentTag = decodeURIComponent(tagName);
+            this.currentTagId = this.convertTagNameToApiFormat(this.currentTag);
+        }
+        
         this.updatePageTitle();
+    }
+
+    /**
+     * 从tagId提取显示名称
+     */
+    extractDisplayNameFromTagId(tagId) {
+        if (tagId.startsWith('sector_')) {
+            return tagId.replace('sector_', '');
+        }
+        if (tagId.startsWith('marketcap_')) {
+            return tagId.replace('marketcap_', '');
+        }
+        
+        // 排名标签的映射
+        const rankingMap = {
+            'rank_roe_ttm_top10': '高ROE',
+            'rank_pe_ttm_bottom10': '低市盈率',
+            'rank_dividend_yield_top10': '高股息率',
+            'rank_revenue_growth_top10': '高增长率',
+            'rank_debt_ratio_bottom10': '低负债率'
+        };
+        
+        return rankingMap[tagId] || tagId;
+    }
+
+    /**
+     * 将标签名称转换为API需要的格式（兼容旧格式）
+     */
+    convertTagNameToApiFormat(tagName) {
+        // 行业标签
+        const sectorTags = ['科技', '金融', '医疗', '消费', '工业', '能源', '材料', '房地产', '公用事业', '通信', '原材料'];
+        if (sectorTags.includes(tagName)) {
+            return `sector_${tagName}`;
+        }
+        
+        // 市值标签
+        const marketCapTags = ['大盘股', '中盘股', '小盘股'];
+        if (marketCapTags.includes(tagName)) {
+            return `marketcap_${tagName}`;
+        }
+        
+        // 排名标签
+        const rankingMap = {
+            '高ROE': 'rank_roe_ttm_top10',
+            '低市盈率': 'rank_pe_ttm_bottom10',
+            '高股息率': 'rank_dividend_yield_top10',
+            '高增长率': 'rank_revenue_growth_top10',
+            '低负债率': 'rank_debt_ratio_bottom10'
+        };
+        
+        if (rankingMap[tagName]) {
+            return rankingMap[tagName];
+        }
+        
+        return tagName;
     }
 
     /**
@@ -145,14 +210,20 @@ class TagDetailPage {
      */
     async loadTagData() {
         try {
-            // 调用真实API获取数据
-            const response = await fetch(`${this.apiBaseUrl}/api/stocks-by-tag?tag=${encodeURIComponent(this.currentTag)}&page=${this.currentPage}&limit=${this.pageSize}&sort=${this.currentSort}`);
+            // 使用新的/api/stocks接口，完全模仿Vercel版本的API调用
+            const apiUrl = `${this.apiBaseUrl}/api/stocks?tags=${encodeURIComponent(this.currentTagId)}&page=${this.currentPage}&limit=${this.pageSize}&sort=${this.currentSort}`;
+            
+            console.log('API请求URL:', apiUrl); // 调试日志
+            
+            const response = await fetch(apiUrl);
             
             if (!response.ok) {
                 throw new Error(`API请求失败: ${response.status}`);
             }
             
             const result = await response.json();
+            
+            console.log('API响应数据:', result); // 调试日志
             
             if (result.success && result.data) {
                 const { stocks, stats, pagination } = result.data;

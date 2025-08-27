@@ -430,12 +430,49 @@ class StockTagExplorer {
     async handleTagClick(tag) {
         console.log('标签点击事件:', tag);
         
-        // 直接跳转到标签详情页，而不是在当前页面显示股票列表
-        const tagName = encodeURIComponent(tag.name || tag.id);
-        const tagDetailUrl = `tag-detail.html?tag=${tagName}`;
+        // 获取标签的API格式ID
+        const tagId = tag.id || this.convertTagNameToApiFormat(tag.name || tag.displayName);
+        const encodedTagId = encodeURIComponent(tagId);
+        const detailUrl = `tag-detail.html?tagId=${encodedTagId}`;
         
-        console.log('跳转到标签详情页:', tagDetailUrl);
-        window.location.href = tagDetailUrl;
+        console.log('跳转到标签详情页:', detailUrl);
+        console.log('使用的tagId:', tagId);
+        
+        // 跳转到标签详情页
+        window.location.href = detailUrl;
+    }
+
+    /**
+     * 将标签名称转换为API需要的格式
+     */
+    convertTagNameToApiFormat(tagName) {
+        // 行业标签
+        const sectorTags = ['科技', '金融', '医疗', '消费', '工业', '能源', '材料', '房地产', '公用事业', '通信', '原材料'];
+        if (sectorTags.includes(tagName)) {
+            return `sector_${tagName}`;
+        }
+        
+        // 市值标签
+        const marketCapTags = ['大盘股', '中盘股', '小盘股'];
+        if (marketCapTags.includes(tagName)) {
+            return `marketcap_${tagName}`;
+        }
+        
+        // 排名标签 - 根据控制台日志的格式
+        const rankingMap = {
+            '高ROE': 'rank_roe_ttm_top10',
+            '低市盈率': 'rank_pe_ttm_bottom10',
+            '高股息率': 'rank_dividend_yield_top10',
+            '高增长率': 'rank_revenue_growth_top10',
+            '低负债率': 'rank_debt_ratio_bottom10'
+        };
+        
+        if (rankingMap[tagName]) {
+            return rankingMap[tagName];
+        }
+        
+        // 如果没有匹配到特定格式，直接返回原名称
+        return tagName;
     }
 
     /**
