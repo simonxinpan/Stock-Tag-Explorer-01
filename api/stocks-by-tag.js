@@ -129,6 +129,82 @@ const getMockStocksByTag = (tagName) => {
                 roe_ttm: 0.19,
                 sector: '汽车'
             }
+        ],
+        '高ROE': [
+            {
+                symbol: 'NVDA',
+                name: 'NVIDIA Corporation',
+                price: 875.28,
+                change: 15.67,
+                change_percent: 1.82,
+                volume: 45678901,
+                market_cap: 2200000000000,
+                pe_ttm: 71.2,
+                roe_ttm: 0.45,
+                sector: '科技'
+            },
+            {
+                symbol: 'MSFT',
+                name: 'Microsoft Corporation',
+                price: 378.85,
+                change: -1.23,
+                change_percent: -0.32,
+                volume: 23456789,
+                market_cap: 2900000000000,
+                pe_ttm: 32.1,
+                roe_ttm: 0.38,
+                sector: '科技'
+            },
+            {
+                symbol: 'AAPL',
+                name: 'Apple Inc.',
+                price: 175.43,
+                change: 2.15,
+                change_percent: 1.24,
+                volume: 45678900,
+                market_cap: 2800000000000,
+                pe_ttm: 28.5,
+                roe_ttm: 0.35,
+                sector: '科技'
+            }
+        ],
+        '低PE': [
+            {
+                symbol: 'BRK.A',
+                name: 'Berkshire Hathaway Inc.',
+                price: 545000.00,
+                change: 2500.00,
+                change_percent: 0.46,
+                volume: 12345,
+                market_cap: 780000000000,
+                pe_ttm: 8.5,
+                roe_ttm: 0.12,
+                sector: '金融'
+            },
+            {
+                symbol: 'JPM',
+                name: 'JPMorgan Chase & Co.',
+                price: 165.43,
+                change: 1.25,
+                change_percent: 0.76,
+                volume: 12345678,
+                market_cap: 485000000000,
+                pe_ttm: 12.3,
+                roe_ttm: 0.15,
+                sector: '金融'
+            },
+            {
+                symbol: 'XOM',
+                name: 'Exxon Mobil Corporation',
+                price: 108.75,
+                change: -0.85,
+                change_percent: -0.78,
+                volume: 18765432,
+                market_cap: 450000000000,
+                pe_ttm: 14.2,
+                roe_ttm: 0.18,
+                sector: '能源'
+            }
         ]
     };
     
@@ -299,6 +375,56 @@ module.exports = async (req, res) => {
                     WHERE s.market_cap < 10000000000 AND s.market_cap > 0
                 `;
                 queryParams = [sort, limitNum, offset];
+            } else if (tag === '高ROE') {
+                stockQuery = `
+                    SELECT 
+                        s.symbol,
+                        s.name,
+                        s.price,
+                        s.change_amount as change,
+                        s.change_percent,
+                        s.volume,
+                        s.market_cap,
+                        s.pe_ratio as pe_ttm,
+                        s.roe_ttm,
+                        s.sector,
+                        s.updated_at
+                    FROM stocks s
+                    WHERE s.roe_ttm IS NOT NULL AND s.roe_ttm > 0
+                    ORDER BY s.roe_ttm DESC
+                    LIMIT $1 OFFSET $2
+                `;
+                countQuery = `
+                    SELECT COUNT(*) as total
+                    FROM stocks s
+                    WHERE s.roe_ttm IS NOT NULL AND s.roe_ttm > 0
+                `;
+                queryParams = [limitNum, offset];
+            } else if (tag === '低PE') {
+                stockQuery = `
+                    SELECT 
+                        s.symbol,
+                        s.name,
+                        s.price,
+                        s.change_amount as change,
+                        s.change_percent,
+                        s.volume,
+                        s.market_cap,
+                        s.pe_ttm,
+                        s.roe_ttm,
+                        s.sector,
+                        s.updated_at
+                    FROM stocks s
+                    WHERE s.pe_ttm IS NOT NULL AND s.pe_ttm > 0
+                    ORDER BY s.pe_ttm ASC
+                    LIMIT $1 OFFSET $2
+                `;
+                countQuery = `
+                    SELECT COUNT(*) as total
+                    FROM stocks s
+                    WHERE s.pe_ttm IS NOT NULL AND s.pe_ttm > 0
+                `;
+                queryParams = [limitNum, offset];
             } else {
                 // 默认：通过标签表查询
                 stockQuery = `
@@ -337,7 +463,7 @@ module.exports = async (req, res) => {
 
             let stockResult, countResult;
             
-            if (tag === '大盘股' || tag === '中盘股' || tag === '小盘股') {
+            if (tag === '大盘股' || tag === '中盘股' || tag === '小盘股' || tag === '高ROE' || tag === '低PE') {
                 [stockResult, countResult] = await Promise.all([
                     pool.query(stockQuery, queryParams),
                     pool.query(countQuery)
