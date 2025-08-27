@@ -8,7 +8,7 @@ on:
 jobs:
   etl-batch-process:
     runs-on: ubuntu-latest
-    timeout-minutes: 15  # 15分钟超时，每批处理50只股票
+    timeout-minutes: 170  # 170分钟超时，确保160分钟运行时间限制有缓冲
     
     steps:
       - name: Checkout repository
@@ -30,19 +30,21 @@ jobs:
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
         run: |
-          echo "🚀 Starting ETL batch process at $(date)"
-          echo "📋 Processing next batch of up to 50 stocks..."
+          echo "🚀 Starting ETL Smart Batch Processor at $(date)"
+          echo "📋 Processing stocks with 160-minute runtime limit..."
+          echo "⏱️ Each batch: 50 stocks, 13-second delay (Polygon API limit)"
           
-          # 运行智能分批脚本，每次处理50只股票
-          node _scripts/update-financials-daily.mjs
+          # 运行智能分批处理器，160分钟运行时间限制
+          node _scripts/etl-smart-batch-processor.mjs
           
-          echo "✅ ETL batch process completed at $(date)"
+          echo "✅ ETL Smart Batch Processor completed at $(date)"
           
       - name: Report completion
         if: always()
         run: |
-          echo "📋 ETL batch job completed at $(date)"
+          echo "📋 ETL Smart Batch Processor job completed at $(date)"
           echo "Status: ${{ job.status }}"
+          echo "⏰ Runtime Limit: 160 minutes per execution"
           
           # 如果失败，输出调试信息
           if [ "${{ job.status }}" != "success" ]; then
