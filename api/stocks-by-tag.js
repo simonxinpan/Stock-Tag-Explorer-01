@@ -7,8 +7,10 @@ const { Pool } = require('pg');
 
 // 数据库连接配置
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL || process.env.NEON_DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
+    }
 });
 
 // 备用模拟数据
@@ -147,44 +149,145 @@ module.exports = async (req, res) => {
         let relatedTags = [];
 
         try {
-            // 尝试从数据库获取股票数据
-            const stockQuery = `
-                SELECT DISTINCT
-                    s.symbol,
-                    s.name,
-                    s.price,
-                    s.change_amount as change,
-                    s.change_percent,
-                    s.volume,
-                    s.market_cap,
-                    s.pe_ratio as pe_ttm,
-                    s.roe,
-                    s.sector,
-                    s.updated_at
-                FROM stocks s
-                JOIN stock_tags st ON s.symbol = st.symbol
-                JOIN tags t ON st.tag_id = t.id
-                WHERE t.tag_name = $1
-                ORDER BY 
-                    CASE WHEN $2 = 'market_cap' THEN s.market_cap END DESC,
-                    CASE WHEN $2 = 'change_percent' THEN s.change_percent END DESC,
-                    CASE WHEN $2 = 'volume' THEN s.volume END DESC,
-                    s.market_cap DESC
-                LIMIT $3 OFFSET $4
-            `;
+            let stockQuery, countQuery, queryParams;
+            
+            // 根据标签类型构建不同的查询
+            if (tag === '大盘股') {
+                stockQuery = `
+                    SELECT 
+                        s.symbol,
+                        s.name,
+                        s.price,
+                        s.change_amount as change,
+                        s.change_percent,
+                        s.volume,
+                        s.market_cap,
+                        s.pe_ratio as pe_ttm,
+                        s.roe,
+                        s.sector,
+                        s.updated_at
+                    FROM stocks s
+                    WHERE s.market_cap >= 200000000000
+                    ORDER BY 
+                        CASE WHEN $1 = 'market_cap' THEN s.market_cap END DESC,
+                        CASE WHEN $1 = 'change_percent' THEN s.change_percent END DESC,
+                        CASE WHEN $1 = 'volume' THEN s.volume END DESC,
+                        s.market_cap DESC
+                    LIMIT $2 OFFSET $3
+                `;
+                countQuery = `
+                    SELECT COUNT(*) as total
+                    FROM stocks s
+                    WHERE s.market_cap >= 200000000000
+                `;
+                queryParams = [sort, limitNum, offset];
+            } else if (tag === '中盘股') {
+                stockQuery = `
+                    SELECT 
+                        s.symbol,
+                        s.name,
+                        s.price,
+                        s.change_amount as change,
+                        s.change_percent,
+                        s.volume,
+                        s.market_cap,
+                        s.pe_ratio as pe_ttm,
+                        s.roe,
+                        s.sector,
+                        s.updated_at
+                    FROM stocks s
+                    WHERE s.market_cap >= 10000000000 AND s.market_cap < 200000000000
+                    ORDER BY 
+                        CASE WHEN $1 = 'market_cap' THEN s.market_cap END DESC,
+                        CASE WHEN $1 = 'change_percent' THEN s.change_percent END DESC,
+                        CASE WHEN $1 = 'volume' THEN s.volume END DESC,
+                        s.market_cap DESC
+                    LIMIT $2 OFFSET $3
+                `;
+                countQuery = `
+                    SELECT COUNT(*) as total
+                    FROM stocks s
+                    WHERE s.market_cap >= 10000000000 AND s.market_cap < 200000000000
+                `;
+                queryParams = [sort, limitNum, offset];
+            } else if (tag === '小盘股') {
+                stockQuery = `
+                    SELECT 
+                        s.symbol,
+                        s.name,
+                        s.price,
+                        s.change_amount as change,
+                        s.change_percent,
+                        s.volume,
+                        s.market_cap,
+                        s.pe_ratio as pe_ttm,
+                        s.roe,
+                        s.sector,
+                        s.updated_at
+                    FROM stocks s
+                    WHERE s.market_cap < 10000000000 AND s.market_cap > 0
+                    ORDER BY 
+                        CASE WHEN $1 = 'market_cap' THEN s.market_cap END DESC,
+                        CASE WHEN $1 = 'change_percent' THEN s.change_percent END DESC,
+                        CASE WHEN $1 = 'volume' THEN s.volume END DESC,
+                        s.market_cap DESC
+                    LIMIT $2 OFFSET $3
+                `;
+                countQuery = `
+                    SELECT COUNT(*) as total
+                    FROM stocks s
+                    WHERE s.market_cap < 10000000000 AND s.market_cap > 0
+                `;
+                queryParams = [sort, limitNum, offset];
+            } else {
+                // 默认：通过标签表查询
+                stockQuery = `
+                    SELECT DISTINCT
+                        s.symbol,
+                        s.name,
+                        s.price,
+                        s.change_amount as change,
+                        s.change_percent,
+                        s.volume,
+                        s.market_cap,
+                        s.pe_ratio as pe_ttm,
+                        s.roe,
+                        s.sector,
+                        s.updated_at
+                    FROM stocks s
+                    JOIN stock_tags st ON s.symbol = st.symbol
+                    JOIN tags t ON st.tag_id = t.id
+                    WHERE t.tag_name = $1
+                    ORDER BY 
+                        CASE WHEN $2 = 'market_cap' THEN s.market_cap END DESC,
+                        CASE WHEN $2 = 'change_percent' THEN s.change_percent END DESC,
+                        CASE WHEN $2 = 'volume' THEN s.volume END DESC,
+                        s.market_cap DESC
+                    LIMIT $3 OFFSET $4
+                `;
+                countQuery = `
+                    SELECT COUNT(DISTINCT s.symbol) as total
+                    FROM stocks s
+                    JOIN stock_tags st ON s.symbol = st.symbol
+                    JOIN tags t ON st.tag_id = t.id
+                    WHERE t.tag_name = $1
+                `;
+                queryParams = [tag, sort, limitNum, offset];
+            }
 
-            const countQuery = `
-                SELECT COUNT(DISTINCT s.symbol) as total
-                FROM stocks s
-                JOIN stock_tags st ON s.symbol = st.symbol
-                JOIN tags t ON st.tag_id = t.id
-                WHERE t.tag_name = $1
-            `;
-
-            const [stockResult, countResult] = await Promise.all([
-                pool.query(stockQuery, [tag, sort, limitNum, offset]),
-                pool.query(countQuery, [tag])
-            ]);
+            let stockResult, countResult;
+            
+            if (tag === '大盘股' || tag === '中盘股' || tag === '小盘股') {
+                [stockResult, countResult] = await Promise.all([
+                    pool.query(stockQuery, queryParams),
+                    pool.query(countQuery)
+                ]);
+            } else {
+                [stockResult, countResult] = await Promise.all([
+                    pool.query(stockQuery, queryParams),
+                    pool.query(countQuery, [tag])
+                ]);
+            }
 
             stocks = stockResult.rows;
             totalCount = parseInt(countResult.rows[0]?.total || 0);

@@ -145,33 +145,42 @@ class TagDetailPage {
      */
     async loadTagData() {
         try {
-            // 调用新的智能路由API
-            const response = await fetch(`${this.apiBaseUrl}/api/stocks-by-tag?tag=${encodeURIComponent(this.currentTag)}&page=${this.currentPage}&limit=${this.pageSize}&sort=${this.currentSort}`);
+            // 使用本地模拟数据
+            const mockData = this.getMockStocksByTag(this.currentTag);
             
-            if (!response.ok) {
-                throw new Error(`API请求失败: ${response.status}`);
+            // 模拟排序
+            let sortedStocks = [...mockData];
+            if (this.currentSort === 'market_cap') {
+                sortedStocks.sort((a, b) => b.marketCap - a.marketCap);
+            } else if (this.currentSort === 'price') {
+                sortedStocks.sort((a, b) => b.price - a.price);
+            } else if (this.currentSort === 'change_percent') {
+                sortedStocks.sort((a, b) => b.changePercent - a.changePercent);
             }
             
-            const result = await response.json();
+            // 模拟分页
+            const startIndex = (this.currentPage - 1) * this.pageSize;
+            const endIndex = startIndex + this.pageSize;
+            const paginatedStocks = sortedStocks.slice(startIndex, endIndex);
             
-            if (result.success && result.data) {
-                const { stocks, stats, pagination } = result.data;
-                
-                this.stockData = stocks || [];
-                this.totalPages = pagination?.totalPages || 1;
-                
-                // 直接渲染股票列表，不需要再次过滤排序
-                this.filteredStocks = this.stockData;
-                this.renderStockList();
-                this.renderPagination();
-                
-                // 更新股票数量显示和统计信息
-                this.updateStatsFromAPI(stats);
-                
-                console.log(`成功加载「${this.currentTag}」标签数据: ${stocks.length} 只股票`);
-            } else {
-                throw new Error('API返回数据格式错误');
-            }
+            this.stockData = paginatedStocks;
+            this.totalPages = Math.ceil(sortedStocks.length / this.pageSize);
+            
+            // 直接渲染股票列表，不需要再次过滤排序
+            this.filteredStocks = this.stockData;
+            this.renderStockList();
+            this.renderPagination();
+            
+            // 更新股票数量显示和统计信息
+            const stats = {
+                total: sortedStocks.length,
+                upCount: sortedStocks.filter(s => s.changePercent > 0).length,
+                downCount: sortedStocks.filter(s => s.changePercent < 0).length,
+                flatCount: sortedStocks.filter(s => s.changePercent === 0).length
+            };
+            this.updateStatsFromAPI(stats);
+            
+            console.log(`成功加载「${this.currentTag}」标签数据: ${paginatedStocks.length} 只股票`);
         } catch (error) {
             console.error('加载标签数据失败:', error);
             this.showError('加载数据失败，请检查网络连接或稍后重试');
@@ -188,21 +197,10 @@ class TagDetailPage {
      */
     async loadAllTags() {
         try {
-            const response = await fetch(`${this.apiBaseUrl}/api/tags`);
-            
-            if (!response.ok) {
-                throw new Error(`标签API请求失败: ${response.status}`);
-            }
-            
-            const result = await response.json();
-            
-            if (result.success && result.data) {
-                this.allTagsData = result.data;
-                this.renderRelatedTags();
-                console.log('成功加载所有标签数据');
-            } else {
-                throw new Error('标签API返回数据格式错误');
-            }
+            // 使用本地模拟标签数据
+            this.allTagsData = this.getMockAllTags();
+            this.renderRelatedTags();
+            console.log('成功加载所有标签数据');
         } catch (error) {
             console.error('加载所有标签失败:', error);
             // 使用空数据作为后备
@@ -213,9 +211,123 @@ class TagDetailPage {
 
 
     /**
-     * 获取模拟股票数据
+     * 根据标签获取模拟股票数据
      */
-    getMockStockData() {
+    getMockStocksByTag(tag) {
+        const allStocks = this.getMockStockData();
+        // 根据标签过滤股票，这里简化处理，返回所有股票
+        return allStocks;
+    }
+
+    /**
+     * 获取模拟所有标签数据
+     */
+    getMockAllTags() {
+        return {
+            '行业分类': [
+                { name: '科技股' },
+                { name: '金融股' },
+                { name: '医疗股' },
+                { name: '消费股' }
+            ],
+            '市值分类': [
+                { name: '大盘股' },
+                { name: '中盘股' },
+                { name: '小盘股' }
+            ],
+            '概念分类': [
+                { name: '人工智能' },
+                { name: '云计算' },
+                { name: '电动汽车' },
+                { name: '半导体' }
+            ]
+        };
+    }
+
+    /**
+      * 获取模拟股票数据
+      */
+     getMockStockData() {
+         return [
+             {
+                 symbol: 'AAPL',
+                 name: 'Apple Inc.',
+                 price: 175.43,
+                 change: 2.15,
+                 changePercent: 1.24,
+                 volume: 45678900,
+                 marketCap: 2800000000000,
+                 pe: 28.5,
+                 roe: 0.26,
+                 sector: '科技'
+             },
+             {
+                 symbol: 'MSFT',
+                 name: 'Microsoft Corporation',
+                 price: 378.85,
+                 change: -1.23,
+                 changePercent: -0.32,
+                 volume: 23456789,
+                 marketCap: 2900000000000,
+                 pe: 32.1,
+                 roe: 0.31,
+                 sector: '科技'
+             },
+             {
+                 symbol: 'GOOGL',
+                 name: 'Alphabet Inc.',
+                 price: 142.56,
+                 change: 3.45,
+                 changePercent: 2.48,
+                 volume: 34567890,
+                 marketCap: 1800000000000,
+                 pe: 25.3,
+                 roe: 0.22,
+                 sector: '科技'
+             },
+             {
+                 symbol: 'TSLA',
+                 name: 'Tesla Inc.',
+                 price: 248.42,
+                 change: -5.67,
+                 changePercent: -2.23,
+                 volume: 56789012,
+                 marketCap: 800000000000,
+                 pe: 45.2,
+                 roe: 0.18,
+                 sector: '汽车'
+             },
+             {
+                 symbol: 'NVDA',
+                 name: 'NVIDIA Corporation',
+                 price: 875.28,
+                 change: 15.67,
+                 changePercent: 1.82,
+                 volume: 45678901,
+                 marketCap: 2200000000000,
+                 pe: 65.4,
+                 roe: 0.35,
+                 sector: '科技'
+             },
+             {
+                 symbol: 'AMZN',
+                 name: 'Amazon.com Inc.',
+                 price: 155.89,
+                 change: 2.34,
+                 changePercent: 1.52,
+                 volume: 34567891,
+                 marketCap: 1600000000000,
+                 pe: 42.8,
+                 roe: 0.15,
+                 sector: '消费'
+             }
+         ];
+     }
+
+    /**
+     * 获取模拟股票数据（旧版本，已删除重复）
+     */
+    getMockStockDataOld() {
         const mockStocks = [
             {
                 symbol: 'AAPL',
