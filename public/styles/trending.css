@@ -958,20 +958,20 @@
 }
 
 .ranking-list-compact .ticker {
-    font-weight: 700;
-    font-size: 0.9rem;
-    color: var(--text-primary);
-    margin-bottom: 0.2rem;
+    font-weight: 500;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
 }
 
 .ranking-list-compact .name {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    font-weight: 700;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
+    margin-bottom: 0.2rem;
 }
 
 .ranking-list-compact .stock-performance {
@@ -1195,20 +1195,20 @@
 }
 
 .ranking-list-full .ticker {
-    font-weight: 700;
-    font-size: 1rem;
-    color: var(--text-primary);
-    margin-bottom: 0.25rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
 }
 
 .ranking-list-full .name {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    font-weight: 500;
+    font-size: 1rem;
+    color: var(--text-primary);
+    font-weight: 700;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
+    margin-bottom: 0.25rem;
 }
 
 .ranking-list-full .stock-performance {
@@ -1775,20 +1775,20 @@
 }
 
 .ticker {
-  font-weight: 700;
-  font-size: 1rem;
-  color: var(--text-primary);
-  margin-bottom: 0.25rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
 }
 
 .name {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  font-weight: 500;
+  font-size: 1rem;
+  color: var(--text-primary);
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+  margin-bottom: 0.25rem;
 }
 
 .stock-performance {
