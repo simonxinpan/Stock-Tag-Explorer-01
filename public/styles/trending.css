@@ -1889,12 +1889,30 @@
     }
 }
 
+/* 榜单标题行样式 */
+.ranking-title-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.ranking-title-row .ranking-title {
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.ranking-title-row .ranking-subtitle {
+    margin: 0;
+    flex: 1;
+}
+
 /* 榜单说明样式 */
 .ranking-description {
     display: block;
     width: 100%;
     padding: 0.75rem 1rem;
-    margin: 0.75rem 0 0 0;
+    margin: 0;
     background: rgba(248, 250, 252, 0.8);
     border-left: 3px solid var(--primary-color);
     border-radius: 0 6px 6px 0;
