@@ -113,8 +113,8 @@ function createStockListItemHTML(stock, type, rank) {
       <a href="${detailsPageUrl}" target="_blank" class="stock-link">
         <div class="rank-circle">${rank}</div>
         <div class="stock-info">
-          <div class="ticker">${stock.ticker}</div>
           <div class="name">${stock.name_zh || stock.name || 'N/A'}</div>
+          <div class="ticker">${stock.ticker}</div>
         </div>
         <div class="stock-performance">
           ${mainMetricHTML}
