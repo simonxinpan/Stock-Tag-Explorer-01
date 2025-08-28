@@ -82,9 +82,7 @@ class TagDetailPage {
         
         // 趋势排名标签的映射
         const rankingMap = {
-            'rank_revenue_growth_top10': '营收增长前10%',
-            'rank_market_cap_top10': '市值前10%',
-            'rank_gross_margin_top10': '高毛利率前10%'
+            'rank_market_cap_top10': '市值前10%'
         };
         
         return rankingMap[tagId] || tagId;
@@ -124,9 +122,7 @@ class TagDetailPage {
         
         // 趋势排名标签
         const rankingMap = {
-            '营收增长前10%': 'rank_revenue_growth_top10',
-            '市值前10%': 'rank_market_cap_top10',
-            '高毛利率前10%': 'rank_gross_margin_top10'
+            '市值前10%': 'rank_market_cap_top10'
         };
         
         if (rankingMap[tagName]) {

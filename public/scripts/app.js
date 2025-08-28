@@ -476,9 +476,7 @@ class StockTagExplorer {
         
         // 趋势排名标签
         const rankingMap = {
-            '营收增长前10%': 'rank_revenue_growth_top10',
-            '市值前10%': 'rank_market_cap_top10',
-            '高毛利率前10%': 'rank_gross_margin_top10'
+            '市值前10%': 'rank_market_cap_top10'
         };
         
         if (rankingMap[tagName]) {
@@ -585,9 +583,7 @@ class StockTagExplorer {
         } else if (tag.name.includes('高流动比率前10%')) {
             result.metric = 'current_ratio';
             result.percentile = 'top10';
-        } else if (tag.name.includes('营收增长前10%')) {
-            result.metric = 'revenue_growth';
-            result.percentile = 'top10';
+
         } else if (tag.name.includes('市值前10%')) {
             result.metric = 'market_cap';
             result.percentile = 'top10';
