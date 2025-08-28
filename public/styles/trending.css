@@ -395,17 +395,20 @@
 .ranking-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 1.5rem;
     padding-bottom: 1rem;
     border-bottom: 2px solid #f3f4f6;
+    gap: 2rem;
 }
 
 .ranking-title {
     font-size: 1.25rem;
     font-weight: 600;
     color: #1f2937;
-    margin: 0 0 0.5rem 0;
+    margin: 0;
+    flex-shrink: 0;
+    min-width: 140px;
 }
 
 .ranking-subtitle {
@@ -1929,7 +1932,7 @@
 /* 榜单说明样式 */
 .ranking-description {
     display: block;
-    width: 100%;
+    flex: 1;
     padding: 1rem;
     margin: 0;
     background: linear-gradient(135deg, rgba(248, 250, 252, 0.9), rgba(241, 245, 249, 0.8));
@@ -1940,7 +1943,6 @@
     color: var(--text-secondary);
     font-weight: 500;
     transition: all 0.3s ease;
-    clear: both;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
