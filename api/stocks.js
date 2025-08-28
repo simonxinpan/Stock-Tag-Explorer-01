@@ -1,13 +1,32 @@
 const { Pool } = require('pg');
+const { URL } = require('url');
+
+// 解析数据库URL
+let dbConfig;
+if (process.env.DATABASE_URL) {
+  const dbUrl = new URL(process.env.DATABASE_URL);
+  dbConfig = {
+    user: dbUrl.username,
+    password: decodeURIComponent(dbUrl.password),
+    host: dbUrl.hostname,
+    port: dbUrl.port,
+    database: dbUrl.pathname.slice(1),
+    ssl: { rejectUnauthorized: false },
+    connectionTimeoutMillis: 10000,
+    idleTimeoutMillis: 30000,
+    max: 20
+  };
+} else {
+  dbConfig = {
+     ssl: { rejectUnauthorized: false },
+     connectionTimeoutMillis: 10000,
+     idleTimeoutMillis: 30000,
+     max: 20
+   };
+}
+
 // 初始化数据库连接池
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  // 添加连接配置以处理特殊字符
-  connectionTimeoutMillis: 10000,
-  idleTimeoutMillis: 30000,
-  max: 20
-});
+const pool = new Pool(dbConfig);
 
 // 模拟数据作为备用方案
 const mockStocks = {
