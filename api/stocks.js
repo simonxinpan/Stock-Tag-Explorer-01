@@ -426,8 +426,7 @@ module.exports = async function handler(req, res) {
               const sp500Query = `
                 SELECT DISTINCT s.*
                 FROM stocks s
-                WHERE s.is_sp500 = true
-                ORDER BY s.ticker
+                ORDER BY CAST(s.market_cap AS BIGINT) DESC NULLS LAST
                 LIMIT 500
               `;
               console.log('Executing SP500 query:', sp500Query);
