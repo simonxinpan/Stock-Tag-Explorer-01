@@ -428,6 +428,35 @@ module.exports = async (req, res) => {
                     WHERE s.pe_ttm IS NOT NULL AND s.pe_ttm > 0
                 `;
                 queryParams = [limitNum, offset];
+            } else if (currentTag === '市值前10%' || currentTag === 'rank_market_cap_top10') {
+                // 市值前10%：返回市值最高的约50只股票（约占总数的10%）
+                stockQuery = `
+                    SELECT 
+                        s.symbol,
+                        s.name,
+                        s.price,
+                        s.change_amount as change,
+                        s.change_percent,
+                        s.volume,
+                        s.market_cap,
+                        s.pe_ratio as pe_ttm,
+                        s.roe,
+                        s.sector,
+                        s.updated_at
+                    FROM (
+                        SELECT *
+                        FROM stocks
+                        WHERE market_cap IS NOT NULL AND market_cap > 0
+                        ORDER BY market_cap DESC
+                        LIMIT 50
+                    ) s
+                    ORDER BY s.market_cap DESC
+                    LIMIT $1 OFFSET $2
+                `;
+                countQuery = `
+                    SELECT 50 as total
+                `;
+                queryParams = [limitNum, offset];
             } else {
                 // 默认：通过标签表查询
                 stockQuery = `
@@ -470,7 +499,8 @@ module.exports = async (req, res) => {
                 currentTag === '中盘股' || currentTag === 'marketcap_中盘股' || 
                 currentTag === '小盘股' || currentTag === 'marketcap_小盘股' || 
                 currentTag === '高ROE' || currentTag === 'rank_roe_top10' || 
-                currentTag === '低PE' || currentTag === 'rank_pe_low') {
+                currentTag === '低PE' || currentTag === 'rank_pe_low' ||
+                currentTag === '市值前10%' || currentTag === 'rank_market_cap_top10') {
                 [stockResult, countResult] = await Promise.all([
                     pool.query(stockQuery, queryParams),
                     pool.query(countQuery)
@@ -577,6 +607,18 @@ module.exports = async (req, res) => {
                     WHERE s.pe_ttm IS NOT NULL AND s.pe_ttm > 0
                 `;
                 allStocksParams = [];
+            } else if (currentTag === '市值前10%' || currentTag === 'rank_market_cap_top10') {
+                allStocksQuery = `
+                    SELECT s.change_amount as change, s.change_percent, s.pe_ratio as pe_ttm, s.roe
+                    FROM (
+                        SELECT *
+                        FROM stocks
+                        WHERE market_cap IS NOT NULL AND market_cap > 0
+                        ORDER BY market_cap DESC
+                        LIMIT 50
+                    ) s
+                `;
+                allStocksParams = [];
             } else {
                 allStocksQuery = `
                     SELECT DISTINCT s.change_amount as change, s.change_percent, s.pe_ratio as pe_ttm, s.roe
@@ -655,15 +697,19 @@ module.exports = async (req, res) => {
 function formatMarketCap(marketCap) {
     if (!marketCap) return '未知';
     
+    // 输入的marketCap是百万美元，需要转换为亿美元
+    // 1亿美元 = 100百万美元
     const cap = parseFloat(marketCap);
-    if (cap >= 1000000000000) {
-        return `${(cap / 1000000000000).toFixed(1)}万亿`;
-    } else if (cap >= 100000000) {
-        return `${(cap / 100000000).toFixed(0)}亿`;
-    } else if (cap >= 100000000) {
-        return `${(cap / 100000000).toFixed(1)}亿`;
+    const capInYi = cap / 100; // 转换为亿美元
+    
+    if (capInYi >= 10000) {
+        return `${(capInYi / 10000).toFixed(1)}万亿美元`;
+    } else if (capInYi >= 100) {
+        return `${capInYi.toFixed(0)}亿美元`;
+    } else if (capInYi >= 10) {
+        return `${capInYi.toFixed(1)}亿美元`;
     } else {
-        return `${(cap / 100000000).toFixed(2)}亿`;
+        return `${capInYi.toFixed(2)}亿美元`;
     }
 }
 
