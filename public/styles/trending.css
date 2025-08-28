@@ -411,9 +411,9 @@
 .ranking-subtitle {
     font-size: 0.875rem;
     color: #6b7280;
-    margin: 0 0 1rem 1.5rem;
-    padding-left: 0.75rem;
-    border-left: 3px solid rgba(79, 70, 229, 0.3);
+    margin: 0 0 1rem 0;
+    padding: 0;
+    border: none;
     font-style: italic;
 }
 
@@ -1929,12 +1929,11 @@
 /* 榜单说明样式 */
 .ranking-description {
     display: block;
-    width: calc(100% - 40px);
+    width: 100%;
     padding: 1rem;
-    margin: 0 0 0 40px;
+    margin: 0;
     background: linear-gradient(135deg, rgba(248, 250, 252, 0.9), rgba(241, 245, 249, 0.8));
     border: 1px solid rgba(226, 232, 240, 0.6);
-    border-left: 4px solid var(--primary-color);
     border-radius: 8px;
     font-size: 0.875rem;
     line-height: 1.6;
@@ -1943,18 +1942,6 @@
     transition: all 0.3s ease;
     clear: both;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    position: relative;
-}
-
-.ranking-description:before {
-    content: '';
-    position: absolute;
-    left: -20px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 12px;
-    height: 2px;
-    background: linear-gradient(90deg, var(--primary-color), transparent);
 }
 
 .ranking-description:hover {
