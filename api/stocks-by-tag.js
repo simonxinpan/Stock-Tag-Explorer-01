@@ -534,20 +534,87 @@ module.exports = async (req, res) => {
             roe: parseFloat(stock.roe || 0)
         }));
 
-        // 计算统计信息
+        // 计算统计信息 - 需要基于所有符合条件的股票，而不是当前页
+        let allStocksForStats = [];
+        
+        try {
+            // 查询所有符合条件的股票用于统计计算
+            let allStocksQuery;
+            let allStocksParams;
+            
+            if (currentTag === '大盘股' || currentTag === 'marketcap_大盘股') {
+                allStocksQuery = `
+                    SELECT s.change_amount as change, s.change_percent, s.pe_ratio as pe_ttm, s.roe
+                    FROM stocks s
+                    WHERE s.market_cap >= 200000000000 AND s.market_cap > 0
+                `;
+                allStocksParams = [];
+            } else if (currentTag === '中盘股' || currentTag === 'marketcap_中盘股') {
+                allStocksQuery = `
+                    SELECT s.change_amount as change, s.change_percent, s.pe_ratio as pe_ttm, s.roe
+                    FROM stocks s
+                    WHERE s.market_cap >= 10000000000 AND s.market_cap < 200000000000 AND s.market_cap > 0
+                `;
+                allStocksParams = [];
+            } else if (currentTag === '小盘股' || currentTag === 'marketcap_小盘股') {
+                allStocksQuery = `
+                    SELECT s.change_amount as change, s.change_percent, s.pe_ratio as pe_ttm, s.roe
+                    FROM stocks s
+                    WHERE s.market_cap < 10000000000 AND s.market_cap > 0
+                `;
+                allStocksParams = [];
+            } else if (currentTag === '高ROE' || currentTag === 'rank_roe_top10') {
+                allStocksQuery = `
+                    SELECT s.change_amount as change, s.change_percent, s.pe_ratio as pe_ttm, s.roe_ttm as roe
+                    FROM stocks s
+                    WHERE s.roe_ttm IS NOT NULL AND s.roe_ttm > 0
+                `;
+                allStocksParams = [];
+            } else if (currentTag === '低PE' || currentTag === 'rank_pe_low') {
+                allStocksQuery = `
+                    SELECT s.change_amount as change, s.change_percent, s.pe_ttm, s.roe_ttm as roe
+                    FROM stocks s
+                    WHERE s.pe_ttm IS NOT NULL AND s.pe_ttm > 0
+                `;
+                allStocksParams = [];
+            } else {
+                allStocksQuery = `
+                    SELECT DISTINCT s.change_amount as change, s.change_percent, s.pe_ratio as pe_ttm, s.roe
+                    FROM stocks s
+                    JOIN stock_tags st ON s.symbol = st.symbol
+                    JOIN tags t ON st.tag_id = t.id
+                    WHERE t.tag_name = $1
+                `;
+                allStocksParams = [currentTag];
+            }
+            
+            const allStocksResult = await pool.query(allStocksQuery, allStocksParams);
+            allStocksForStats = allStocksResult.rows;
+            
+        } catch (statsError) {
+            console.error('统计查询失败，使用当前页数据:', statsError);
+            // 如果统计查询失败，使用当前页数据作为备选
+            allStocksForStats = formattedStocks.map(s => ({
+                change: s.change,
+                change_percent: s.changePercent,
+                pe_ttm: s.pe,
+                roe: s.roe
+            }));
+        }
+        
         const stats = {
             total: totalCount,
-            upCount: formattedStocks.filter(s => s.change > 0).length,
-            downCount: formattedStocks.filter(s => s.change < 0).length,
-            flatCount: formattedStocks.filter(s => s.change === 0).length,
-            avgChange: formattedStocks.length > 0 
-                ? formattedStocks.reduce((sum, s) => sum + s.changePercent, 0) / formattedStocks.length 
+            upCount: allStocksForStats.filter(s => parseFloat(s.change || 0) > 0).length,
+            downCount: allStocksForStats.filter(s => parseFloat(s.change || 0) < 0).length,
+            flatCount: allStocksForStats.filter(s => parseFloat(s.change || 0) === 0).length,
+            avgChange: allStocksForStats.length > 0 
+                ? allStocksForStats.reduce((sum, s) => sum + parseFloat(s.change_percent || 0), 0) / allStocksForStats.length 
                 : 0,
-            avgPE: formattedStocks.length > 0
-                ? formattedStocks.filter(s => s.pe > 0).reduce((sum, s) => sum + s.pe, 0) / formattedStocks.filter(s => s.pe > 0).length
+            avgPE: allStocksForStats.length > 0
+                ? allStocksForStats.filter(s => parseFloat(s.pe_ttm || 0) > 0).reduce((sum, s) => sum + parseFloat(s.pe_ttm || 0), 0) / allStocksForStats.filter(s => parseFloat(s.pe_ttm || 0) > 0).length
                 : 0,
-            avgROE: formattedStocks.length > 0
-                ? formattedStocks.filter(s => s.roe > 0).reduce((sum, s) => sum + s.roe, 0) / formattedStocks.filter(s => s.roe > 0).length
+            avgROE: allStocksForStats.length > 0
+                ? allStocksForStats.filter(s => parseFloat(s.roe || 0) > 0).reduce((sum, s) => sum + parseFloat(s.roe || 0), 0) / allStocksForStats.filter(s => parseFloat(s.roe || 0) > 0).length
                 : 0
         };
 
