@@ -221,8 +221,8 @@ class TagDetailPage {
      */
     async loadTagData() {
         try {
-            // 使用新的/api/stocks接口，完全模仿Vercel版本的API调用
-            const apiUrl = `${this.apiBaseUrl}/api/stocks?tags=${encodeURIComponent(this.currentTagId)}&page=${this.currentPage}&limit=${this.pageSize}&sort=${this.currentSort}`;
+            // 使用新的/api/stocks接口，移除硬编码的limit限制以显示所有股票
+            const apiUrl = `${this.apiBaseUrl}/api/stocks?tags=${encodeURIComponent(this.currentTagId)}&page=${this.currentPage}&sort=${this.currentSort}`;
             
             console.log('API请求URL:', apiUrl); // 调试日志
             
