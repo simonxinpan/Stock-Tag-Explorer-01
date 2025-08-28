@@ -11,12 +11,17 @@ class TagDetailPage {
         this.filteredStocks = [];
         this.relatedTags = [];
         this.currentPage = 1;
-        this.pageSize = 12;
+        this.pageSize = 20; // 改为20只股票每页，匹配原网站设计
         this.totalPages = 1;
         this.currentSort = 'name-asc';
         this.currentView = 'grid';
         this.priceFilter = 'all';
         this.changeFilter = 'all';
+        
+        // 无限滚动状态管理
+        this.isLoading = false;
+        this.allStocksLoaded = false;
+        this.hasMoreData = true;
         
         this.init();
     }
@@ -29,7 +34,7 @@ class TagDetailPage {
             this.bindEvents();
             await this.loadTagFromURL();
             this.showLoading();
-            await this.loadTagData();
+            await this.loadTagData(true); // 首次加载，传入isNewTag=true
             // 独立加载所有标签数据用于相关标签板块
             await this.loadAllTags();
             this.hideLoading();
@@ -82,9 +87,7 @@ class TagDetailPage {
         
         // 趋势排名标签的映射
         const rankingMap = {
-            'rank_revenue_growth_top10': '营收增长前10%',
-            'rank_market_cap_top10': '市值前10%',
-            'rank_gross_margin_top10': '高毛利率前10%'
+            'rank_market_cap_top10': '市值前10%'
         };
         
         return rankingMap[tagId] || tagId;
@@ -124,9 +127,7 @@ class TagDetailPage {
         
         // 趋势排名标签
         const rankingMap = {
-            '营收增长前10%': 'rank_revenue_growth_top10',
-            '市值前10%': 'rank_market_cap_top10',
-            '高毛利率前10%': 'rank_gross_margin_top10'
+            '市值前10%': 'rank_market_cap_top10'
         };
         
         if (rankingMap[tagName]) {
@@ -203,6 +204,34 @@ class TagDetailPage {
                 this.switchView('list');
             });
         }
+        
+        // 无限滚动事件监听
+        this.setupInfiniteScroll();
+    }
+    
+    /**
+     * 设置无限滚动
+     */
+    setupInfiniteScroll() {
+        const scrollHandler = this.debounce(() => {
+            // 检查是否滚动到接近底部（距离底部200px时开始加载）
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const windowHeight = window.innerHeight;
+            const documentHeight = document.documentElement.scrollHeight;
+            
+            if (scrollTop + windowHeight >= documentHeight - 200) {
+                // 如果还有更多数据且当前没在加载，则加载下一页
+                if (this.hasMoreData && !this.isLoading && !this.allStocksLoaded) {
+                    console.log('触发无限滚动，加载下一页数据');
+                    this.loadTagData(false, true); // append=true，追加数据
+                }
+            }
+        }, 100); // 100ms防抖
+        
+        window.addEventListener('scroll', scrollHandler);
+        
+        // 保存引用以便后续移除
+        this.scrollHandler = scrollHandler;
     }
 
     /**
@@ -221,11 +250,34 @@ class TagDetailPage {
     }
 
     /**
-     * 加载标签数据
+     * 加载标签数据 - 支持无限滚动分页
+     * @param {boolean} isNewTag - 是否为新标签（重置状态）
+     * @param {boolean} append - 是否追加到现有数据
      */
-    async loadTagData() {
+    async loadTagData(isNewTag = false, append = false) {
+        // 防止重复加载或已加载完所有数据
+        if (this.isLoading || (this.allStocksLoaded && !isNewTag)) {
+            return;
+        }
+        
+        this.isLoading = true;
+        
+        // 如果是新标签，重置所有状态
+        if (isNewTag) {
+            this.currentPage = 1;
+            this.allStocksLoaded = false;
+            this.hasMoreData = true;
+            this.stockData = [];
+            this.filteredStocks = [];
+            this.hideLoadComplete();
+            this.showLoading();
+        } else {
+            // 无限滚动加载更多
+            this.showInfiniteLoading();
+        }
+        
         try {
-            // 使用新的/api/stocks接口，完全模仿Vercel版本的API调用
+            // 使用分页API，每页20只股票
             const apiUrl = `${this.apiBaseUrl}/api/stocks?tags=${encodeURIComponent(this.currentTagId)}&page=${this.currentPage}&limit=${this.pageSize}&sort=${this.currentSort}`;
             
             console.log('API请求URL:', apiUrl); // 调试日志
@@ -243,18 +295,43 @@ class TagDetailPage {
             if (result.success && result.data) {
                 const { stocks, stats, pagination } = result.data;
                 
-                this.stockData = stocks || [];
+                if (append && stocks && stocks.length > 0) {
+                    // 追加模式：将新数据添加到现有数据
+                    this.stockData = [...this.stockData, ...stocks];
+                } else {
+                    // 替换模式：使用新数据
+                    this.stockData = stocks || [];
+                }
+                
+                this.filteredStocks = this.stockData;
                 this.totalPages = pagination?.totalPages || 1;
                 
-                // 直接渲染股票列表，不需要再次过滤排序
-                this.filteredStocks = this.stockData;
+                // 检查是否还有更多数据
+                if (!stocks || stocks.length < this.pageSize) {
+                    this.allStocksLoaded = true;
+                    this.hasMoreData = false;
+                    this.showLoadComplete();
+                } else {
+                    this.hasMoreData = true;
+                }
+                
+                // 渲染股票列表
                 this.renderStockList();
                 this.renderPagination();
                 
-                // 更新股票数量显示和统计信息
-                this.updateStatsFromAPI(stats);
+                // 更新统计信息（仅在首次加载时）
+                if (!append) {
+                    this.updateStatsFromAPI(stats);
+                }
                 
-                console.log(`成功加载「${this.currentTag}」标签数据: ${stocks.length} 只股票`);
+                // 准备下一页
+                this.currentPage++;
+                
+                console.log(`成功加载「${this.currentTag}」标签数据: ${stocks?.length || 0} 只股票 (总计: ${this.stockData.length} 只)`);
+                
+                if (isNewTag) {
+                    this.hideLoading();
+                }
             } else {
                 throw new Error('API返回数据格式错误');
             }
@@ -262,10 +339,15 @@ class TagDetailPage {
             console.error('加载标签数据失败:', error);
             this.showError('加载数据失败，请稍后重试');
             // 清空数据并显示错误状态
-            this.stockData = [];
-            this.filteredStocks = [];
-            this.renderStockList();
-            this.renderPagination();
+            if (isNewTag) {
+                this.stockData = [];
+                this.filteredStocks = [];
+                this.renderStockList();
+                this.renderPagination();
+            }
+        } finally {
+            this.isLoading = false;
+            this.hideInfiniteLoading();
         }
     }
 
@@ -622,15 +704,19 @@ class TagDetailPage {
      * 应用过滤和排序（重新调用API）
      */
     async applyFiltersAndSorting() {
-        // 重置到第一页
+        // 重置分页状态
         this.currentPage = 1;
+        this.allStocksLoaded = false;
+        this.hasMoreData = true;
+        this.stockData = [];
+        this.filteredStocks = [];
         
         // 显示加载状态
         this.showLoading();
         
         try {
-            // 重新加载数据
-            await this.loadTagData();
+            // 重新加载数据（作为新标签处理）
+            await this.loadTagData(true);
         } catch (error) {
             console.error('应用筛选排序失败:', error);
             this.showError('筛选排序失败，请重试');
@@ -861,27 +947,6 @@ class TagDetailPage {
 
 
     /**
-     * 显示加载状态
-     */
-    showLoading() {
-        const loading = document.getElementById('loading');
-        const error = document.getElementById('error');
-        const stockList = document.getElementById('stock-list');
-        
-        if (loading) loading.classList.remove('hidden');
-        if (error) error.classList.add('hidden');
-        if (stockList) stockList.innerHTML = '';
-    }
-
-    /**
-     * 隐藏加载状态
-     */
-    hideLoading() {
-        const loading = document.getElementById('loading');
-        if (loading) loading.classList.add('hidden');
-    }
-
-    /**
      * 显示加载状态 - 与index.html保持一致
      */
     showLoading() {
@@ -903,6 +968,46 @@ class TagDetailPage {
         
         if (loading) loading.classList.add('hidden');
         if (stockList) stockList.style.display = 'block';
+    }
+
+    /**
+     * 显示无限滚动加载指示器
+     */
+    showInfiniteLoading() {
+        const infiniteLoadingElement = document.getElementById('infinite-loading');
+        if (infiniteLoadingElement) {
+            infiniteLoadingElement.classList.remove('hidden');
+        }
+    }
+
+    /**
+     * 隐藏无限滚动加载指示器
+     */
+    hideInfiniteLoading() {
+        const infiniteLoadingElement = document.getElementById('infinite-loading');
+        if (infiniteLoadingElement) {
+            infiniteLoadingElement.classList.add('hidden');
+        }
+    }
+
+    /**
+     * 显示加载完成提示
+     */
+    showLoadComplete() {
+        const loadCompleteElement = document.getElementById('load-complete');
+        if (loadCompleteElement) {
+            loadCompleteElement.classList.remove('hidden');
+        }
+    }
+
+    /**
+     * 隐藏加载完成提示
+     */
+    hideLoadComplete() {
+        const loadCompleteElement = document.getElementById('load-complete');
+        if (loadCompleteElement) {
+            loadCompleteElement.classList.add('hidden');
+        }
     }
 
     /**

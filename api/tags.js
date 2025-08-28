@@ -112,17 +112,6 @@ const fallbackTags = {
     ],
     '趋势排名': [
         {
-            id: 'rank_revenue_growth_top10',
-            name: '营收增长前10%',
-            description: '营收增长率最高的前10%股票',
-            stock_count: 50,
-            avg_market_cap: 'N/A',
-            top_stocks: ['NVDA', 'AMD', 'TSLA'],
-            dynamic_rank: true,
-            metric: 'revenue_growth',
-            percentile: 'top10'
-        },
-        {
             id: 'rank_market_cap_top10',
             name: '市值前10%',
             description: '市值最大的前10%股票',
@@ -294,18 +283,6 @@ async function getTags(req, res) {
         
         const trendTags = [
             {
-                id: 'rank_revenue_growth_top10',
-                name: '营收增长前10%',
-                type: '趋势排名',
-                description: '营收增长率最高的前10%股票',
-                stock_count: 50,
-                avg_market_cap: 'N/A',
-                top_stocks: [],
-                dynamic_rank: true,
-                metric: 'revenue_growth',
-                percentile: 'top10'
-            },
-            {
                 id: 'rank_market_cap_top10',
                 name: '市值前10%',
                 type: '趋势排名',
@@ -315,18 +292,6 @@ async function getTags(req, res) {
                 top_stocks: [],
                 dynamic_rank: true,
                 metric: 'market_cap',
-                percentile: 'top10'
-            },
-            {
-                id: 'rank_gross_margin_top10',
-                name: '高毛利率前10%',
-                type: '趋势排名',
-                description: '毛利率最高的前10%股票',
-                stock_count: 50,
-                avg_market_cap: 'N/A',
-                top_stocks: [],
-                dynamic_rank: true,
-                metric: 'gross_margin',
                 percentile: 'top10'
             }
         ];

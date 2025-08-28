@@ -1,18 +1,67 @@
 const { Pool } = require('pg');
-const cors = require('cors');
+const { URL } = require('url');
+
+// 解析数据库URL
+let dbConfig;
+if (process.env.DATABASE_URL) {
+  const dbUrl = new URL(process.env.DATABASE_URL);
+  dbConfig = {
+    user: dbUrl.username,
+    password: decodeURIComponent(dbUrl.password),
+    host: dbUrl.hostname,
+    port: dbUrl.port,
+    database: dbUrl.pathname.slice(1),
+    ssl: { rejectUnauthorized: false },
+    connectionTimeoutMillis: 10000,
+    idleTimeoutMillis: 30000,
+    max: 20
+  };
+} else {
+  dbConfig = {
+     ssl: { rejectUnauthorized: false },
+     connectionTimeoutMillis: 10000,
+     idleTimeoutMillis: 30000,
+     max: 20
+   };
+}
 
 // 初始化数据库连接池
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+const pool = new Pool(dbConfig);
 
-// CORS中间件
-const corsMiddleware = cors({
-  origin: ['http://localhost:3000', 'http://localhost:8000', 'https://stock-tag-explorer.vercel.app', 'https://stock-tag-explorer-01.vercel.app'],
-  methods: ['GET', 'POST'],
-  credentials: true
-});
+// 模拟数据作为备用方案
+const mockStocks = {
+  'high_volume': [
+    { symbol: 'AAPL', name: '苹果公司', price: 195.89, change: 2.34, changePercent: 1.21, volume: 45234567, marketCap: '3.1T' },
+    { symbol: 'MSFT', name: '微软公司', price: 378.85, change: -1.23, changePercent: -0.32, volume: 23456789, marketCap: '2.8T' },
+    { symbol: 'GOOGL', name: '谷歌A类', price: 142.56, change: 3.45, changePercent: 2.48, volume: 34567890, marketCap: '1.8T' },
+    { symbol: 'AMZN', name: '亚马逊', price: 155.23, change: -0.87, changePercent: -0.56, volume: 28901234, marketCap: '1.6T' },
+    { symbol: 'TSLA', name: '特斯拉', price: 248.42, change: 12.34, changePercent: 5.23, volume: 67890123, marketCap: '789B' }
+  ],
+  'special_sp500': [
+    { symbol: 'AAPL', name: '苹果公司', price: 195.89, change: 2.34, changePercent: 1.21, volume: 45234567, marketCap: '3.1T' },
+    { symbol: 'MSFT', name: '微软公司', price: 378.85, change: -1.23, changePercent: -0.32, volume: 23456789, marketCap: '2.8T' },
+    { symbol: 'AMZN', name: '亚马逊', price: 155.23, change: -0.87, changePercent: -0.56, volume: 28901234, marketCap: '1.6T' },
+    { symbol: 'GOOGL', name: '谷歌A类', price: 142.56, change: 3.45, changePercent: 2.48, volume: 34567890, marketCap: '1.8T' },
+    { symbol: 'TSLA', name: '特斯拉', price: 248.42, change: 12.34, changePercent: 5.23, volume: 67890123, marketCap: '789B' },
+    { symbol: 'BRK.B', name: '伯克希尔B', price: 356.78, change: 1.23, changePercent: 0.35, volume: 4567890, marketCap: '785B' },
+    { symbol: 'UNH', name: '联合健康', price: 524.67, change: -3.45, changePercent: -0.65, volume: 2345678, marketCap: '493B' },
+    { symbol: 'JNJ', name: '强生公司', price: 156.89, change: 0.78, changePercent: 0.50, volume: 6789012, marketCap: '412B' },
+    { symbol: 'JPM', name: '摩根大通', price: 178.45, change: 1.67, changePercent: 0.94, volume: 8901234, marketCap: '523B' },
+    { symbol: 'V', name: 'Visa', price: 267.89, change: -0.45, changePercent: -0.17, volume: 5678901, marketCap: '578B' }
+  ],
+  'rank_market_cap_top10': [
+    { symbol: 'AAPL', name: '苹果公司', price: 195.89, change: 2.34, changePercent: 1.21, volume: 45234567, marketCap: '3.1T' },
+    { symbol: 'MSFT', name: '微软公司', price: 378.85, change: -1.23, changePercent: -0.32, volume: 23456789, marketCap: '2.8T' },
+    { symbol: 'GOOGL', name: '谷歌A类', price: 142.56, change: 3.45, changePercent: 2.48, volume: 34567890, marketCap: '1.8T' },
+    { symbol: 'AMZN', name: '亚马逊', price: 155.23, change: -0.87, changePercent: -0.56, volume: 28901234, marketCap: '1.6T' },
+    { symbol: 'NVDA', name: '英伟达', price: 495.22, change: 8.76, changePercent: 1.80, volume: 45123456, marketCap: '1.2T' },
+    { symbol: 'META', name: 'Meta平台', price: 352.96, change: -2.14, changePercent: -0.60, volume: 19876543, marketCap: '896B' },
+    { symbol: 'TSLA', name: '特斯拉', price: 248.42, change: 12.34, changePercent: 5.23, volume: 67890123, marketCap: '789B' },
+    { symbol: 'BRK.B', name: '伯克希尔B', price: 356.78, change: 1.23, changePercent: 0.35, volume: 4567890, marketCap: '785B' },
+    { symbol: 'V', name: 'Visa', price: 267.89, change: -0.45, changePercent: -0.17, volume: 5678901, marketCap: '578B' },
+    { symbol: 'JPM', name: '摩根大通', price: 178.45, change: 1.67, changePercent: 0.94, volume: 8901234, marketCap: '523B' }
+  ]
+};
 
 // 简化的数据获取函数 - 避免外部API调用超时
 async function getStockData(symbols) {
@@ -120,50 +169,17 @@ function formatMarketCap(marketCap) {
 }
 
 // 备用模拟股票数据
-const mockStocks = {
-  'high_volume': [
-    { symbol: 'AAPL', name: '苹果公司', price: 195.89, change: 2.34, changePercent: 1.21, volume: 45234567, marketCap: '3.1T' },
-    { symbol: 'MSFT', name: '微软公司', price: 378.85, change: -1.23, changePercent: -0.32, volume: 23456789, marketCap: '2.8T' },
-    { symbol: 'GOOGL', name: '谷歌A类', price: 142.56, change: 3.45, changePercent: 2.48, volume: 34567890, marketCap: '1.8T' },
-    { symbol: 'AMZN', name: '亚马逊', price: 155.23, change: -0.87, changePercent: -0.56, volume: 28901234, marketCap: '1.6T' },
-    { symbol: 'TSLA', name: '特斯拉', price: 248.42, change: 12.34, changePercent: 5.23, volume: 67890123, marketCap: '789B' }
-  ],
-  'high_roe': [
-    { symbol: 'NVDA', name: '英伟达', price: 495.22, change: 8.76, changePercent: 1.80, volume: 45123456, marketCap: '1.2T' },
-    { symbol: 'META', name: 'Meta平台', price: 352.96, change: -2.14, changePercent: -0.60, volume: 19876543, marketCap: '896B' },
-    { symbol: 'NFLX', name: '奈飞', price: 487.83, change: 5.67, changePercent: 1.18, volume: 8765432, marketCap: '217B' },
-    { symbol: 'CRM', name: 'Salesforce', price: 267.45, change: 3.21, changePercent: 1.22, volume: 5432109, marketCap: '261B' }
-  ],
-  'technology': [
-    { symbol: 'AAPL', name: '苹果公司', price: 195.89, change: 2.34, changePercent: 1.21, volume: 45234567, marketCap: '3.1T' },
-    { symbol: 'MSFT', name: '微软公司', price: 378.85, change: -1.23, changePercent: -0.32, volume: 23456789, marketCap: '2.8T' },
-    { symbol: 'NVDA', name: '英伟达', price: 495.22, change: 8.76, changePercent: 1.80, volume: 45123456, marketCap: '1.2T' },
-    { symbol: 'GOOGL', name: '谷歌A类', price: 142.56, change: 3.45, changePercent: 2.48, volume: 34567890, marketCap: '1.8T' },
-    { symbol: 'META', name: 'Meta平台', price: 352.96, change: -2.14, changePercent: -0.60, volume: 19876543, marketCap: '896B' },
-    { symbol: 'ADBE', name: 'Adobe', price: 567.89, change: 4.32, changePercent: 0.77, volume: 3456789, marketCap: '258B' }
-  ],
-  'sp500': [
-    { symbol: 'AAPL', name: '苹果公司', price: 195.89, change: 2.34, changePercent: 1.21, volume: 45234567, marketCap: '3.1T' },
-    { symbol: 'MSFT', name: '微软公司', price: 378.85, change: -1.23, changePercent: -0.32, volume: 23456789, marketCap: '2.8T' },
-    { symbol: 'AMZN', name: '亚马逊', price: 155.23, change: -0.87, changePercent: -0.56, volume: 28901234, marketCap: '1.6T' },
-    { symbol: 'GOOGL', name: '谷歌A类', price: 142.56, change: 3.45, changePercent: 2.48, volume: 34567890, marketCap: '1.8T' },
-    { symbol: 'TSLA', name: '特斯拉', price: 248.42, change: 12.34, changePercent: 5.23, volume: 67890123, marketCap: '789B' },
-    { symbol: 'BRK.B', name: '伯克希尔B', price: 356.78, change: 1.23, changePercent: 0.35, volume: 4567890, marketCap: '785B' },
-    { symbol: 'UNH', name: '联合健康', price: 524.67, change: -3.45, changePercent: -0.65, volume: 2345678, marketCap: '493B' },
-    { symbol: 'JNJ', name: '强生公司', price: 156.89, change: 0.78, changePercent: 0.50, volume: 6789012, marketCap: '412B' }
-  ]
-};
+// 删除重复的模拟数据定义，使用上面已定义的mockStocks
 
 module.exports = async function handler(req, res) {
-  // 应用CORS中间件
-  await new Promise((resolve, reject) => {
-    corsMiddleware(req, res, (result) => {
-      if (result instanceof Error) {
-        return reject(result);
-      }
-      return resolve(result);
-    });
-  });
+  // 设置CORS头
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -192,6 +208,7 @@ module.exports = async function handler(req, res) {
     }
     
     try {
+      // 尝试连接数据库，如果失败则直接跳到catch块使用模拟数据
       const client = await pool.connect();
       
       // 检查表是否存在
@@ -426,8 +443,7 @@ module.exports = async function handler(req, res) {
               const sp500Query = `
                 SELECT DISTINCT s.*
                 FROM stocks s
-                WHERE s.is_sp500 = true
-                ORDER BY s.ticker
+                ORDER BY CAST(s.market_cap AS BIGINT) DESC NULLS LAST
                 LIMIT 500
               `;
               console.log('Executing SP500 query:', sp500Query);
@@ -507,6 +523,10 @@ module.exports = async function handler(req, res) {
           mockKey = 'technology'; // 默认使用technology作为行业示例
         } else if (tag.startsWith('marketcap_')) {
           mockKey = 'sp500'; // 默认使用sp500作为市值示例
+        } else if (tag === 'special_sp500') {
+          mockKey = 'special_sp500';
+        } else if (tag === 'rank_market_cap_top10') {
+          mockKey = 'rank_market_cap_top10';
         }
         
         if (mockStocks[mockKey]) {

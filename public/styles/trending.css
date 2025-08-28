@@ -395,10 +395,11 @@
 .ranking-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 1.5rem;
     padding-bottom: 1rem;
     border-bottom: 2px solid #f3f4f6;
+    gap: 2rem;
 }
 
 .ranking-title {
@@ -406,12 +407,17 @@
     font-weight: 600;
     color: #1f2937;
     margin: 0;
+    flex-shrink: 0;
+    min-width: 140px;
 }
 
 .ranking-subtitle {
     font-size: 0.875rem;
     color: #6b7280;
-    margin: 0.25rem 0 0 0;
+    margin: 0 0 1rem 0;
+    padding: 0;
+    border: none;
+    font-style: italic;
 }
 
 .ranking-list-compact {
@@ -958,20 +964,20 @@
 }
 
 .ranking-list-compact .ticker {
-    font-weight: 700;
-    font-size: 0.9rem;
-    color: var(--text-primary);
-    margin-bottom: 0.2rem;
+    font-weight: 500;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
 }
 
 .ranking-list-compact .name {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    font-weight: 700;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
+    margin-bottom: 0.2rem;
 }
 
 .ranking-list-compact .stock-performance {
@@ -1195,20 +1201,20 @@
 }
 
 .ranking-list-full .ticker {
-    font-weight: 700;
-    font-size: 1rem;
-    color: var(--text-primary);
-    margin-bottom: 0.25rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
 }
 
 .ranking-list-full .name {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    font-weight: 500;
+    font-size: 1rem;
+    color: var(--text-primary);
+    font-weight: 700;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
+    margin-bottom: 0.25rem;
 }
 
 .ranking-list-full .stock-performance {
@@ -1775,20 +1781,20 @@
 }
 
 .ticker {
-  font-weight: 700;
-  font-size: 1rem;
-  color: var(--text-primary);
-  margin-bottom: 0.25rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
 }
 
 .name {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  font-weight: 500;
+  font-size: 1rem;
+  color: var(--text-primary);
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+  margin-bottom: 0.25rem;
 }
 
 .stock-performance {
@@ -1887,4 +1893,63 @@
     .category-title {
         padding: 0.75rem;
     }
+}
+
+/* 榜单标题行样式 */
+.ranking-title-row {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.ranking-title-row .ranking-title {
+    margin: 0;
+    flex-shrink: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+}
+
+.ranking-title-row .ranking-subtitle {
+    margin: 0;
+    flex: 1;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    background: linear-gradient(135deg, var(--primary-color), #667eea);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 榜单说明样式 */
+.ranking-description {
+    display: block;
+    flex: 1;
+    padding: 1rem;
+    margin: 0;
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.9), rgba(241, 245, 249, 0.8));
+    border: 1px solid rgba(226, 232, 240, 0.6);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.ranking-description:hover {
+    background: linear-gradient(135deg, rgba(248, 250, 252, 1), rgba(241, 245, 249, 0.95));
+    color: var(--text-primary);
+    border-color: rgba(226, 232, 240, 0.8);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
 }
