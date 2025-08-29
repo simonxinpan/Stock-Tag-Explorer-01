@@ -293,26 +293,26 @@ class TagDetailPage {
             
             console.log('API响应数据:', result); // 调试日志
             
-            if (result.success && result.data) {
-                const { stocks, stats, pagination } = result.data;
-                const totalCount = stats?.total || 0;
+            if (result.success) {
+                // 处理新的API数据格式：直接从result中获取stocks和totalCount
+                const stocks = result.stocks || [];
+                const totalCount = result.totalCount || 0;
                 
                 if (isNewTag) {
-                    // 首次加载：替换所有数据
-                    this.stockData = stocks || [];
+                    // 首次加载：替换所有数据并设置总数
+                    this.stockData = stocks;
                     this.totalStocks = totalCount;
-                    // 更新页面标题显示总数
+                    // 只在首次加载时更新页面标题显示总数
                     this.updatePageTitleWithTotal(totalCount);
-                } else if (append && stocks && stocks.length > 0) {
+                } else {
                     // 追加模式：将新数据添加到现有数据末尾
                     this.stockData = [...this.stockData, ...stocks];
                 }
                 
                 this.filteredStocks = this.stockData;
-                this.totalPages = pagination?.totalPages || 1;
                 
                 // 检查是否还有更多数据
-                if (!stocks || stocks.length < this.pageSize || this.stockData.length >= totalCount) {
+                if (!stocks || stocks.length < this.pageSize || this.stockData.length >= this.totalStocks) {
                     this.allStocksLoaded = true;
                     this.hasMoreData = false;
                     this.showLoadComplete();
@@ -325,14 +325,14 @@ class TagDetailPage {
                 this.renderPagination();
                 
                 // 更新统计信息（仅在首次加载时）
-                if (isNewTag) {
-                    this.updateStatsFromAPI(stats);
+                if (isNewTag && result.stats) {
+                    this.updateStatsFromAPI(result.stats);
                 }
                 
                 // 准备下一页
                 this.currentPage++;
                 
-                console.log(`成功加载「${this.currentTag}」标签数据: ${stocks?.length || 0} 只股票 (总计: ${this.stockData.length}/${totalCount} 只)`);
+                console.log(`成功加载「${this.currentTag}」标签数据: ${stocks.length} 只股票 (总计: ${this.stockData.length}/${this.totalStocks} 只)`);
                 
                 if (isNewTag) {
                     this.hideLoading();
@@ -796,7 +796,7 @@ class TagDetailPage {
      * 渲染股票列表 - 无限滚动模式
      */
     renderStockListInfinite(isNewTag = false) {
-        const stockListContainer = document.getElementById('stock-list-ul');
+        const stockListContainer = document.getElementById('stock-list');
         if (!stockListContainer) {
             console.error('找不到股票列表容器');
             return;
@@ -810,7 +810,8 @@ class TagDetailPage {
             }
         } else {
             // 追加模式：只渲染新加载的股票
-            const newStocks = this.stockData.slice(-(this.pageSize));
+            const currentStockCount = stockListContainer.children.length;
+            const newStocks = this.stockData.slice(currentStockCount);
             if (window.stockRenderer && newStocks.length > 0) {
                 // 创建临时容器来渲染新股票
                 const tempContainer = document.createElement('div');

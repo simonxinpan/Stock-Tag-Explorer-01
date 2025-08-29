@@ -294,155 +294,155 @@ module.exports = async (req, res) => {
             if (currentTag === '大盘股' || currentTag === 'marketcap_大盘股') {
                 stockQuery = `
                     SELECT 
-                        s.symbol,
-                        s.name,
-                        s.price,
-                        s.change_amount as change,
-                        s.change_percent,
-                        s.volume,
-                        s.market_cap,
-                        s.pe_ratio as pe_ttm,
-                        s.roe,
-                        s.sector,
-                        s.updated_at
-                    FROM stocks s
-                    WHERE s.market_cap >= 200000000000
+                        symbol,
+                        name,
+                        price,
+                        change_amount as change,
+                        change_percent,
+                        volume,
+                        market_cap,
+                        pe_ratio as pe_ttm,
+                        roe,
+                        sector,
+                        updated_at
+                    FROM stocks
+                    WHERE market_cap >= 200000000000
                     ORDER BY 
-                        CASE WHEN $1 = 'market_cap' THEN s.market_cap END DESC,
-                        CASE WHEN $1 = 'change_percent' THEN s.change_percent END DESC,
-                        CASE WHEN $1 = 'volume' THEN s.volume END DESC,
-                        s.market_cap DESC
+                        CASE WHEN $1 = 'market_cap' THEN market_cap END DESC,
+                        CASE WHEN $1 = 'change_percent' THEN change_percent END DESC,
+                        CASE WHEN $1 = 'volume' THEN volume END DESC,
+                        market_cap DESC
                     LIMIT $2 OFFSET $3
                 `;
                 countQuery = `
                     SELECT COUNT(*) as total
-                    FROM stocks s
-                    WHERE s.market_cap >= 200000000000
+                    FROM stocks
+                    WHERE market_cap >= 200000000000
                 `;
                 queryParams = [sort, limitNum, offset];
             } else if (currentTag === '中盘股' || currentTag === 'marketcap_中盘股') {
                 stockQuery = `
                     SELECT 
-                        s.symbol,
-                        s.name,
-                        s.price,
-                        s.change_amount as change,
-                        s.change_percent,
-                        s.volume,
-                        s.market_cap,
-                        s.pe_ratio as pe_ttm,
-                        s.roe,
-                        s.sector,
-                        s.updated_at
-                    FROM stocks s
-                    WHERE s.market_cap >= 10000000000 AND s.market_cap < 200000000000
+                        symbol,
+                        name,
+                        price,
+                        change_amount as change,
+                        change_percent,
+                        volume,
+                        market_cap,
+                        pe_ratio as pe_ttm,
+                        roe,
+                        sector,
+                        updated_at
+                    FROM stocks
+                    WHERE market_cap >= 10000000000 AND market_cap < 200000000000
                     ORDER BY 
-                        CASE WHEN $1 = 'market_cap' THEN s.market_cap END DESC,
-                        CASE WHEN $1 = 'change_percent' THEN s.change_percent END DESC,
-                        CASE WHEN $1 = 'volume' THEN s.volume END DESC,
-                        s.market_cap DESC
+                        CASE WHEN $1 = 'market_cap' THEN market_cap END DESC,
+                        CASE WHEN $1 = 'change_percent' THEN change_percent END DESC,
+                        CASE WHEN $1 = 'volume' THEN volume END DESC,
+                        market_cap DESC
                     LIMIT $2 OFFSET $3
                 `;
                 countQuery = `
                     SELECT COUNT(*) as total
-                    FROM stocks s
-                    WHERE s.market_cap >= 10000000000 AND s.market_cap < 200000000000
+                    FROM stocks
+                    WHERE market_cap >= 10000000000 AND market_cap < 200000000000
                 `;
                 queryParams = [sort, limitNum, offset];
             } else if (currentTag === '小盘股' || currentTag === 'marketcap_小盘股') {
                 stockQuery = `
                     SELECT 
-                        s.symbol,
-                        s.name,
-                        s.price,
-                        s.change_amount as change,
-                        s.change_percent,
-                        s.volume,
-                        s.market_cap,
-                        s.pe_ratio as pe_ttm,
-                        s.roe,
-                        s.sector,
-                        s.updated_at
-                    FROM stocks s
-                    WHERE s.market_cap < 10000000000 AND s.market_cap > 0
+                        symbol,
+                        name,
+                        price,
+                        change_amount as change,
+                        change_percent,
+                        volume,
+                        market_cap,
+                        pe_ratio as pe_ttm,
+                        roe,
+                        sector,
+                        updated_at
+                    FROM stocks
+                    WHERE market_cap < 10000000000 AND market_cap > 0
                     ORDER BY 
-                        CASE WHEN $1 = 'market_cap' THEN s.market_cap END DESC,
-                        CASE WHEN $1 = 'change_percent' THEN s.change_percent END DESC,
-                        CASE WHEN $1 = 'volume' THEN s.volume END DESC,
-                        s.market_cap DESC
+                        CASE WHEN $1 = 'market_cap' THEN market_cap END DESC,
+                        CASE WHEN $1 = 'change_percent' THEN change_percent END DESC,
+                        CASE WHEN $1 = 'volume' THEN volume END DESC,
+                        market_cap DESC
                     LIMIT $2 OFFSET $3
                 `;
                 countQuery = `
                     SELECT COUNT(*) as total
-                    FROM stocks s
-                    WHERE s.market_cap < 10000000000 AND s.market_cap > 0
+                    FROM stocks
+                    WHERE market_cap < 10000000000 AND market_cap > 0
                 `;
                 queryParams = [sort, limitNum, offset];
             } else if (currentTag === '高ROE' || currentTag === 'rank_roe_top10') {
                 stockQuery = `
                     SELECT 
-                        s.symbol,
-                        s.name,
-                        s.price,
-                        s.change_amount as change,
-                        s.change_percent,
-                        s.volume,
-                        s.market_cap,
-                        s.pe_ratio as pe_ttm,
-                        s.roe_ttm,
-                        s.sector,
-                        s.updated_at
-                    FROM stocks s
-                    WHERE s.roe_ttm IS NOT NULL AND s.roe_ttm > 0
-                    ORDER BY s.roe_ttm DESC
+                        symbol,
+                        name,
+                        price,
+                        change_amount as change,
+                        change_percent,
+                        volume,
+                        market_cap,
+                        pe_ratio as pe_ttm,
+                        roe as roe_ttm,
+                        sector,
+                        updated_at
+                    FROM stocks
+                    WHERE roe IS NOT NULL AND roe > 0
+                    ORDER BY roe DESC
                     LIMIT $1 OFFSET $2
                 `;
                 countQuery = `
                     SELECT COUNT(*) as total
-                    FROM stocks s
-                    WHERE s.roe_ttm IS NOT NULL AND s.roe_ttm > 0
+                    FROM stocks
+                    WHERE roe IS NOT NULL AND roe > 0
                 `;
                 queryParams = [limitNum, offset];
             } else if (currentTag === '低PE' || currentTag === 'rank_pe_low') {
                 stockQuery = `
                     SELECT 
-                        s.symbol,
-                        s.name,
-                        s.price,
-                        s.change_amount as change,
-                        s.change_percent,
-                        s.volume,
-                        s.market_cap,
-                        s.pe_ttm,
-                        s.roe_ttm,
-                        s.sector,
-                        s.updated_at
-                    FROM stocks s
-                    WHERE s.pe_ttm IS NOT NULL AND s.pe_ttm > 0
-                    ORDER BY s.pe_ttm ASC
+                        symbol,
+                        name,
+                        price,
+                        change_amount as change,
+                        change_percent,
+                        volume,
+                        market_cap,
+                        pe_ratio as pe_ttm,
+                        roe as roe_ttm,
+                        sector,
+                        updated_at
+                    FROM stocks
+                    WHERE pe_ratio IS NOT NULL AND pe_ratio > 0
+                    ORDER BY pe_ratio ASC
                     LIMIT $1 OFFSET $2
                 `;
                 countQuery = `
                     SELECT COUNT(*) as total
-                    FROM stocks s
-                    WHERE s.pe_ttm IS NOT NULL AND s.pe_ttm > 0
+                    FROM stocks
+                    WHERE pe_ratio IS NOT NULL AND pe_ratio > 0
                 `;
                 queryParams = [limitNum, offset];
             } else if (currentTag === '市值前10%' || currentTag === 'rank_market_cap_top10') {
                 // 市值前10%：返回市值最高的约50只股票（约占总数的10%）
                 stockQuery = `
                     SELECT 
-                        s.symbol,
-                        s.name,
-                        s.price,
-                        s.change_amount as change,
-                        s.change_percent,
-                        s.volume,
-                        s.market_cap,
-                        s.pe_ratio as pe_ttm,
-                        s.roe,
-                        s.sector,
-                        s.updated_at
+                        symbol,
+                        name,
+                        price,
+                        change_amount as change,
+                        change_percent,
+                        volume,
+                        market_cap,
+                        pe_ratio as pe_ttm,
+                        roe,
+                        sector,
+                        updated_at
                     FROM (
                         SELECT *
                         FROM stocks
