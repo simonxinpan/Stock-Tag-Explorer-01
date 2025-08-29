@@ -13,6 +13,7 @@ class TagDetailPage {
         this.currentPage = 1;
         this.pageSize = 20; // 改为20只股票每页，匹配原网站设计
         this.totalPages = 1;
+        this.totalStocks = 0;
         this.currentSort = 'name-asc';
         this.currentView = 'grid';
         this.priceFilter = 'all';
@@ -278,7 +279,7 @@ class TagDetailPage {
         
         try {
             // 使用分页API，每页20只股票
-            const apiUrl = `${this.apiBaseUrl}/api/stocks?tags=${encodeURIComponent(this.currentTagId)}&page=${this.currentPage}&limit=${this.pageSize}&sort=${this.currentSort}`;
+            const apiUrl = `${this.apiBaseUrl}/api/stocks-by-tag?tagId=${encodeURIComponent(this.currentTagId)}&page=${this.currentPage}&limit=${this.pageSize}&sort=${this.currentSort}`;
             
             console.log('API请求URL:', apiUrl); // 调试日志
             
@@ -294,20 +295,24 @@ class TagDetailPage {
             
             if (result.success && result.data) {
                 const { stocks, stats, pagination } = result.data;
+                const totalCount = stats?.total || 0;
                 
-                if (append && stocks && stocks.length > 0) {
-                    // 追加模式：将新数据添加到现有数据
-                    this.stockData = [...this.stockData, ...stocks];
-                } else {
-                    // 替换模式：使用新数据
+                if (isNewTag) {
+                    // 首次加载：替换所有数据
                     this.stockData = stocks || [];
+                    this.totalStocks = totalCount;
+                    // 更新页面标题显示总数
+                    this.updatePageTitleWithTotal(totalCount);
+                } else if (append && stocks && stocks.length > 0) {
+                    // 追加模式：将新数据添加到现有数据末尾
+                    this.stockData = [...this.stockData, ...stocks];
                 }
                 
                 this.filteredStocks = this.stockData;
                 this.totalPages = pagination?.totalPages || 1;
                 
                 // 检查是否还有更多数据
-                if (!stocks || stocks.length < this.pageSize) {
+                if (!stocks || stocks.length < this.pageSize || this.stockData.length >= totalCount) {
                     this.allStocksLoaded = true;
                     this.hasMoreData = false;
                     this.showLoadComplete();
@@ -315,19 +320,19 @@ class TagDetailPage {
                     this.hasMoreData = true;
                 }
                 
-                // 渲染股票列表
-                this.renderStockList();
+                // 渲染股票列表（无限滚动模式）
+                this.renderStockListInfinite(isNewTag);
                 this.renderPagination();
                 
                 // 更新统计信息（仅在首次加载时）
-                if (!append) {
+                if (isNewTag) {
                     this.updateStatsFromAPI(stats);
                 }
                 
                 // 准备下一页
                 this.currentPage++;
                 
-                console.log(`成功加载「${this.currentTag}」标签数据: ${stocks?.length || 0} 只股票 (总计: ${this.stockData.length} 只)`);
+                console.log(`成功加载「${this.currentTag}」标签数据: ${stocks?.length || 0} 只股票 (总计: ${this.stockData.length}/${totalCount} 只)`);
                 
                 if (isNewTag) {
                     this.hideLoading();
@@ -785,6 +790,47 @@ class TagDetailPage {
         // 更新分页
         this.totalPages = Math.ceil(this.filteredStocks.length / this.pageSize);
         this.renderPagination();
+    }
+
+    /**
+     * 渲染股票列表 - 无限滚动模式
+     */
+    renderStockListInfinite(isNewTag = false) {
+        const stockListContainer = document.getElementById('stock-list-ul');
+        if (!stockListContainer) {
+            console.error('找不到股票列表容器');
+            return;
+        }
+
+        if (isNewTag) {
+            // 首次加载：清空容器并渲染所有已加载的股票
+            stockListContainer.innerHTML = '';
+            if (window.stockRenderer) {
+                window.stockRenderer.renderStockList(this.stockData, stockListContainer);
+            }
+        } else {
+            // 追加模式：只渲染新加载的股票
+            const newStocks = this.stockData.slice(-(this.pageSize));
+            if (window.stockRenderer && newStocks.length > 0) {
+                // 创建临时容器来渲染新股票
+                const tempContainer = document.createElement('div');
+                window.stockRenderer.renderStockList(newStocks, tempContainer);
+                // 将新股票追加到现有列表末尾
+                while (tempContainer.firstChild) {
+                    stockListContainer.appendChild(tempContainer.firstChild);
+                }
+            }
+        }
+    }
+
+    /**
+     * 更新页面标题显示总数
+     */
+    updatePageTitleWithTotal(totalCount) {
+        const titleElement = document.querySelector('.tag-title');
+        if (titleElement && this.currentTag) {
+            titleElement.textContent = `${this.currentTag} (${totalCount}只股票)`;
+        }
     }
 
     /**
