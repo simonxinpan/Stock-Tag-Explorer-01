@@ -241,10 +241,10 @@ module.exports = async function handler(req, res) {
             queryResult = result.rows;
           }
           // 处理市值分类标签 (marketcap_开头或large_cap等)
-          else if (tag.startsWith('marketcap_') || ['large_cap', 'mid_cap', 'small_cap'].includes(tag)) {
+          else if (tag.startsWith('marketcap_') || ['large_cap', 'mid_cap', 'small_cap', '大盘股', '中盘股', '小盘股'].includes(tag)) {
             let marketCapQuery = '';
             
-            if (tag === 'large_cap' || tag === 'marketcap_大盘股') {
+            if (tag === 'large_cap' || tag === 'marketcap_大盘股' || tag === '大盘股') {
               // 大盘股: 市值 >= 2000亿美元 (即 >= 200,000 百万美元)
               marketCapQuery = `
                 SELECT DISTINCT s.*, COUNT(*) OVER() AS total_count
@@ -252,7 +252,7 @@ module.exports = async function handler(req, res) {
                 WHERE CAST(s.market_cap AS BIGINT) >= 200000
                 ORDER BY CAST(s.market_cap AS BIGINT) DESC NULLS LAST
               `;
-            } else if (tag === 'mid_cap' || tag === 'marketcap_中盘股') {
+            } else if (tag === 'mid_cap' || tag === 'marketcap_中盘股' || tag === '中盘股') {
               // 中盘股: 100亿 <= 市值 < 2000亿美元 (即 10,000 <= 市值 < 200,000 百万美元)
               marketCapQuery = `
                 SELECT DISTINCT s.*, COUNT(*) OVER() AS total_count
@@ -261,7 +261,7 @@ module.exports = async function handler(req, res) {
                   AND CAST(s.market_cap AS BIGINT) < 200000
                 ORDER BY CAST(s.market_cap AS BIGINT) DESC NULLS LAST
               `;
-            } else if (tag === 'small_cap' || tag === 'marketcap_小盘股') {
+            } else if (tag === 'small_cap' || tag === 'marketcap_小盘股' || tag === '小盘股') {
               // 小盘股: 市值 < 100亿美元 (即 < 10,000 百万美元)
               marketCapQuery = `
                 SELECT DISTINCT s.*, COUNT(*) OVER() AS total_count
@@ -361,30 +361,45 @@ module.exports = async function handler(req, res) {
               queryResult = result.rows;
             }
           }
-          // 处理rank_前缀的动态排名标签
-          else if (tag.startsWith('rank_')) {
+          // 处理rank_前缀的动态排名标签和财务表现标签
+          else if (tag.startsWith('rank_') || ['高ROE', '低PE', '财务表现'].includes(tag)) {
             let rankQuery = '';
             const topCount = Math.ceil(502 * 0.1); // 前10%
             
-            if (tag === 'rank_roe_ttm_top10') {
+            if (tag === 'rank_roe_ttm_top10' || tag === '高ROE') {
               rankQuery = `
-                SELECT DISTINCT s.*
+                SELECT DISTINCT s.*, COUNT(*) OVER() AS total_count
                 FROM stocks s
                 WHERE s.roe_ttm IS NOT NULL AND s.roe_ttm > 0
                 ORDER BY s.roe_ttm DESC NULLS LAST
                 LIMIT ${topCount}
               `;
-            } else if (tag === 'rank_pe_ttm_low10') {
+            } else if (tag === 'rank_pe_ttm_low10' || tag === '低PE') {
               rankQuery = `
-                SELECT DISTINCT s.*
+                SELECT DISTINCT s.*, COUNT(*) OVER() AS total_count
                 FROM stocks s
                 WHERE s.pe_ttm IS NOT NULL AND s.pe_ttm > 0
                 ORDER BY s.pe_ttm ASC NULLS LAST
                 LIMIT ${topCount}
               `;
+            } else if (tag === '财务表现') {
+              // 财务表现：综合高ROE和低PE的股票
+              rankQuery = `
+                SELECT DISTINCT s.*, COUNT(*) OVER() AS total_count
+                FROM stocks s
+                WHERE (s.roe_ttm IS NOT NULL AND s.roe_ttm > 15) 
+                   OR (s.pe_ttm IS NOT NULL AND s.pe_ttm > 0 AND s.pe_ttm < 20)
+                ORDER BY 
+                  CASE 
+                    WHEN s.roe_ttm IS NOT NULL AND s.pe_ttm IS NOT NULL 
+                    THEN (s.roe_ttm / NULLIF(s.pe_ttm, 0)) 
+                    ELSE 0 
+                  END DESC NULLS LAST
+                LIMIT ${topCount * 2}
+              `;
             } else if (tag === 'rank_revenue_growth_top10') {
               rankQuery = `
-                SELECT DISTINCT s.*
+                SELECT DISTINCT s.*, COUNT(*) OVER() AS total_count
                 FROM stocks s
                 WHERE s.revenue_growth IS NOT NULL
                 ORDER BY s.revenue_growth DESC NULLS LAST
