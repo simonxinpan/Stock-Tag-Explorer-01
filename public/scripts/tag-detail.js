@@ -278,8 +278,13 @@ class TagDetailPage {
         }
         
         try {
+            // 检查是否使用测试API
+            const urlParams = new URLSearchParams(window.location.search);
+            const useTestApi = urlParams.get('api') === 'test';
+            
             // 使用分页API，每页20只股票
-            const apiUrl = `${this.apiBaseUrl}/api/stocks-by-tag?tagId=${encodeURIComponent(this.currentTagId)}&page=${this.currentPage}&limit=${this.pageSize}&sort=${this.currentSort}`;
+            const apiEndpoint = useTestApi ? '/api/stocks-by-tag-test' : '/api/stocks-by-tag';
+            const apiUrl = `${this.apiBaseUrl}${apiEndpoint}?tagId=${encodeURIComponent(this.currentTagId)}&page=${this.currentPage}&limit=${this.pageSize}&sort=${this.currentSort}`;
             
             console.log('API请求URL:', apiUrl); // 调试日志
             
@@ -294,9 +299,9 @@ class TagDetailPage {
             console.log('API响应数据:', result); // 调试日志
             
             if (result.success) {
-                // 处理新的API数据格式：直接从result中获取stocks和totalCount
-                const stocks = result.stocks || [];
-                const totalCount = result.totalCount || 0;
+                // 处理API数据格式：根据API类型获取数据
+                const stocks = result.data || result.stocks || [];
+                const totalCount = result.pagination ? result.pagination.total : (result.totalCount || 0);
                 
                 if (isNewTag) {
                     // 首次加载：替换所有数据并设置总数
@@ -325,8 +330,8 @@ class TagDetailPage {
                 this.renderPagination();
                 
                 // 更新统计信息（仅在首次加载时）
-                if (isNewTag && result.stats) {
-                    this.updateStatsFromAPI(result.stats);
+                if (isNewTag && (result.statistics || result.stats)) {
+                    this.updateStatsFromAPI(result.statistics || result.stats);
                 }
                 
                 // 准备下一页
@@ -974,9 +979,9 @@ class TagDetailPage {
         const flatStocksEl = document.getElementById('flat-stocks');
         
         if (totalStocksEl) totalStocksEl.textContent = stats.total || 0;
-        if (risingStocksEl) risingStocksEl.textContent = stats.upCount || 0;
-        if (fallingStocksEl) fallingStocksEl.textContent = stats.downCount || 0;
-        if (flatStocksEl) flatStocksEl.textContent = stats.flatCount || 0;
+        if (risingStocksEl) risingStocksEl.textContent = stats.up || stats.upCount || 0;
+        if (fallingStocksEl) fallingStocksEl.textContent = stats.down || stats.downCount || 0;
+        if (flatStocksEl) flatStocksEl.textContent = stats.flat || stats.flatCount || 0;
         
         // 更新标签名称和描述
         const tagNameEl = document.getElementById('tag-name');
@@ -988,11 +993,16 @@ class TagDetailPage {
         }
         
         // 显示平均指标（如果有）
-        if (stats.avgPE && stats.avgPE > 0) {
-            console.log(`平均PE: ${stats.avgPE.toFixed(2)}`);
+        if (stats.avgPE && parseFloat(stats.avgPE) > 0) {
+            console.log(`平均PE: ${parseFloat(stats.avgPE).toFixed(2)}`);
         }
-        if (stats.avgROE && stats.avgROE > 0) {
-            console.log(`平均ROE: ${(stats.avgROE * 100).toFixed(2)}%`);
+        if (stats.avgROE) {
+            const roeValue = typeof stats.avgROE === 'string' && stats.avgROE.includes('%') 
+                ? parseFloat(stats.avgROE.replace('%', '')) 
+                : parseFloat(stats.avgROE) * 100;
+            if (roeValue > 0) {
+                console.log(`平均ROE: ${roeValue.toFixed(2)}%`);
+            }
         }
     }
 

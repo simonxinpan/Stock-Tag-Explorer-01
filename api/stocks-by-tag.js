@@ -11,205 +11,7 @@ const pool = new Pool({
     ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
-// 备用模拟数据
-const getMockStocksByTag = (tagName) => {
-    const mockData = {
-        '大盘股': [
-            {
-                symbol: 'AAPL',
-                name: 'Apple Inc.',
-                price: 175.43,
-                change: 2.15,
-                change_percent: 1.24,
-                volume: 45678900,
-                market_cap: 2800000000000,
-                pe_ttm: 28.5,
-                roe_ttm: 0.26,
-                sector: '科技'
-            },
-            {
-                symbol: 'MSFT',
-                name: 'Microsoft Corporation',
-                price: 378.85,
-                change: -1.23,
-                change_percent: -0.32,
-                volume: 23456789,
-                market_cap: 2900000000000,
-                pe_ttm: 32.1,
-                roe_ttm: 0.31,
-                sector: '科技'
-            },
-            {
-                symbol: 'GOOGL',
-                name: 'Alphabet Inc.',
-                price: 142.56,
-                change: 1.87,
-                change_percent: 1.33,
-                volume: 28901234,
-                market_cap: 1800000000000,
-                pe_ttm: 25.8,
-                roe_ttm: 0.28,
-                sector: '科技'
-            },
-            {
-                symbol: 'AMZN',
-                name: 'Amazon.com Inc.',
-                price: 155.89,
-                change: -2.45,
-                change_percent: -1.55,
-                volume: 34567890,
-                market_cap: 1600000000000,
-                pe_ttm: 45.2,
-                roe_ttm: 0.15,
-                sector: '消费'
-            },
-            {
-                symbol: 'TSLA',
-                name: 'Tesla Inc.',
-                price: 248.42,
-                change: 12.34,
-                change_percent: 5.23,
-                volume: 78901234,
-                market_cap: 800000000000,
-                pe_ttm: 65.4,
-                roe_ttm: 0.19,
-                sector: '汽车'
-            }
-        ],
-        '大型科技股': [
-            {
-                symbol: 'AAPL',
-                name: 'Apple Inc.',
-                price: 175.43,
-                change: 2.15,
-                change_percent: 1.24,
-                volume: 45678900,
-                market_cap: 2800000000000,
-                pe_ttm: 28.5,
-                roe_ttm: 0.26,
-                sector: '科技'
-            },
-            {
-                symbol: 'MSFT',
-                name: 'Microsoft Corporation',
-                price: 378.85,
-                change: -1.23,
-                change_percent: -0.32,
-                volume: 23456789,
-                market_cap: 2900000000000,
-                pe_ttm: 32.1,
-                roe_ttm: 0.31,
-                sector: '科技'
-            }
-        ],
-        '人工智能': [
-            {
-                symbol: 'NVDA',
-                name: 'NVIDIA Corporation',
-                price: 875.28,
-                change: 15.67,
-                change_percent: 1.82,
-                volume: 45678901,
-                market_cap: 2200000000000,
-                pe_ttm: 71.2,
-                roe_ttm: 0.35,
-                sector: '科技'
-            }
-        ],
-        '电动汽车': [
-            {
-                symbol: 'TSLA',
-                name: 'Tesla Inc.',
-                price: 248.42,
-                change: 12.34,
-                change_percent: 5.23,
-                volume: 78901234,
-                market_cap: 800000000000,
-                pe_ttm: 65.4,
-                roe_ttm: 0.19,
-                sector: '汽车'
-            }
-        ],
-        '高ROE': [
-            {
-                symbol: 'NVDA',
-                name: 'NVIDIA Corporation',
-                price: 875.28,
-                change: 15.67,
-                change_percent: 1.82,
-                volume: 45678901,
-                market_cap: 2200000000000,
-                pe_ttm: 71.2,
-                roe_ttm: 0.45,
-                sector: '科技'
-            },
-            {
-                symbol: 'MSFT',
-                name: 'Microsoft Corporation',
-                price: 378.85,
-                change: -1.23,
-                change_percent: -0.32,
-                volume: 23456789,
-                market_cap: 2900000000000,
-                pe_ttm: 32.1,
-                roe_ttm: 0.38,
-                sector: '科技'
-            },
-            {
-                symbol: 'AAPL',
-                name: 'Apple Inc.',
-                price: 175.43,
-                change: 2.15,
-                change_percent: 1.24,
-                volume: 45678900,
-                market_cap: 2800000000000,
-                pe_ttm: 28.5,
-                roe_ttm: 0.35,
-                sector: '科技'
-            }
-        ],
-        '低PE': [
-            {
-                symbol: 'BRK.A',
-                name: 'Berkshire Hathaway Inc.',
-                price: 545000.00,
-                change: 2500.00,
-                change_percent: 0.46,
-                volume: 12345,
-                market_cap: 780000000000,
-                pe_ttm: 8.5,
-                roe_ttm: 0.12,
-                sector: '金融'
-            },
-            {
-                symbol: 'JPM',
-                name: 'JPMorgan Chase & Co.',
-                price: 165.43,
-                change: 1.25,
-                change_percent: 0.76,
-                volume: 12345678,
-                market_cap: 485000000000,
-                pe_ttm: 12.3,
-                roe_ttm: 0.15,
-                sector: '金融'
-            },
-            {
-                symbol: 'XOM',
-                name: 'Exxon Mobil Corporation',
-                price: 108.75,
-                change: -0.85,
-                change_percent: -0.78,
-                volume: 18765432,
-                market_cap: 450000000000,
-                pe_ttm: 14.2,
-                roe_ttm: 0.18,
-                sector: '能源'
-            }
-        ]
-    };
-    
-    return mockData[tagName] || [];
-};
+
 
 // 获取相关标签
 const getRelatedTags = async (currentTag) => {
@@ -239,17 +41,8 @@ const getRelatedTags = async (currentTag) => {
         }));
     } catch (error) {
         console.error('获取相关标签失败:', error);
-        // 返回模拟相关标签
-        return [
-            { name: '大型科技股', count: 25 },
-            { name: '人工智能', count: 18 },
-            { name: '云计算', count: 15 },
-            { name: '电动汽车', count: 12 },
-            { name: '半导体', count: 20 },
-            { name: '消费电子', count: 14 },
-            { name: '软件服务', count: 22 },
-            { name: '互联网', count: 16 }
-        ].filter(tag => tag.name !== currentTag);
+        // 不使用模拟数据，返回空数组
+        return [];
     }
 };
 
@@ -457,6 +250,37 @@ module.exports = async (req, res) => {
                     SELECT 50 as total
                 `;
                 queryParams = [limitNum, offset];
+            } else if (currentTag.startsWith('sector_')) {
+                // 处理行业分类标签 (sector_开头)
+                const sectorName = currentTag.replace('sector_', '');
+                stockQuery = `
+                    SELECT 
+                        ticker as symbol,
+                        name,
+                        price,
+                        change_amount as change,
+                        change_percent,
+                        volume,
+                        market_cap,
+                        pe_ttm,
+                        roe,
+                        sector_zh as sector,
+                        updated_at
+                    FROM stocks
+                    WHERE (sector_zh = $1 OR sector_en = $1)
+                    ORDER BY 
+                        CASE WHEN $2 = 'market_cap' THEN market_cap END DESC,
+                        CASE WHEN $2 = 'change_percent' THEN change_percent END DESC,
+                        CASE WHEN $2 = 'volume' THEN volume END DESC,
+                        market_cap DESC
+                    LIMIT $3 OFFSET $4
+                `;
+                countQuery = `
+                    SELECT COUNT(*) as total
+                    FROM stocks
+                    WHERE (sector_zh = $1 OR sector_en = $1)
+                `;
+                queryParams = [sectorName, sort, limitNum, offset];
             } else {
                 // 默认：通过标签表查询
                 stockQuery = `
@@ -505,6 +329,12 @@ module.exports = async (req, res) => {
                     pool.query(stockQuery, queryParams),
                     pool.query(countQuery)
                 ]);
+            } else if (currentTag.startsWith('sector_')) {
+                const sectorName = currentTag.replace('sector_', '');
+                [stockResult, countResult] = await Promise.all([
+                    pool.query(stockQuery, queryParams),
+                    pool.query(countQuery, [sectorName])
+                ]);
             } else {
                 [stockResult, countResult] = await Promise.all([
                     pool.query(stockQuery, queryParams),
@@ -521,32 +351,12 @@ module.exports = async (req, res) => {
             console.log(`数据库查询成功: 找到 ${stocks.length} 只股票，总计 ${totalCount} 只`);
 
         } catch (dbError) {
-            console.error('数据库查询失败，使用模拟数据:', dbError);
+            console.error('数据库查询失败:', dbError);
             
-            // 使用备用模拟数据
-            const mockData = getMockStocksByTag(currentTag);
-            
-            // 应用排序
-            let sortedMockData = [...mockData];
-            if (sort === 'market_cap') {
-                sortedMockData.sort((a, b) => b.market_cap - a.market_cap);
-            } else if (sort === 'price') {
-                sortedMockData.sort((a, b) => b.price - a.price);
-            } else if (sort === 'change_percent') {
-                sortedMockData.sort((a, b) => b.change_percent - a.change_percent);
-            }
-            
-            stocks = sortedMockData.slice(offset, offset + limitNum);
-            totalCount = sortedMockData.length;
-            
-            // 模拟相关标签
-            relatedTags = [
-                { name: '大型科技股', count: 25 },
-                { name: '人工智能', count: 18 },
-                { name: '云计算', count: 15 },
-                { name: '电动汽车', count: 12 },
-                { name: '半导体', count: 20 }
-            ].filter(t => t.name !== currentTag);
+            // 不使用模拟数据，直接返回空结果
+            stocks = [];
+            totalCount = 0;
+            relatedTags = [];
         }
 
         // 格式化股票数据
@@ -619,6 +429,14 @@ module.exports = async (req, res) => {
                     ) s
                 `;
                 allStocksParams = [];
+            } else if (currentTag.startsWith('sector_')) {
+                const sectorName = currentTag.replace('sector_', '');
+                allStocksQuery = `
+                    SELECT s.change_amount as change, s.change_percent, s.pe_ttm, s.roe
+                    FROM stocks s
+                    WHERE (s.sector_zh = $1 OR s.sector_en = $1)
+                `;
+                allStocksParams = [sectorName];
             } else {
                 allStocksQuery = `
                     SELECT DISTINCT s.change_amount as change, s.change_percent, s.pe_ttm, s.roe
@@ -669,12 +487,12 @@ module.exports = async (req, res) => {
             hasPrev: pageNum > 1
         };
 
-        console.log(`标签查询「${tag}」完成，返回 ${formattedStocks.length} 只股票，总计 ${totalCount} 只`);
+        console.log(`标签查询「${currentTag}」完成，返回 ${formattedStocks.length} 只股票，总计 ${totalCount} 只`);
 
         return res.status(200).json({
             success: true,
             data: {
-                tag: tag,
+                tag: currentTag,
                 stocks: formattedStocks,
                 stats,
                 pagination,
