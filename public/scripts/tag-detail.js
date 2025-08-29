@@ -277,8 +277,8 @@ class TagDetailPage {
         }
         
         try {
-            // 使用分页API，每页20只股票
-            const apiUrl = `${this.apiBaseUrl}/api/stocks?tags=${encodeURIComponent(this.currentTagId)}&page=${this.currentPage}&limit=${this.pageSize}&sort=${this.currentSort}`;
+            // 使用正确的标签股票API，每页20只股票
+            const apiUrl = `${this.apiBaseUrl}/api/stocks-by-tag?tagId=${encodeURIComponent(this.currentTagId)}&page=${this.currentPage}&limit=${this.pageSize}&sort=${this.currentSort}`;
             
             console.log('API请求URL:', apiUrl); // 调试日志
             
@@ -292,8 +292,13 @@ class TagDetailPage {
             
             console.log('API响应数据:', result); // 调试日志
             
-            if (result.success && result.data) {
-                const { stocks, stats, pagination } = result.data;
+            if (result.success) {
+                // 解析API返回格式
+                const data = result.data || {};
+                const stocks = data.stocks || [];
+                const stats = data.stats || {};
+                const pagination = data.pagination || {};
+                const totalCount = stats.total || 0;
                 
                 if (append && stocks && stocks.length > 0) {
                     // 追加模式：将新数据添加到现有数据
@@ -321,13 +326,17 @@ class TagDetailPage {
                 
                 // 更新统计信息（仅在首次加载时）
                 if (!append) {
+                    // 确保stats包含总数信息
+                    if (!stats.total && totalCount) {
+                        stats.total = totalCount;
+                    }
                     this.updateStatsFromAPI(stats);
                 }
                 
                 // 准备下一页
                 this.currentPage++;
                 
-                console.log(`成功加载「${this.currentTag}」标签数据: ${stocks?.length || 0} 只股票 (总计: ${this.stockData.length} 只)`);
+                console.log(`成功加载「${this.currentTag}」标签数据: ${stocks?.length || 0} 只股票 (总计: ${totalCount || this.stockData.length} 只)`);
                 
                 if (isNewTag) {
                     this.hideLoading();
@@ -916,16 +925,22 @@ class TagDetailPage {
             return;
         }
         
+        // 兼容不同API格式的统计数据
+        const totalCount = stats.total || stats.totalCount || 0;
+        const upCount = stats.upCount || stats.up || 0;
+        const downCount = stats.downCount || stats.down || 0;
+        const flatCount = stats.flatCount || stats.flat || 0;
+        
         // 更新统计显示
         const totalStocksEl = document.getElementById('total-stocks');
         const risingStocksEl = document.getElementById('rising-stocks');
         const fallingStocksEl = document.getElementById('falling-stocks');
         const flatStocksEl = document.getElementById('flat-stocks');
         
-        if (totalStocksEl) totalStocksEl.textContent = stats.total || 0;
-        if (risingStocksEl) risingStocksEl.textContent = stats.upCount || 0;
-        if (fallingStocksEl) fallingStocksEl.textContent = stats.downCount || 0;
-        if (flatStocksEl) flatStocksEl.textContent = stats.flatCount || 0;
+        if (totalStocksEl) totalStocksEl.textContent = totalCount;
+        if (risingStocksEl) risingStocksEl.textContent = upCount;
+        if (fallingStocksEl) fallingStocksEl.textContent = downCount;
+        if (flatStocksEl) flatStocksEl.textContent = flatCount;
         
         // 更新标签名称和描述
         const tagNameEl = document.getElementById('tag-name');
@@ -933,15 +948,35 @@ class TagDetailPage {
         
         if (tagNameEl) tagNameEl.textContent = this.currentTag;
         if (tagDescriptionEl) {
-            tagDescriptionEl.textContent = `共找到 ${stats.total || 0} 只「${this.currentTag}」相关股票`;
+            tagDescriptionEl.textContent = `共找到 ${totalCount} 只「${this.currentTag}」相关股票`;
         }
         
         // 显示平均指标（如果有）
-        if (stats.avgPE && stats.avgPE > 0) {
-            console.log(`平均PE: ${stats.avgPE.toFixed(2)}`);
+        let avgPE = stats.avgPE;
+        let avgROE = stats.avgROE;
+        
+        // 确保avgPE是数字类型
+        if (avgPE && typeof avgPE === 'string') {
+            avgPE = parseFloat(avgPE);
         }
-        if (stats.avgROE && stats.avgROE > 0) {
-            console.log(`平均ROE: ${(stats.avgROE * 100).toFixed(2)}%`);
+        
+        // 处理avgROE，可能包含百分号
+        if (avgROE) {
+            if (typeof avgROE === 'string') {
+                // 移除百分号并转换为数字
+                avgROE = parseFloat(avgROE.replace('%', ''));
+                // 如果原来是百分比格式，需要除以100
+                if (stats.avgROE.includes('%')) {
+                    avgROE = avgROE / 100;
+                }
+            }
+        }
+        
+        if (avgPE && avgPE > 0) {
+            console.log(`平均PE: ${avgPE.toFixed(2)}`);
+        }
+        if (avgROE && avgROE > 0) {
+            console.log(`平均ROE: ${(avgROE * 100).toFixed(2)}%`);
         }
     }
 

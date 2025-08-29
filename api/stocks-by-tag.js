@@ -205,6 +205,154 @@ const getMockStocksByTag = (tagName) => {
                 roe_ttm: 0.18,
                 sector: '能源'
             }
+        ],
+        'special_sp500': [
+            {
+                symbol: 'AAPL',
+                name: 'Apple Inc.',
+                price: 175.43,
+                change: 2.15,
+                change_percent: 1.24,
+                volume: 45678900,
+                market_cap: 2800000000000,
+                pe_ttm: 28.5,
+                roe_ttm: 0.26,
+                sector: '科技'
+            },
+            {
+                symbol: 'MSFT',
+                name: 'Microsoft Corporation',
+                price: 378.85,
+                change: -1.23,
+                change_percent: -0.32,
+                volume: 23456789,
+                market_cap: 2900000000000,
+                pe_ttm: 32.1,
+                roe_ttm: 0.31,
+                sector: '科技'
+            },
+            {
+                symbol: 'GOOGL',
+                name: 'Alphabet Inc.',
+                price: 142.56,
+                change: 1.87,
+                change_percent: 1.33,
+                volume: 28901234,
+                market_cap: 1800000000000,
+                pe_ttm: 25.8,
+                roe_ttm: 0.28,
+                sector: '科技'
+            },
+            {
+                symbol: 'AMZN',
+                name: 'Amazon.com Inc.',
+                price: 155.89,
+                change: -2.45,
+                change_percent: -1.55,
+                volume: 34567890,
+                market_cap: 1600000000000,
+                pe_ttm: 45.2,
+                roe_ttm: 0.15,
+                sector: '消费'
+            },
+            {
+                symbol: 'TSLA',
+                name: 'Tesla Inc.',
+                price: 248.42,
+                change: 12.34,
+                change_percent: 5.23,
+                volume: 78901234,
+                market_cap: 800000000000,
+                pe_ttm: 65.4,
+                roe_ttm: 0.19,
+                sector: '汽车'
+            },
+            {
+                symbol: 'NVDA',
+                name: 'NVIDIA Corporation',
+                price: 875.28,
+                change: 15.67,
+                change_percent: 1.82,
+                volume: 45678901,
+                market_cap: 2200000000000,
+                pe_ttm: 71.2,
+                roe_ttm: 0.35,
+                sector: '科技'
+            },
+            {
+                symbol: 'META',
+                name: 'Meta Platforms Inc.',
+                price: 485.22,
+                change: 8.45,
+                change_percent: 1.77,
+                volume: 15678901,
+                market_cap: 1200000000000,
+                pe_ttm: 24.8,
+                roe_ttm: 0.22,
+                sector: '科技'
+            }
+        ],
+        'sector_信息技术': [
+            {
+                symbol: 'AAPL',
+                name: 'Apple Inc.',
+                price: 175.43,
+                change: 2.15,
+                change_percent: 1.24,
+                volume: 45678900,
+                market_cap: 2800000000000,
+                pe_ttm: 28.5,
+                roe_ttm: 0.26,
+                sector: '信息技术'
+            },
+            {
+                symbol: 'MSFT',
+                name: 'Microsoft Corporation',
+                price: 378.85,
+                change: -1.23,
+                change_percent: -0.32,
+                volume: 23456789,
+                market_cap: 2900000000000,
+                pe_ttm: 32.1,
+                roe_ttm: 0.31,
+                sector: '信息技术'
+            },
+            {
+                symbol: 'GOOGL',
+                name: 'Alphabet Inc.',
+                price: 142.56,
+                change: 1.87,
+                change_percent: 1.33,
+                volume: 28901234,
+                market_cap: 1800000000000,
+                pe_ttm: 25.8,
+                roe_ttm: 0.28,
+                sector: '信息技术'
+            },
+            {
+                symbol: 'NVDA',
+                name: 'NVIDIA Corporation',
+                price: 875.28,
+                change: 15.67,
+                change_percent: 1.82,
+                volume: 45678901,
+                market_cap: 2200000000000,
+                pe_ttm: 71.2,
+                roe_ttm: 0.35,
+                sector: '信息技术'
+            },
+            {
+                symbol: 'META',
+                name: 'Meta Platforms Inc.',
+                price: 485.22,
+                change: 8.45,
+                change_percent: 1.77,
+                volume: 15678901,
+                market_cap: 1200000000000,
+                pe_ttm: 24.8,
+                roe_ttm: 0.22,
+                sector: '信息技术'
+            }
         ]
     };
     
