@@ -292,8 +292,11 @@ class TagDetailPage {
             
             console.log('API响应数据:', result); // 调试日志
             
-            if (result.success && result.data) {
-                const { stocks, stats, pagination } = result.data;
+            if (result.success) {
+                // 优先使用新的API格式（直接返回stocks和totalCount）
+                const stocks = result.stocks || result.data?.stocks || [];
+                const totalCount = result.totalCount || result.data?.pagination?.count || 0;
+                const stats = result.data?.stats;
                 
                 if (append && stocks && stocks.length > 0) {
                     // 追加模式：将新数据添加到现有数据
@@ -304,10 +307,9 @@ class TagDetailPage {
                 }
                 
                 this.filteredStocks = this.stockData;
-                this.totalPages = pagination?.totalPages || 1;
                 
                 // 检查是否还有更多数据
-                if (!stocks || stocks.length < this.pageSize) {
+                if (!stocks || stocks.length < this.pageSize || (this.currentPage * this.pageSize) >= totalCount) {
                     this.allStocksLoaded = true;
                     this.hasMoreData = false;
                     this.showLoadComplete();
@@ -315,19 +317,19 @@ class TagDetailPage {
                     this.hasMoreData = true;
                 }
                 
-                // 渲染股票列表
-                this.renderStockList();
-                this.renderPagination();
+                // 渲染股票列表（追加模式）
+                this.renderStockList(append);
                 
-                // 更新统计信息（仅在首次加载时）
-                if (!append) {
-                    this.updateStatsFromAPI(stats);
+                // 只在首次加载时更新标题和统计信息
+                if (isNewTag) {
+                    this.updatePageTitle(totalCount);
+                    this.updateStatsFromAPI(stats, totalCount);
                 }
                 
                 // 准备下一页
                 this.currentPage++;
                 
-                console.log(`成功加载「${this.currentTag}」标签数据: ${stocks?.length || 0} 只股票 (总计: ${this.stockData.length} 只)`);
+                console.log(`成功加载「${this.currentTag}」标签数据: ${stocks?.length || 0} 只股票 (总计: ${totalCount} 只)`);
                 
                 if (isNewTag) {
                     this.hideLoading();
@@ -768,23 +770,32 @@ class TagDetailPage {
     /**
      * 渲染股票列表 - 使用通用渲染器
      */
-    renderStockList() {
+    renderStockList(append = false) {
         if (!window.stockRenderer) {
             console.error('Stock renderer not available');
             return;
         }
 
-        // 计算分页
-        const startIndex = (this.currentPage - 1) * this.pageSize;
-        const endIndex = startIndex + this.pageSize;
-        const pageStocks = this.filteredStocks.slice(startIndex, endIndex);
-
-        // 使用通用渲染器渲染股票列表
-        window.stockRenderer.renderStockList(pageStocks, 'stock-list');
-
-        // 更新分页
-        this.totalPages = Math.ceil(this.filteredStocks.length / this.pageSize);
-        this.renderPagination();
+        if (append) {
+            // 追加模式：只渲染新加载的股票
+            const previousLength = this.stockData.length - (this.stockData.length % this.pageSize === 0 ? this.pageSize : this.stockData.length % this.pageSize);
+            const newStocks = this.stockData.slice(previousLength);
+            
+            // 获取股票列表容器
+            const stockListContainer = document.getElementById('stock-list');
+            if (stockListContainer && newStocks.length > 0) {
+                // 为每只新股票创建DOM元素并追加到末尾
+                newStocks.forEach(stock => {
+                    const stockElement = window.stockRenderer.createStockItem(stock);
+                    if (stockElement) {
+                        stockListContainer.appendChild(stockElement);
+                    }
+                });
+            }
+        } else {
+            // 替换模式：渲染所有股票
+            window.stockRenderer.renderStockList(this.stockData, 'stock-list');
+        }
     }
 
     /**
@@ -908,10 +919,29 @@ class TagDetailPage {
     }
 
     /**
+     * 更新页面标题
+     */
+    updatePageTitle(totalCount) {
+        const tagNameEl = document.getElementById('tag-name');
+        const tagDescriptionEl = document.getElementById('tag-description');
+        
+        if (tagNameEl) tagNameEl.textContent = this.currentTag;
+        if (tagDescriptionEl) {
+            tagDescriptionEl.textContent = `共找到 ${totalCount || 0} 只「${this.currentTag}」相关股票`;
+        }
+        
+        // 更新统计显示
+        const statsDisplay = document.querySelector('.stats-display');
+        if (statsDisplay) {
+            statsDisplay.textContent = `共 ${totalCount || 0} 只股票`;
+        }
+    }
+
+    /**
      * 从API数据更新统计信息
      */
-    updateStatsFromAPI(stats) {
-        if (!stats) {
+    updateStatsFromAPI(stats, totalCount) {
+        if (!stats && !totalCount) {
             this.updateStats();
             return;
         }
@@ -922,25 +952,16 @@ class TagDetailPage {
         const fallingStocksEl = document.getElementById('falling-stocks');
         const flatStocksEl = document.getElementById('flat-stocks');
         
-        if (totalStocksEl) totalStocksEl.textContent = stats.total || 0;
-        if (risingStocksEl) risingStocksEl.textContent = stats.upCount || 0;
-        if (fallingStocksEl) fallingStocksEl.textContent = stats.downCount || 0;
-        if (flatStocksEl) flatStocksEl.textContent = stats.flatCount || 0;
-        
-        // 更新标签名称和描述
-        const tagNameEl = document.getElementById('tag-name');
-        const tagDescriptionEl = document.getElementById('tag-description');
-        
-        if (tagNameEl) tagNameEl.textContent = this.currentTag;
-        if (tagDescriptionEl) {
-            tagDescriptionEl.textContent = `共找到 ${stats.total || 0} 只「${this.currentTag}」相关股票`;
-        }
+        if (totalStocksEl) totalStocksEl.textContent = totalCount || stats?.total || 0;
+        if (risingStocksEl) risingStocksEl.textContent = stats?.upCount || 0;
+        if (fallingStocksEl) fallingStocksEl.textContent = stats?.downCount || 0;
+        if (flatStocksEl) flatStocksEl.textContent = stats?.flatCount || 0;
         
         // 显示平均指标（如果有）
-        if (stats.avgPE && stats.avgPE > 0) {
+        if (stats?.avgPE && stats.avgPE > 0) {
             console.log(`平均PE: ${stats.avgPE.toFixed(2)}`);
         }
-        if (stats.avgROE && stats.avgROE > 0) {
+        if (stats?.avgROE && stats.avgROE > 0) {
             console.log(`平均ROE: ${(stats.avgROE * 100).toFixed(2)}%`);
         }
     }

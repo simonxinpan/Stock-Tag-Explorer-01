@@ -231,11 +231,10 @@ module.exports = async function handler(req, res) {
           if (tag.startsWith('sector_')) {
             const sectorName = tag.replace('sector_', '');
             const sectorQuery = `
-              SELECT DISTINCT s.*
+              SELECT DISTINCT s.*, COUNT(*) OVER() AS total_count
               FROM stocks s
               WHERE s.sector_zh = $1 OR s.sector_en = $1
               ORDER BY s.ticker
-              LIMIT 100
             `;
             console.log('Executing sector query:', sectorQuery, 'with param:', sectorName);
             const result = await client.query(sectorQuery, [sectorName]);
@@ -248,30 +247,27 @@ module.exports = async function handler(req, res) {
             if (tag === 'large_cap' || tag === 'marketcap_大盘股') {
               // 大盘股: 市值 >= 2000亿美元 (即 >= 200,000 百万美元)
               marketCapQuery = `
-                SELECT DISTINCT s.*
+                SELECT DISTINCT s.*, COUNT(*) OVER() AS total_count
                 FROM stocks s
                 WHERE CAST(s.market_cap AS BIGINT) >= 200000
-                ORDER BY s.market_cap DESC
-                LIMIT 100
+                ORDER BY CAST(s.market_cap AS BIGINT) DESC NULLS LAST
               `;
             } else if (tag === 'mid_cap' || tag === 'marketcap_中盘股') {
               // 中盘股: 100亿 <= 市值 < 2000亿美元 (即 10,000 <= 市值 < 200,000 百万美元)
               marketCapQuery = `
-                SELECT DISTINCT s.*
+                SELECT DISTINCT s.*, COUNT(*) OVER() AS total_count
                 FROM stocks s
                 WHERE CAST(s.market_cap AS BIGINT) >= 10000 
                   AND CAST(s.market_cap AS BIGINT) < 200000
-                ORDER BY s.market_cap DESC
-                LIMIT 100
+                ORDER BY CAST(s.market_cap AS BIGINT) DESC NULLS LAST
               `;
             } else if (tag === 'small_cap' || tag === 'marketcap_小盘股') {
               // 小盘股: 市值 < 100亿美元 (即 < 10,000 百万美元)
               marketCapQuery = `
-                SELECT DISTINCT s.*
+                SELECT DISTINCT s.*, COUNT(*) OVER() AS total_count
                 FROM stocks s
                 WHERE CAST(s.market_cap AS BIGINT) < 10000 AND CAST(s.market_cap AS BIGINT) > 0
-                ORDER BY s.market_cap DESC
-                LIMIT 100
+                ORDER BY CAST(s.market_cap AS BIGINT) DESC NULLS LAST
               `;
             }
             
@@ -396,7 +392,7 @@ module.exports = async function handler(req, res) {
               `;
             } else if (tag === 'rank_market_cap_top10') {
               rankQuery = `
-                SELECT DISTINCT s.*
+                SELECT DISTINCT s.*, COUNT(*) OVER() AS total_count
                 FROM stocks s
                 WHERE CAST(s.market_cap AS BIGINT) > 0
                 ORDER BY CAST(s.market_cap AS BIGINT) DESC NULLS LAST
@@ -404,7 +400,7 @@ module.exports = async function handler(req, res) {
               `;
             } else if (tag === 'rank_dividend_yield_top10') {
               rankQuery = `
-                SELECT DISTINCT s.*
+                SELECT DISTINCT s.*, COUNT(*) OVER() AS total_count
                 FROM stocks s
                 WHERE s.dividend_yield IS NOT NULL AND s.dividend_yield > 0
                 ORDER BY s.dividend_yield DESC NULLS LAST
@@ -412,7 +408,7 @@ module.exports = async function handler(req, res) {
               `;
             } else if (tag === 'rank_gross_margin_top10') {
               rankQuery = `
-                SELECT DISTINCT s.*
+                SELECT DISTINCT s.*, COUNT(*) OVER() AS total_count
                 FROM stocks s
                 WHERE s.gross_margin IS NOT NULL AND s.gross_margin > 0
                 ORDER BY s.gross_margin DESC NULLS LAST
@@ -429,7 +425,7 @@ module.exports = async function handler(req, res) {
           // 处理S&P 500特殊标签
           else if (tag === 'sp500_all') {
             const sp500Query = `
-              SELECT DISTINCT s.*
+              SELECT DISTINCT s.*, COUNT(*) OVER() AS total_count
               FROM stocks s
               ORDER BY s.ticker
             `;
@@ -441,7 +437,7 @@ module.exports = async function handler(req, res) {
           else if (tag.startsWith('special_')) {
             if (tag === 'special_sp500') {
               const sp500Query = `
-                SELECT DISTINCT s.*
+                SELECT DISTINCT s.*, COUNT(*) OVER() AS total_count
                 FROM stocks s
                 ORDER BY CAST(s.market_cap AS BIGINT) DESC NULLS LAST
                 LIMIT 500
@@ -456,12 +452,11 @@ module.exports = async function handler(req, res) {
             const tagId = parseInt(tag, 10);
             if (!isNaN(tagId)) {
               const idQuery = `
-                SELECT DISTINCT s.*
+                SELECT DISTINCT s.*, COUNT(*) OVER() AS total_count
                 FROM stocks s
                 JOIN stock_tags st ON s.ticker = st.stock_ticker
                 WHERE st.tag_id = $1
                 ORDER BY s.ticker
-                LIMIT 100
               `;
               console.log('Executing ID query:', idQuery, 'with param:', tagId);
               const result = await client.query(idQuery, [tagId]);
@@ -478,6 +473,9 @@ module.exports = async function handler(req, res) {
           index === self.findIndex(s => s.ticker === stock.ticker)
         );
         
+        // 从查询结果中获取总数（使用第一条记录的total_count）
+        totalCount = uniqueStocks.length > 0 ? parseInt(uniqueStocks[0].total_count, 10) : 0;
+        
         // 直接使用数据库数据，避免外部API调用
         stocks = uniqueStocks.map(dbStock => ({
           symbol: dbStock.ticker,
@@ -491,8 +489,6 @@ module.exports = async function handler(req, res) {
           industry: 'Unknown',
           lastUpdated: dbStock.last_updated || new Date().toISOString()
         }));
-        
-        totalCount = stocks.length;
       } else {
         // 表不存在，使用模拟数据
         const allStocks = new Set();
@@ -576,6 +572,8 @@ module.exports = async function handler(req, res) {
 
     res.status(200).json({
       success: true,
+      stocks: paginatedStocks,
+      totalCount: totalCount,
       data: {
         stocks: paginatedStocks,
         pagination: {
