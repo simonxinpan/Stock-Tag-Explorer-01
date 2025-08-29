@@ -278,7 +278,7 @@ class TagDetailPage {
         
         try {
             // 使用分页API，每页20只股票
-            const apiUrl = `${this.apiBaseUrl}/api/stocks?tags=${encodeURIComponent(this.currentTagId)}&page=${this.currentPage}&limit=${this.pageSize}&sort=${this.currentSort}`;
+            const apiUrl = `${this.apiBaseUrl}/api/stocks-by-tag?tagId=${encodeURIComponent(this.currentTagId)}&page=${this.currentPage}&limit=${this.pageSize}&sort=${this.currentSort}`;
             
             console.log('API请求URL:', apiUrl); // 调试日志
             
