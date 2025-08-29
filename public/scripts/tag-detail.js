@@ -806,7 +806,7 @@ class TagDetailPage {
             // 首次加载：清空容器并渲染所有已加载的股票
             stockListContainer.innerHTML = '';
             if (window.stockRenderer) {
-                window.stockRenderer.renderStockList(this.stockData, stockListContainer);
+                window.stockRenderer.renderStockList(this.stockData, 'stock-list');
             }
         } else {
             // 追加模式：只渲染新加载的股票
@@ -815,11 +815,15 @@ class TagDetailPage {
             if (window.stockRenderer && newStocks.length > 0) {
                 // 创建临时容器来渲染新股票
                 const tempContainer = document.createElement('div');
-                window.stockRenderer.renderStockList(newStocks, tempContainer);
+                tempContainer.id = 'temp-stock-container';
+                document.body.appendChild(tempContainer);
+                window.stockRenderer.renderStockList(newStocks, 'temp-stock-container');
                 // 将新股票追加到现有列表末尾
                 while (tempContainer.firstChild) {
                     stockListContainer.appendChild(tempContainer.firstChild);
                 }
+                // 清理临时容器
+                document.body.removeChild(tempContainer);
             }
         }
     }

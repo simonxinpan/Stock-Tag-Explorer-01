@@ -294,14 +294,14 @@ module.exports = async (req, res) => {
             if (currentTag === '大盘股' || currentTag === 'marketcap_大盘股') {
                 stockQuery = `
                     SELECT 
-                        symbol,
+                        ticker as symbol,
                         name,
                         price,
                         change_amount as change,
                         change_percent,
                         volume,
                         market_cap,
-                        pe_ratio as pe_ttm,
+                        pe_ttm,
                         roe,
                         sector,
                         updated_at
@@ -323,14 +323,14 @@ module.exports = async (req, res) => {
             } else if (currentTag === '中盘股' || currentTag === 'marketcap_中盘股') {
                 stockQuery = `
                     SELECT 
-                        symbol,
+                        ticker as symbol,
                         name,
                         price,
                         change_amount as change,
                         change_percent,
                         volume,
                         market_cap,
-                        pe_ratio as pe_ttm,
+                        pe_ttm,
                         roe,
                         sector,
                         updated_at
@@ -352,14 +352,14 @@ module.exports = async (req, res) => {
             } else if (currentTag === '小盘股' || currentTag === 'marketcap_小盘股') {
                 stockQuery = `
                     SELECT 
-                        symbol,
+                        ticker as symbol,
                         name,
                         price,
                         change_amount as change,
                         change_percent,
                         volume,
                         market_cap,
-                        pe_ratio as pe_ttm,
+                        pe_ttm,
                         roe,
                         sector,
                         updated_at
@@ -381,7 +381,7 @@ module.exports = async (req, res) => {
             } else if (currentTag === '高ROE' || currentTag === 'rank_roe_top10') {
                 stockQuery = `
                     SELECT 
-                        symbol,
+                        ticker as symbol,
                         name,
                         price,
                         change_amount as change,
@@ -406,7 +406,7 @@ module.exports = async (req, res) => {
             } else if (currentTag === '低PE' || currentTag === 'rank_pe_low') {
                 stockQuery = `
                     SELECT 
-                        symbol,
+                        ticker as symbol,
                         name,
                         price,
                         change_amount as change,
@@ -418,21 +418,21 @@ module.exports = async (req, res) => {
                         sector,
                         updated_at
                     FROM stocks
-                    WHERE pe_ratio IS NOT NULL AND pe_ratio > 0
-                    ORDER BY pe_ratio ASC
+                    WHERE pe_ttm IS NOT NULL AND pe_ttm > 0
+                    ORDER BY pe_ttm ASC
                     LIMIT $1 OFFSET $2
                 `;
                 countQuery = `
                     SELECT COUNT(*) as total
                     FROM stocks
-                    WHERE pe_ratio IS NOT NULL AND pe_ratio > 0
+                    WHERE pe_ttm IS NOT NULL AND pe_ttm > 0
                 `;
                 queryParams = [limitNum, offset];
             } else if (currentTag === '市值前10%' || currentTag === 'rank_market_cap_top10') {
                 // 市值前10%：返回市值最高的约50只股票（约占总数的10%）
                 stockQuery = `
                     SELECT 
-                        symbol,
+                        ticker as symbol,
                         name,
                         price,
                         change_amount as change,
@@ -461,19 +461,19 @@ module.exports = async (req, res) => {
                 // 默认：通过标签表查询
                 stockQuery = `
                     SELECT DISTINCT
-                        s.symbol,
+                        s.ticker as symbol,
                         s.name,
                         s.price,
                         s.change_amount as change,
                         s.change_percent,
                         s.volume,
                         s.market_cap,
-                        s.pe_ratio as pe_ttm,
+                        s.pe_ttm,
                         s.roe,
                         s.sector,
                         s.updated_at
                     FROM stocks s
-                    JOIN stock_tags st ON s.symbol = st.symbol
+                    JOIN stock_tags st ON s.ticker = st.symbol
                     JOIN tags t ON st.tag_id = t.id
                     WHERE t.tag_name = $1
                     ORDER BY 
@@ -484,9 +484,9 @@ module.exports = async (req, res) => {
                     LIMIT $3 OFFSET $4
                 `;
                 countQuery = `
-                    SELECT COUNT(DISTINCT s.symbol) as total
+                    SELECT COUNT(DISTINCT s.ticker) as total
                     FROM stocks s
-                    JOIN stock_tags st ON s.symbol = st.symbol
+                    JOIN stock_tags st ON s.ticker = st.symbol
                     JOIN tags t ON st.tag_id = t.id
                     WHERE t.tag_name = $1
                 `;
@@ -621,9 +621,9 @@ module.exports = async (req, res) => {
                 allStocksParams = [];
             } else {
                 allStocksQuery = `
-                    SELECT DISTINCT s.change_amount as change, s.change_percent, s.pe_ratio as pe_ttm, s.roe
+                    SELECT DISTINCT s.change_amount as change, s.change_percent, s.pe_ttm, s.roe
                     FROM stocks s
-                    JOIN stock_tags st ON s.symbol = st.symbol
+                    JOIN stock_tags st ON s.ticker = st.symbol
                     JOIN tags t ON st.tag_id = t.id
                     WHERE t.tag_name = $1
                 `;
