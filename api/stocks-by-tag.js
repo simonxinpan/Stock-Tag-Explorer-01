@@ -61,8 +61,15 @@ module.exports = async function handler(request, response) {
     let stocks = [];
     let totalCount = 0;
 
-    // --- 智能路由逻辑 ---
-    if (tagId.startsWith('marketcap_')) {
+    // --- 智能路由逻辑（优先处理特殊标签） ---
+    if (tagId === 'special_sp500') {
+        // 1. 处理 S&P 500 特殊标签
+        query = `SELECT *, COUNT(*) OVER() AS total_count FROM stocks ORDER BY market_cap DESC LIMIT ${limit} OFFSET ${offset};`;
+        const { rows } = await client.query(query);
+        stocks = rows;
+        totalCount = rows.length > 0 ? parseInt(rows[0].total_count, 10) : 0;
+        
+    } else if (tagId.startsWith('marketcap_')) {
         const type = tagId.split('_')[1];
         let whereClause = '';
         switch (type) {
@@ -119,6 +126,12 @@ module.exports = async function handler(request, response) {
     } else {
         // 默认处理普通的、基于数字ID的静态标签
         const numericTagId = parseInt(tagId, 10);
+        if (isNaN(numericTagId)) {
+            // 安全检查：如果tagId不是数字，返回空结果
+            client.release();
+            return response.status(200).json({ success: true, stocks: [], totalCount: 0 });
+        }
+        
         query = `SELECT s.* FROM stocks s JOIN stock_tags st ON s.ticker = st.stock_ticker WHERE st.tag_id = $1 ${orderByClause} LIMIT ${limit} OFFSET ${offset};`;
         countQuery = `SELECT COUNT(*) FROM stock_tags WHERE tag_id = $1;`;
         values = [numericTagId];
