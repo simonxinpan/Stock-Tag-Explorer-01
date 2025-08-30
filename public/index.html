@@ -8,6 +8,17 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- 图标库 -->
+    <script>
+        // 加载图标库
+        fetch('./assets/icons.svg')
+            .then(response => response.text())
+            .then(data => {
+                const div = document.createElement('div');
+                div.innerHTML = data;
+                document.body.insertBefore(div, document.body.firstChild);
+            });
+    </script>
 </head>
 <body>
     <!-- 全局导航栏 -->
@@ -19,13 +30,28 @@
             </a>
             <ul class="navbar-links">
                 <li>
-                    <a href="index.html" class="global-nav-link active">标签云广场</a>
+                    <a href="index.html" class="global-nav-link active">
+                        <svg class="nav-icon tag-icon">
+                            <use href="#icon-tag"></use>
+                        </svg>
+                        标签云广场
+                    </a>
                 </li>
                 <li>
-                    <a href="trending.html" class="global-nav-link">趋势风云榜</a>
+                    <a href="trending.html" class="global-nav-link">
+                        <svg class="nav-icon trending-icon">
+                            <use href="#icon-trending"></use>
+                        </svg>
+                        趋势风云榜
+                    </a>
                 </li>
                 <li>
-                    <a href="https://heatmap-dvrckt4gd-simon-pans-projects.vercel.app/" class="global-nav-link" target="_blank">股票热力图</a>
+                    <a href="heatmap-center.html" class="global-nav-link">
+                        <svg class="nav-icon heatmap-icon">
+                            <use href="#icon-heatmap"></use>
+                        </svg>
+                        股票热力图
+                    </a>
                 </li>
             </ul>
         </div>

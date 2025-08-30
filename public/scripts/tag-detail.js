@@ -205,6 +205,14 @@ class TagDetailPage {
             });
         }
         
+        // 热力图按钮
+        const heatmapBtn = document.getElementById('heatmap-btn');
+        if (heatmapBtn) {
+            heatmapBtn.addEventListener('click', () => {
+                this.goToHeatmap();
+            });
+        }
+        
         // 无限滚动事件监听
         this.setupInfiniteScroll();
     }
@@ -1023,6 +1031,29 @@ class TagDetailPage {
         if (stockList) stockList.style.display = 'none';
         if (error) error.classList.remove('hidden');
         if (errorMessage) errorMessage.textContent = message;
+    }
+
+    /**
+     * 跳转到标签热力图页面
+     */
+    goToHeatmap() {
+        if (this.currentTagId) {
+            const heatmapUrl = `tag-heatmap.html?tagId=${encodeURIComponent(this.currentTagId)}`;
+            window.location.href = heatmapUrl;
+        } else {
+            this.showToast('无法获取标签信息，请稍后重试');
+        }
+    }
+
+    /**
+     * 显示提示信息
+     */
+    showToast(message) {
+        if (window.stockRenderer && window.stockRenderer.showToast) {
+            window.stockRenderer.showToast(message);
+        } else {
+            console.log(message);
+        }
     }
     
 

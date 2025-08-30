@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高ROE标签热力图 - 股票标签探索器</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/heatmap-center.css">
+    <link rel="stylesheet" href="styles/tag-detail.css">
+    <link rel="stylesheet" href="styles/icons.css">
+    <style>
+        /* 标签专属热力图页面样式 */
+        .tag-heatmap-layout {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .main-heatmap-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .heatmap-header {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .heatmap-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .tag-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .heatmap-stats {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            display: block;
+        }
+        
+        .main-heatmap-container {
+            padding: 24px;
+            min-height: 500px;
+            background: #f8fafc;
+        }
+        
+        .heatmap-placeholder {
+            width: 100%;
+            height: 450px;
+            background: linear-gradient(45deg, #ef4444 0%, #fbbf24 50%, #22c55e 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .heatmap-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(6, 1fr);
+            gap: 2px;
+            padding: 8px;
+        }
+        
+        .heatmap-cell {
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .heatmap-cell:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.05);
+        }
+        
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .sidebar-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .section-header {
+            background: #f8fafc;
+            padding: 16px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: 600;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section-content {
+            padding: 16px 20px;
+        }
+        
+        .related-tags {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .tag-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: #f1f5f9;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .tag-item:hover {
+            background: #e2e8f0;
+            transform: translateX(4px);
+        }
+        
+        .tag-name {
+            font-weight: 500;
+            color: #334155;
+        }
+        
+        .tag-count {
+            font-size: 12px;
+            color: #64748b;
+            background: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+        
+        .category-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        
+        .category-card {
+            padding: 12px;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .category-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .category-icon {
+            width: 24px;
+            height: 24px;
+            margin: 0 auto 8px;
+            background: #3b82f6;
+            border-radius: 50%;
+        }
+        
+        .category-name {
+            font-size: 12px;
+            font-weight: 500;
+            color: #334155;
+        }
+        
+        .panoramic-preview {
+            height: 120px;
+            background: linear-gradient(45deg, #1e293b 0%, #334155 50%, #475569 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .panoramic-preview:hover {
+            transform: scale(1.02);
+        }
+        
+        .mini-grid {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 1px;
+        }
+        
+        .mini-cell {
+            background: rgba(255,255,255,0.1);
+            border-radius: 1px;
+        }
+        
+        .breadcrumb {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #64748b;
+        }
+        
+        .breadcrumb a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+        
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 1024px) {
+            .tag-heatmap-layout {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            
+            .sidebar {
+                order: -1;
+            }
+        }
+    </style>
+    
+    <!-- 图标库加载 -->
+    <script>
+        fetch('assets/icons.svg')
+            .then(response => response.text())
+            .then(data => {
+                const div = document.createElement('div');
+                div.innerHTML = data;
+                document.body.insertBefore(div, document.body.firstChild);
+            });
+    </script>
+</head>
+<body>
+    <!-- 全局导航栏 -->
+    <nav class="global-navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <svg class="nav-icon"><use href="#icon-home"></use></svg>
+                股票标签探索器
+            </div>
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link">
+                    <svg class="nav-icon tag-icon"><use href="#icon-tag"></use></svg>
+                    标签云广场
+                </a>
+                <a href="trending.html" class="nav-link">
+                    <svg class="nav-icon trending-icon"><use href="#icon-trending"></use></svg>
+                    趋势风云榜
+                </a>
+                <a href="heatmap-center.html" class="nav-link active">
+                    <svg class="nav-icon heatmap-icon"><use href="#icon-heatmap"></use></svg>
+                    热力图中心
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- 面包屑导航 -->
+        <div class="breadcrumb">
+            <a href="index.html">首页</a>
+            <span>></span>
+            <a href="tag-detail.html?tagId=rank_roe_ttm_top10">高ROE标签</a>
+            <span>></span>
+            <span>热力图</span>
+        </div>
+
+        <div class="tag-heatmap-layout">
+            <!-- 主热力图区域 -->
+            <div class="main-heatmap-section">
+                <div class="heatmap-header">
+                    <div class="heatmap-title">
+                        <svg class="nav-icon"><use href="#icon-heatmap"></use></svg>
+                        <div>
+                            <h1>高ROE标签热力图</h1>
+                            <div class="tag-badge">ROE > 15%</div>
+                        </div>
+                    </div>
+                    <div class="heatmap-stats">
+                        <div class="stat-item">
+                            <span class="stat-value">127</span>
+                            <span>股票数量</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">+2.3%</span>
+                            <span>平均涨幅</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">18.5%</span>
+                            <span>平均ROE</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="main-heatmap-container">
+                    <div class="heatmap-placeholder">
+                        <div class="heatmap-grid">
+                            <div class="heatmap-cell">AAPL</div>
+                            <div class="heatmap-cell">MSFT</div>
+                            <div class="heatmap-cell">GOOGL</div>
+                            <div class="heatmap-cell">AMZN</div>
+                            <div class="heatmap-cell">TSLA</div>
+                            <div class="heatmap-cell">META</div>
+                            <div class="heatmap-cell">NVDA</div>
+                            <div class="heatmap-cell">NFLX</div>
+                            <div class="heatmap-cell">CRM</div>
+                            <div class="heatmap-cell">ADBE</div>
+                            <div class="heatmap-cell">PYPL</div>
+                            <div class="heatmap-cell">INTC</div>
+                            <div class="heatmap-cell">AMD</div>
+                            <div class="heatmap-cell">QCOM</div>
+                            <div class="heatmap-cell">AVGO</div>
+                            <div class="heatmap-cell">TXN</div>
+                            <div class="heatmap-cell">ORCL</div>
+                            <div class="heatmap-cell">IBM</div>
+                            <div class="heatmap-cell">CSCO</div>
+                            <div class="heatmap-cell">UBER</div>
+                            <div class="heatmap-cell">LYFT</div>
+                            <div class="heatmap-cell">SNAP</div>
+                            <div class="heatmap-cell">TWTR</div>
+                            <div class="heatmap-cell">PINS</div>
+                            <div class="heatmap-cell">SQ</div>
+                            <div class="heatmap-cell">SHOP</div>
+                            <div class="heatmap-cell">ROKU</div>
+                            <div class="heatmap-cell">ZM</div>
+                            <div class="heatmap-cell">DOCU</div>
+                            <div class="heatmap-cell">OKTA</div>
+                            <div class="heatmap-cell">SNOW</div>
+                            <div class="heatmap-cell">PLTR</div>
+                            <div class="heatmap-cell">CRWD</div>
+                            <div class="heatmap-cell">ZS</div>
+                            <div class="heatmap-cell">DDOG</div>
+                            <div class="heatmap-cell">MDB</div>
+                            <div class="heatmap-cell">TEAM</div>
+                            <div class="heatmap-cell">WDAY</div>
+                            <div class="heatmap-cell">NOW</div>
+                            <div class="heatmap-cell">VEEV</div>
+                            <div class="heatmap-cell">SPLK</div>
+                            <div class="heatmap-cell">PANW</div>
+                            <div class="heatmap-cell">FTNT</div>
+                            <div class="heatmap-cell">CHKP</div>
+                            <div class="heatmap-cell">CYBR</div>
+                            <div class="heatmap-cell">FEYE</div>
+                            <div class="heatmap-cell">PFPT</div>
+                            <div class="heatmap-cell">TENB</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧边栏 -->
+            <div class="sidebar">
+                <!-- 相关标签 -->
+                <div class="sidebar-section">
+                    <div class="section-header">
+                        <svg class="nav-icon"><use href="#icon-tag"></use></svg>
+                        相关标签
+                    </div>
+                    <div class="section-content">
+                        <div class="related-tags">
+                            <div class="tag-item" onclick="location.href='tag-specific-heatmap.html?tag=high_profit_margin'">
+                                <span class="tag-name">高利润率</span>
+                                <span class="tag-count">89</span>
+                            </div>
+                            <div class="tag-item" onclick="location.href='tag-specific-heatmap.html?tag=low_debt'">
+                                <span class="tag-name">低负债率</span>
+                                <span class="tag-count">156</span>
+                            </div>
+                            <div class="tag-item" onclick="location.href='tag-specific-heatmap.html?tag=dividend_growth'">
+                                <span class="tag-name">股息增长</span>
+                                <span class="tag-count">73</span>
+                            </div>
+                            <div class="tag-item" onclick="location.href='tag-specific-heatmap.html?tag=revenue_growth'">
+                                <span class="tag-name">营收增长</span>
+                                <span class="tag-count">201</span>
+                            </div>
+                            <div class="tag-item" onclick="location.href='tag-specific-heatmap.html?tag=cash_rich'">
+                                <span class="tag-name">现金充裕</span>
+                                <span class="tag-count">112</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 行业分类热力图 -->
+                <div class="sidebar-section">
+                    <div class="section-header">
+                        <svg class="nav-icon"><use href="#icon-stock"></use></svg>
+                        行业热力图
+                    </div>
+                    <div class="section-content">
+                        <div class="category-grid">
+                            <div class="category-card" onclick="location.href='panoramic-heatmap.html#technology'">
+                                <div class="category-icon"></div>
+                                <div class="category-name">科技</div>
+                            </div>
+                            <div class="category-card" onclick="location.href='panoramic-heatmap.html#healthcare'">
+                                <div class="category-icon"></div>
+                                <div class="category-name">医疗</div>
+                            </div>
+                            <div class="category-card" onclick="location.href='panoramic-heatmap.html#finance'">
+                                <div class="category-icon"></div>
+                                <div class="category-name">金融</div>
+                            </div>
+                            <div class="category-card" onclick="location.href='panoramic-heatmap.html#energy'">
+                                <div class="category-icon"></div>
+                                <div class="category-name">能源</div>
+                            </div>
+                            <div class="category-card" onclick="location.href='panoramic-heatmap.html#consumer'">
+                                <div class="category-icon"></div>
+                                <div class="category-name">消费</div>
+                            </div>
+                            <div class="category-card" onclick="location.href='panoramic-heatmap.html#industrial'">
+                                <div class="category-icon"></div>
+                                <div class="category-name">工业</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 全景热力图入口 -->
+                <div class="sidebar-section">
+                    <div class="section-header">
+                        <svg class="nav-icon"><use href="#icon-heatmap"></use></svg>
+                        全景热力图
+                    </div>
+                    <div class="section-content">
+                        <div class="panoramic-preview" onclick="location.href='panoramic-heatmap.html'">
+                            <div class="mini-grid">
+                                <div class="mini-cell"></div>
+                                <div class="mini-cell"></div>
+                                <div class="mini-cell"></div>
+                                <div class="mini-cell"></div>
+                                <div class="mini-cell"></div>
+                                <div class="mini-cell"></div>
+                                <div class="mini-cell"></div>
+                                <div class="mini-cell"></div>
+                                <div class="mini-cell"></div>
+                                <div class="mini-cell"></div>
+                                <div class="mini-cell"></div>
+                                <div class="mini-cell"></div>
+                                <div class="mini-cell"></div>
+                                <div class="mini-cell"></div>
+                                <div class="mini-cell"></div>
+                                <div class="mini-cell"></div>
+                                <div class="mini-cell"></div>
+                                <div class="mini-cell"></div>
+                                <div class="mini-cell"></div>
+                                <div class="mini-cell"></div>
+                                <div class="mini-cell"></div>
+                                <div class="mini-cell"></div>
+                                <div class="mini-cell"></div>
+                                <div class="mini-cell"></div>
+                            </div>
+                            <span style="position: relative; z-index: 1;">查看全景热力图</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 榜单热力图 -->
+                <div class="sidebar-section">
+                    <div class="section-header">
+                        <svg class="nav-icon"><use href="#icon-trending"></use></svg>
+                        榜单热力图
+                    </div>
+                    <div class="section-content">
+                        <div class="related-tags">
+                            <div class="tag-item" onclick="location.href='tag-specific-heatmap.html?tag=market_cap_top100'">
+                                <span class="tag-name">市值TOP100</span>
+                                <span class="tag-count">100</span>
+                            </div>
+                            <div class="tag-item" onclick="location.href='tag-specific-heatmap.html?tag=volume_top50'">
+                                <span class="tag-name">成交量TOP50</span>
+                                <span class="tag-count">50</span>
+                            </div>
+                            <div class="tag-item" onclick="location.href='tag-specific-heatmap.html?tag=gainers_today'">
+                                <span class="tag-name">今日涨幅榜</span>
+                                <span class="tag-count">30</span>
+                            </div>
+                            <div class="tag-item" onclick="location.href='tag-specific-heatmap.html?tag=most_active'">
+                                <span class="tag-name">最活跃股票</span>
+                                <span class="tag-count">25</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 页面交互逻辑
+        document.addEventListener('DOMContentLoaded', function() {
+            // 热力图单元格点击事件
+            const heatmapCells = document.querySelectorAll('.heatmap-cell');
+            heatmapCells.forEach(cell => {
+                cell.addEventListener('click', function() {
+                    const symbol = this.textContent;
+                    // 跳转到股票详情页
+                    window.location.href = `stock-detail.html?symbol=${symbol}`;
+                });
+            });
+
+            // 动态更新热力图颜色
+            function updateHeatmapColors() {
+                heatmapCells.forEach(cell => {
+                    const change = (Math.random() - 0.5) * 10; // -5% to +5%
+                    if (change > 2) {
+                        cell.style.background = 'rgba(34, 197, 94, 0.8)'; // 绿色
+                    } else if (change < -2) {
+                        cell.style.background = 'rgba(239, 68, 68, 0.8)'; // 红色
+                    } else {
+                        cell.style.background = 'rgba(251, 191, 36, 0.8)'; // 黄色
+                    }
+                });
+            }
+
+            // 初始化颜色
+            updateHeatmapColors();
+
+            // 每5秒更新一次颜色（模拟实时数据）
+            setInterval(updateHeatmapColors, 5000);
+        });
+    </script>
+</body>
+</html>

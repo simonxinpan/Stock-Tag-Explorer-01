@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>标签热力图 - Stock Tag Explorer</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/heatmap-center.css">
+    <link rel="stylesheet" href="styles/heatmap-integration.css">
+    <!-- 图标库 -->
+    <script>
+        // 加载图标库
+        fetch('./assets/icons.svg')
+            .then(response => response.text())
+            .then(data => {
+                const div = document.createElement('div');
+                div.innerHTML = data;
+                document.body.insertBefore(div, document.body.firstChild);
+            });
+    </script>
+    <style>
+        .tag-heatmap-container {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .main-heatmap {
+            flex: 2;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 24px;
+        }
+        
+        .sidebar {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .heatmap-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        
+        .heatmap-card h3 {
+            margin: 0 0 16px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .view-full {
+            font-size: 12px;
+            color: #007bff;
+            text-decoration: none;
+            font-weight: normal;
+        }
+        
+        .view-full:hover {
+            text-decoration: underline;
+        }
+        
+        .mini-heatmap {
+            height: 200px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+        
+        .tag-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-bottom: 24px;
+            padding: 20px;
+            border-radius: 12px;
+        }
+        
+        .tag-info h1 {
+            margin: 0 0 8px 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .tag-info p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .breadcrumb {
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .breadcrumb a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        
+        .main-heatmap-content {
+            height: 600px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+        
+        .related-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 16px;
+        }
+        
+        .tag-chip {
+            background: #f0f0f0;
+            color: #333;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+        
+        .tag-chip:hover {
+            background: #e0e0e0;
+        }
+        
+        .quick-nav {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .quick-nav h3 {
+            margin: 0 0 16px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .nav-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .nav-item {
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-align: center;
+            text-decoration: none;
+            color: #333;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .nav-item:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
+        
+        @media (max-width: 1024px) {
+            .tag-heatmap-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                flex-direction: row;
+                overflow-x: auto;
+            }
+            
+            .heatmap-card {
+                min-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 全局导航栏 -->
+    <nav class="global-navbar">
+        <div class="navbar-container">
+            <a href="index.html" class="navbar-brand">
+                <span class="navbar-logo">📊</span>
+                <span class="navbar-title">Stock Explorer</span>
+            </a>
+            <ul class="navbar-links">
+                <li>
+                    <a href="index.html" class="global-nav-link">
+                        <svg class="nav-icon tag-icon">
+                            <use href="#icon-tag"></use>
+                        </svg>
+                        标签云广场
+                    </a>
+                </li>
+                <li>
+                    <a href="trending.html" class="global-nav-link">
+                        <svg class="nav-icon trending-icon">
+                            <use href="#icon-trending"></use>
+                        </svg>
+                        趋势风云榜
+                    </a>
+                </li>
+                <li>
+                    <a href="heatmap-center.html" class="global-nav-link active">
+                        <svg class="nav-icon heatmap-icon">
+                            <use href="#icon-heatmap"></use>
+                        </svg>
+                        股票热力图
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- 面包屑导航 -->
+        <div class="breadcrumb">
+            <a href="index.html">首页</a> > 
+            <a href="heatmap-center.html">热力图中心</a> > 
+            <span id="current-tag-name">标签热力图</span>
+        </div>
+
+        <div class="tag-heatmap-container">
+            <!-- 主热力图区域 -->
+            <div class="main-heatmap">
+                <div class="tag-info">
+                    <h1 id="tag-title">高ROE标签热力图</h1>
+                    <p id="tag-description">展示高净资产收益率(ROE)股票的市场表现热力图</p>
+                    <div class="related-tags">
+                        <a href="#" class="tag-chip">高ROE</a>
+                        <a href="#" class="tag-chip">盈利能力</a>
+                        <a href="#" class="tag-chip">财务指标</a>
+                        <a href="#" class="tag-chip">价值投资</a>
+                    </div>
+                </div>
+                
+                <div class="main-heatmap-content" id="main-heatmap">
+                    <!-- 主要标签热力图将在这里渲染 -->
+                </div>
+            </div>
+
+            <!-- 侧边栏 -->
+            <div class="sidebar">
+                <!-- 快速导航 -->
+                <div class="quick-nav">
+                    <h3>快速导航</h3>
+                    <div class="nav-grid">
+                        <a href="heatmap-center.html" class="nav-item">🏠 热力图中心</a>
+                        <a href="panoramic-heatmap.html" class="nav-item">🌐 全景热力图</a>
+                        <a href="tag-detail.html" class="nav-item">📋 标签详情</a>
+                        <a href="trending.html" class="nav-item">📈 趋势榜单</a>
+                    </div>
+                </div>
+
+                <!-- 全景热力图预览 -->
+                <div class="heatmap-card">
+                    <h3>
+                        🌐 全景热力图
+                        <a href="panoramic-heatmap.html" class="view-full">查看完整</a>
+                    </h3>
+                    <div class="mini-heatmap" id="panoramic-preview">
+                        <!-- 全景热力图预览 -->
+                    </div>
+                </div>
+
+                <!-- 相关标签热力图 -->
+                <div class="heatmap-card">
+                    <h3>
+                        🏷️ 相关标签
+                        <a href="heatmap-center.html#tags" class="view-full">查看更多</a>
+                    </h3>
+                    <div class="mini-heatmap" id="related-tags-heatmap">
+                        <!-- 相关标签热力图 -->
+                    </div>
+                </div>
+
+                <!-- 行业热力图 -->
+                <div class="heatmap-card">
+                    <h3>
+                        🏭 行业分布
+                        <a href="heatmap-center.html#industries" class="view-full">查看更多</a>
+                    </h3>
+                    <div class="mini-heatmap" id="industry-heatmap">
+                        <!-- 行业热力图 -->
+                    </div>
+                </div>
+
+                <!-- 榜单热力图 -->
+                <div class="heatmap-card">
+                    <h3>
+                        📊 热门榜单
+                        <a href="trending.html" class="view-full">查看更多</a>
+                    </h3>
+                    <div class="mini-heatmap" id="trending-heatmap">
+                        <!-- 榜单热力图 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="scripts/DataProcessor.js"></script>
+    <script src="scripts/HeatmapRenderer.js"></script>
+    <script src="scripts/StockHeatmap.js"></script>
+    <script src="scripts/tag-heatmap.js"></script>
+</body>
+</html>

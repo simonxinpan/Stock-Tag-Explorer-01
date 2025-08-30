@@ -1,3 +1,6 @@
+/* 导入图标样式 */
+@import url('./icons.css');
+
 /* 全局样式重置 */
 * {
     margin: 0;
@@ -5,22 +8,35 @@
     box-sizing: border-box;
 }
 
-/* 根变量定义 */
+/* 根变量定义 - 简化颜色方案 */
 :root {
+    /* 主要颜色：蓝色系 */
     --primary-color: #2563eb;
     --primary-hover: #1d4ed8;
+    --primary-light: #3b82f6;
+    
+    /* 辅助颜色：灰色系 */
     --secondary-color: #64748b;
-    --success-color: #10b981;
-    --danger-color: #ef4444;
-    --warning-color: #f59e0b;
+    --secondary-light: #94a3b8;
+    --secondary-dark: #475569;
+    
+    /* 股票涨跌颜色 */
+    --success-color: #10b981; /* 绿色 - 上涨 */
+    --danger-color: #ef4444;  /* 红色 - 下跌 */
+    
+    /* 背景和表面颜色 */
     --background-color: #f8fafc;
     --surface-color: #ffffff;
     --surface-secondary: #f1f5f9;
     --surface-hover: #e2e8f0;
     --border-color: #e2e8f0;
+    
+    /* 文字颜色 */
     --text-primary: #1e293b;
     --text-secondary: #64748b;
     --text-muted: #94a3b8;
+    
+    /* 阴影和圆角 */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
@@ -105,17 +121,37 @@ body {
     border-radius: var(--radius-md);
     transition: all 0.2s ease-in-out;
     font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .global-nav-link:hover {
     color: var(--primary-color);
     background-color: rgba(37, 99, 235, 0.1);
+    transform: translateY(-1px);
 }
 
 .global-nav-link.active {
     color: var(--primary-color);
     background-color: rgba(37, 99, 235, 0.15);
     font-weight: 600;
+}
+
+/* 导航图标样式 */
+.global-nav-link .nav-icon {
+    width: 18px;
+    height: 18px;
+    transition: all 0.3s ease;
+}
+
+.global-nav-link:hover .nav-icon {
+    transform: scale(1.1);
+}
+
+.global-nav-link.active .nav-icon {
+    transform: scale(1.05);
+    filter: brightness(1.2);
 }
 
 /* 工具类 */

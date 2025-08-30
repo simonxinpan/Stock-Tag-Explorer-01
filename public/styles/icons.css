@@ -1,0 +1,287 @@
+/* 图标库样式 */
+
+/* 基础图标样式 */
+.icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    fill: currentColor;
+    vertical-align: middle;
+    transition: all 0.2s ease;
+}
+
+/* 导航图标样式 - 增强版 */
+.nav-icon {
+    width: 22px;
+    height: 22px;
+    margin-right: 8px;
+    vertical-align: middle;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+/* 导航链接悬停效果 - 更醒目 */
+.nav-link:hover .nav-icon {
+    transform: scale(1.15);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15)) brightness(1.1);
+}
+
+/* 激活状态的导航图标 - 更突出 */
+.nav-link.active .nav-icon {
+    transform: scale(1.1);
+    filter: drop-shadow(0 2px 6px rgba(59, 130, 246, 0.3)) brightness(1.2) saturate(1.2);
+}
+
+/* 热力图图标特殊效果 - 增强版 */
+.nav-icon.heatmap-icon {
+    animation: heatmapGlow 2.5s ease-in-out infinite;
+}
+
+@keyframes heatmapGlow {
+    0%, 100% {
+        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+        transform: scale(1);
+    }
+    50% {
+        filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.4)) drop-shadow(0 0 12px rgba(34, 197, 94, 0.3));
+        transform: scale(1.05);
+    }
+}
+
+/* 趋势图标特殊效果 - 增强版 */
+.nav-icon.trending-icon:hover {
+    animation: trendingRise 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes trendingRise {
+    0% {
+        transform: translateY(0) scale(1);
+        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+    }
+    50% {
+        transform: translateY(-4px) scale(1.1);
+        filter: drop-shadow(0 4px 8px rgba(34, 197, 94, 0.3));
+    }
+    100% {
+        transform: translateY(0) scale(1.15);
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15)) brightness(1.1);
+    }
+}
+
+/* 标签图标特殊效果 - 增强版 */
+.nav-icon.tag-icon:hover {
+    animation: tagFloat 0.6s ease-out;
+}
+
+@keyframes tagFloat {
+    0% {
+        transform: rotate(0deg) scale(1);
+        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+    }
+    50% {
+        transform: rotate(-3deg) scale(1.1);
+        filter: drop-shadow(0 3px 6px rgba(59, 130, 246, 0.3));
+    }
+    100% {
+        transform: rotate(0deg) scale(1.15);
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15)) brightness(1.1);
+    }
+}
+
+/* 按钮中的图标 */
+.btn .icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 6px;
+}
+
+/* 大尺寸图标 */
+.icon-lg {
+    width: 24px;
+    height: 24px;
+}
+
+/* 中等尺寸图标 */
+.icon-md {
+    width: 20px;
+    height: 20px;
+}
+
+/* 小尺寸图标 */
+.icon-sm {
+    width: 16px;
+    height: 16px;
+}
+
+/* 超小尺寸图标 */
+.icon-xs {
+    width: 12px;
+    height: 12px;
+}
+
+/* 图标颜色变体 */
+.icon-primary {
+    color: #3b82f6;
+}
+
+.icon-success {
+    color: #22c55e;
+}
+
+.icon-danger {
+    color: #ef4444;
+}
+
+.icon-warning {
+    color: #f59e0b;
+}
+
+.icon-secondary {
+    color: #6b7280;
+}
+
+.icon-muted {
+    color: #9ca3af;
+}
+
+/* 响应式图标 */
+@media (max-width: 768px) {
+    .nav-icon {
+        width: 18px;
+        height: 18px;
+        margin-right: 6px;
+    }
+    
+    .icon-lg {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .icon-md {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+    .icon {
+        filter: brightness(1.1);
+    }
+    
+    .nav-icon.heatmap-icon {
+        filter: brightness(1.2) saturate(1.1);
+    }
+}
+
+/* 图标加载动画 */
+.icon-loading {
+    animation: iconSpin 1s linear infinite;
+}
+
+@keyframes iconSpin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* 图标组合样式 */
+.icon-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.icon-group .icon {
+    margin: 0;
+}
+
+/* 图标徽章 */
+.icon-badge {
+    position: relative;
+    display: inline-block;
+}
+
+.icon-badge::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    background: #ef4444;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+}
+
+/* 图标文本组合 */
+.icon-text {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.icon-text .icon {
+    flex-shrink: 0;
+}
+
+/* 图标按钮样式 */
+.icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.icon-btn:hover {
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.icon-btn:active {
+    transform: scale(0.95);
+}
+
+/* 图标分隔符 */
+.icon-divider {
+    width: 1px;
+    height: 20px;
+    background: #e5e7eb;
+    margin: 0 12px;
+}
+
+/* 图标提示 */
+.icon-tooltip {
+    position: relative;
+}
+
+.icon-tooltip::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    background: #1f2937;
+    color: #ffffff;
+    font-size: 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    z-index: 1000;
+}
+
+.icon-tooltip:hover::before {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-4px);
+}
