@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全景热力图 - Stock Tag Explorer</title>
+    <link rel="stylesheet" href="./styles/main.css">
+    <link rel="stylesheet" href="./styles/heatmap-center.css">
+    <link rel="stylesheet" href="./styles/heatmap-integration.css">
+    <link rel="stylesheet" href="./styles/panoramic-heatmap.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- 全局导航栏 -->
+    <nav class="global-navbar">
+        <div class="navbar-container">
+            <a href="index.html" class="navbar-brand">
+                <span class="navbar-logo">📊</span>
+                <span class="navbar-title">Stock Explorer</span>
+            </a>
+            <ul class="navbar-links">
+                <li>
+                    <a href="index.html" class="global-nav-link">标签云广场</a>
+                </li>
+                <li>
+                    <a href="trending.html" class="global-nav-link">趋势风云榜</a>
+                </li>
+                <li>
+                    <a href="panoramic-heatmap.html" class="global-nav-link active">全景热力图</a>
+                </li>
+                <li>
+                    <a href="heatmap-center.html" class="global-nav-link">热力图汇总</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    
+    <div id="app">
+        <!-- 头部 -->
+        <header class="header">
+            <div class="container">
+                <div class="header-content">
+                    <div class="header-left">
+                        <h1 class="page-title">🔥 全景热力图</h1>
+                        <p class="page-subtitle">实时股票市场全景可视化 - 一图看懂市场动态</p>
+                    </div>
+                    <div class="header-right">
+                        <div class="quick-nav">
+                            <a href="tag-detail.html" class="quick-nav-btn">
+                                <span class="nav-icon">🏷️</span>
+                                <span class="nav-text">标签详情</span>
+                            </a>
+                            <a href="trending.html" class="quick-nav-btn">
+                                <span class="nav-icon">📈</span>
+                                <span class="nav-text">趋势榜单</span>
+                            </a>
+                            <a href="heatmap-center.html" class="quick-nav-btn">
+                                <span class="nav-icon">🎯</span>
+                                <span class="nav-text">热力图汇总</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- 主内容区 -->
+        <main class="main">
+            <div class="container">
+                <!-- 特定行业焦点区域 -->
+                <section id="featured-sector-section" class="featured-sector-section" style="display: none;">
+                    <div class="featured-sector-header">
+                        <button class="back-btn" onclick="hideFeaturedSector()">
+                            <i class="fas fa-arrow-left"></i>
+                            返回全景视图
+                        </button>
+                        <div class="featured-sector-title">
+                            <h2 id="featured-sector-name">科技行业</h2>
+                            <p id="featured-sector-description">包含软件、硬件、互联网等科技类股票</p>
+                        </div>
+                    </div>
+                    <div class="featured-sector-content">
+                        <div class="featured-heatmap-display">
+                            <div id="featured-sector-heatmap" class="featured-heatmap-canvas"></div>
+                            <div class="featured-heatmap-legend">
+                                <div class="legend-item">
+                                    <span class="legend-color" style="background: #dc2626;"></span>
+                                    <span>跌幅 > 5%</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-color" style="background: #f97316;"></span>
+                                    <span>跌幅 0-5%</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-color" style="background: #64748b;"></span>
+                                    <span>平盘</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-color" style="background: #16a34a;"></span>
+                                    <span>涨幅 0-5%</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-color" style="background: #059669;"></span>
+                                    <span>涨幅 > 5%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="featured-sector-stats">
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <span class="stat-label">股票数量</span>
+                                    <span id="featured-sector-count" class="stat-number">120</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">平均涨幅</span>
+                                    <span id="featured-sector-avg-change" class="stat-number positive">+1.85%</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">领涨股票</span>
+                                    <span id="featured-sector-top-stock" class="stat-number">腾讯控股</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 全景热力图区域 -->
+                <section class="panoramic-section">
+                    <div class="section-header">
+                        <h2 class="section-title">📊 市场全景热力图</h2>
+                        <div class="section-controls">
+                            <div class="control-group">
+                                <label for="panoramic-metric">指标</label>
+                                <select id="panoramic-metric" class="control-select">
+                                    <option value="change_percent">涨跌幅</option>
+                                    <option value="volume">成交量</option>
+                                    <option value="market_cap">市值</option>
+                                    <option value="turnover_rate">换手率</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label for="panoramic-timeframe">时间范围</label>
+                                <select id="panoramic-timeframe" class="control-select">
+                                    <option value="1d">今日</option>
+                                    <option value="1w">本周</option>
+                                    <option value="1m">本月</option>
+                                    <option value="3m">三个月</option>
+                                </select>
+                            </div>
+                            <button id="panoramic-refresh" class="refresh-btn">🔄 刷新</button>
+                            <button id="panoramic-fullscreen" class="fullscreen-btn">⛶ 全屏</button>
+                        </div>
+                    </div>
+                    
+                    <div class="panoramic-container">
+                        <div id="panoramic-heatmap" class="heatmap-display">
+                            <div class="loading-state">
+                                <div class="loading-spinner"></div>
+                                <p>正在加载全景热力图...</p>
+                            </div>
+                        </div>
+                        
+                        <div class="heatmap-legend">
+                            <div class="legend-title">图例</div>
+                            <div class="legend-scale">
+                                <div class="scale-item negative-high">-5%+</div>
+                                <div class="scale-item negative-mid">-2%</div>
+                                <div class="scale-item neutral">0%</div>
+                                <div class="scale-item positive-mid">+2%</div>
+                                <div class="scale-item positive-high">+5%+</div>
+                            </div>
+                            <div class="legend-stats">
+                                <div class="stat-item">
+                                    <span class="stat-label">上涨股票:</span>
+                                    <span id="panoramic-rising-count" class="stat-value">--</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">下跌股票:</span>
+                                    <span id="panoramic-falling-count" class="stat-value">--</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">平盘股票:</span>
+                                    <span id="panoramic-flat-count" class="stat-value">--</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 特定行业热力图区域（当有锚点时显示） -->
+                <section id="featured-sector-section" class="featured-sector-section" style="display: none;">
+                    <div class="section-header">
+                        <h2 id="featured-sector-title" class="section-title">🏭 行业热力图</h2>
+                        <div class="section-description">
+                            <p id="featured-sector-desc">当前行业详细热力图展示</p>
+                        </div>
+                        <div class="section-controls">
+                            <button id="back-to-overview" class="back-btn">← 返回全景</button>
+                        </div>
+                    </div>
+                    
+                    <div class="featured-sector-container">
+                        <div id="featured-sector-heatmap" class="featured-heatmap-display">
+                            <div class="loading-state">
+                                <div class="loading-spinner"></div>
+                                <p>正在加载行业热力图...</p>
+                            </div>
+                        </div>
+                        
+                        <div class="featured-heatmap-legend">
+                            <div class="legend-title">图例</div>
+                            <div class="legend-scale">
+                                <div class="scale-item negative-high">-5%+</div>
+                                <div class="scale-item negative-mid">-2%</div>
+                                <div class="scale-item neutral">0%</div>
+                                <div class="scale-item positive-mid">+2%</div>
+                                <div class="scale-item positive-high">+5%+</div>
+                            </div>
+                            <div class="legend-stats">
+                                <div class="stat-item">
+                                    <span class="stat-label">行业股票数:</span>
+                                    <span id="featured-sector-count" class="stat-value">--</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">平均涨幅:</span>
+                                    <span id="featured-sector-change" class="stat-value">--</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">领涨股票:</span>
+                                    <span id="featured-sector-leader" class="stat-value">--</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 行业热力图区域 -->
+                <section class="sector-heatmaps-section">
+                    <div class="section-header">
+                        <h2 class="section-title">🏭 行业热力图</h2>
+                        <div class="section-description">
+                            <p>按行业分类展示股票表现，点击可查看详细行业热力图</p>
+                        </div>
+                    </div>
+                    
+                    <div class="sector-grid">
+                        <!-- 科技行业 -->
+                        <div class="sector-card" data-sector="technology">
+                            <div class="sector-header">
+                                <h3 class="sector-title">💻 科技</h3>
+                                <div class="sector-stats">
+                                    <span class="sector-count">--只</span>
+                                    <span class="sector-change">--%</span>
+                                </div>
+                            </div>
+                            <div class="sector-heatmap-mini" id="tech-heatmap">
+                                <div class="mini-loading">加载中...</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 金融行业 -->
+                        <div class="sector-card" data-sector="financial">
+                            <div class="sector-header">
+                                <h3 class="sector-title">🏦 金融</h3>
+                                <div class="sector-stats">
+                                    <span class="sector-count">--只</span>
+                                    <span class="sector-change">--%</span>
+                                </div>
+                            </div>
+                            <div class="sector-heatmap-mini" id="financial-heatmap">
+                                <div class="mini-loading">加载中...</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 医疗健康 -->
+                        <div class="sector-card" data-sector="healthcare">
+                            <div class="sector-header">
+                                <h3 class="sector-title">🏥 医疗健康</h3>
+                                <div class="sector-stats">
+                                    <span class="sector-count">--只</span>
+                                    <span class="sector-change">--%</span>
+                                </div>
+                            </div>
+                            <div class="sector-heatmap-mini" id="healthcare-heatmap">
+                                <div class="mini-loading">加载中...</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 消费品 -->
+                        <div class="sector-card" data-sector="consumer">
+                            <div class="sector-header">
+                                <h3 class="sector-title">🛒 消费品</h3>
+                                <div class="sector-stats">
+                                    <span class="sector-count">--只</span>
+                                    <span class="sector-change">--%</span>
+                                </div>
+                            </div>
+                            <div class="sector-heatmap-mini" id="consumer-heatmap">
+                                <div class="mini-loading">加载中...</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 工业 -->
+                        <div class="sector-card" data-sector="industrial">
+                            <div class="sector-header">
+                                <h3 class="sector-title">🏭 工业</h3>
+                                <div class="sector-stats">
+                                    <span class="sector-count">--只</span>
+                                    <span class="sector-change">--%</span>
+                                </div>
+                            </div>
+                            <div class="sector-heatmap-mini" id="industrial-heatmap">
+                                <div class="mini-loading">加载中...</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 能源 -->
+                        <div class="sector-card" data-sector="energy">
+                            <div class="sector-header">
+                                <h3 class="sector-title">⚡ 能源</h3>
+                                <div class="sector-stats">
+                                    <span class="sector-count">--只</span>
+                                    <span class="sector-change">--%</span>
+                                </div>
+                            </div>
+                            <div class="sector-heatmap-mini" id="energy-heatmap">
+                                <div class="mini-loading">加载中...</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 材料 -->
+                        <div class="sector-card" data-sector="materials">
+                            <div class="sector-header">
+                                <h3 class="sector-title">🧱 材料</h3>
+                                <div class="sector-stats">
+                                    <span class="sector-count">--只</span>
+                                    <span class="sector-change">--%</span>
+                                </div>
+                            </div>
+                            <div class="sector-heatmap-mini" id="materials-heatmap">
+                                <div class="mini-loading">加载中...</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 房地产 -->
+                        <div class="sector-card" data-sector="realestate">
+                            <div class="sector-header">
+                                <h3 class="sector-title">🏠 房地产</h3>
+                                <div class="sector-stats">
+                                    <span class="sector-count">--只</span>
+                                    <span class="sector-change">--%</span>
+                                </div>
+                            </div>
+                            <div class="sector-heatmap-mini" id="realestate-heatmap">
+                                <div class="mini-loading">加载中...</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 通信 -->
+                        <div class="sector-card" data-sector="communication">
+                            <div class="sector-header">
+                                <h3 class="sector-title">📡 通信</h3>
+                                <div class="sector-stats">
+                                    <span class="sector-count">--只</span>
+                                    <span class="sector-change">--%</span>
+                                </div>
+                            </div>
+                            <div class="sector-heatmap-mini" id="communication-heatmap">
+                                <div class="mini-loading">加载中...</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 公用事业 -->
+                        <div class="sector-card" data-sector="utilities">
+                            <div class="sector-header">
+                                <h3 class="sector-title">🔌 公用事业</h3>
+                                <div class="sector-stats">
+                                    <span class="sector-count">--只</span>
+                                    <span class="sector-change">--%</span>
+                                </div>
+                            </div>
+                            <div class="sector-heatmap-mini" id="utilities-heatmap">
+                                <div class="mini-loading">加载中...</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 交通运输 -->
+                        <div class="sector-card" data-sector="transportation">
+                            <div class="sector-header">
+                                <h3 class="sector-title">🚛 交通运输</h3>
+                                <div class="sector-stats">
+                                    <span class="sector-count">--只</span>
+                                    <span class="sector-change">--%</span>
+                                </div>
+                            </div>
+                            <div class="sector-heatmap-mini" id="transportation-heatmap">
+                                <div class="mini-loading">加载中...</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 零售 -->
+                        <div class="sector-card" data-sector="retail">
+                            <div class="sector-header">
+                                <h3 class="sector-title">🛍️ 零售</h3>
+                                <div class="sector-stats">
+                                    <span class="sector-count">--只</span>
+                                    <span class="sector-change">--%</span>
+                                </div>
+                            </div>
+                            <div class="sector-heatmap-mini" id="retail-heatmap">
+                                <div class="mini-loading">加载中...</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 农业 -->
+                        <div class="sector-card" data-sector="agriculture">
+                            <div class="sector-header">
+                                <h3 class="sector-title">🌾 农业</h3>
+                                <div class="sector-stats">
+                                    <span class="sector-count">--只</span>
+                                    <span class="sector-change">--%</span>
+                                </div>
+                            </div>
+                            <div class="sector-heatmap-mini" id="agriculture-heatmap">
+                                <div class="mini-loading">加载中...</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+    
+    <!-- 全屏模态框 -->
+    <div id="fullscreen-modal" class="fullscreen-modal hidden">
+        <div class="modal-header">
+            <h3 class="modal-title">全景热力图 - 全屏模式</h3>
+            <button id="close-fullscreen" class="close-btn">✕</button>
+        </div>
+        <div class="modal-content">
+            <div id="fullscreen-heatmap" class="fullscreen-heatmap-container"></div>
+        </div>
+    </div>
+    
+    <!-- 脚本引入 -->
+    <script src="./scripts/DataProcessor.js"></script>
+    <script src="./scripts/HeatmapRenderer.js"></script>
+    <script src="./scripts/StockHeatmap.js"></script>
+    <script src="./scripts/featured-content.js"></script>
+    <script src="./scripts/panoramic-heatmap.js"></script>
+</body>
+</html>

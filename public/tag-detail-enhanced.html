@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>标签详情 - Stock Tag Explorer</title>
+    <link rel="stylesheet" href="./styles/main.css">
+    <link rel="stylesheet" href="./styles/tag-detail.css">
+    <link rel="stylesheet" href="./styles/heatmap-integration.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- 全局导航栏 -->
+    <nav class="global-navbar">
+        <div class="navbar-container">
+            <a href="index.html" class="navbar-brand">
+                <span class="navbar-logo">📊</span>
+                <span class="navbar-title">Stock Explorer</span>
+            </a>
+            <ul class="navbar-links">
+                <li>
+                    <a href="index.html" class="global-nav-link">标签云广场</a>
+                </li>
+                <li>
+                    <a href="trending.html" class="global-nav-link">趋势风云榜</a>
+                </li>
+                <li>
+                    <a href="heatmap-center.html" class="global-nav-link">热力图中心</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    
+    <div id="app">
+        <!-- 头部 -->
+        <header class="header">
+            <div class="container">
+                <div class="header-content">
+                    <div class="header-left">
+                        <div class="breadcrumb">
+                            <a href="index.html" class="breadcrumb-link">标签广场</a>
+                            <span class="breadcrumb-separator">></span>
+                            <span id="tag-name" class="breadcrumb-current">加载中...</span>
+                        </div>
+                        <h1 id="page-title" class="page-title highlight-tag">标签详情</h1>
+                        <p id="tag-description" class="tag-description">查看该标签下的所有股票</p>
+                    </div>
+                    <div class="header-right">
+                        <div class="header-actions">
+                            <button id="toggle-heatmap" class="btn-toggle-heatmap active">
+                                <span class="toggle-icon">🔥</span>
+                                <span class="toggle-text">热力图视图</span>
+                            </button>
+                            <a href="heatmap-center.html" class="btn-heatmap-center">
+                                <span class="btn-icon">🌍</span>
+                                <span class="btn-text">热力图中心</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- 主内容区 -->
+        <main class="main">
+            <div class="container">
+                <!-- 特定标签焦点区域 -->
+                <section id="featured-tag-section" class="featured-tag-section" style="display: none;">
+                    <div class="featured-tag-header">
+                        <button class="back-btn" onclick="hideFeaturedTag()">
+                            <i class="fas fa-arrow-left"></i>
+                            返回标签列表
+                        </button>
+                        <div class="featured-tag-title">
+                            <h2 id="featured-tag-name">高ROE</h2>
+                            <p id="featured-tag-description">净资产收益率超过15%的优质股票</p>
+                        </div>
+                    </div>
+                    <div class="featured-tag-content">
+                        <div class="featured-heatmap-display">
+                            <div id="featured-tag-heatmap" class="featured-heatmap-canvas"></div>
+                            <div class="featured-heatmap-legend">
+                                <div class="legend-item">
+                                    <span class="legend-color" style="background: #dc2626;"></span>
+                                    <span>跌幅 > 5%</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-color" style="background: #f97316;"></span>
+                                    <span>跌幅 0-5%</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-color" style="background: #64748b;"></span>
+                                    <span>平盘</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-color" style="background: #16a34a;"></span>
+                                    <span>涨幅 0-5%</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-color" style="background: #059669;"></span>
+                                    <span>涨幅 > 5%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="featured-tag-stats">
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <span class="stat-label">股票数量</span>
+                                    <span id="featured-tag-count" class="stat-number">156</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">平均涨幅</span>
+                                    <span id="featured-tag-avg-change" class="stat-number positive">+2.34%</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">领涨股票</span>
+                                    <span id="featured-tag-top-stock" class="stat-number">贵州茅台</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 热力图展示区域 -->
+                <div id="heatmap-section" class="heatmap-section">
+                    <div class="heatmap-header">
+                        <div class="heatmap-title-group">
+                            <h3 class="heatmap-title">
+                                <span class="title-icon">🔥</span>
+                                <span id="heatmap-title-text">标签热力图</span>
+                            </h3>
+                            <p class="heatmap-subtitle">实时展示该标签下股票的表现情况</p>
+                        </div>
+                        <div class="heatmap-controls">
+                            <div class="control-group">
+                                <label for="heatmap-metric">显示指标:</label>
+                                <select id="heatmap-metric" class="heatmap-select">
+                                    <option value="change_percent">涨跌幅</option>
+                                    <option value="volume">成交量</option>
+                                    <option value="market_cap">市值</option>
+                                    <option value="price">股价</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label for="heatmap-timeframe">时间范围:</label>
+                                <select id="heatmap-timeframe" class="heatmap-select">
+                                    <option value="1d">今日</option>
+                                    <option value="1w">本周</option>
+                                    <option value="1m">本月</option>
+                                    <option value="3m">三个月</option>
+                                </select>
+                            </div>
+                            <button id="refresh-heatmap" class="btn-refresh">
+                                <span class="refresh-icon">🔄</span>
+                                <span class="refresh-text">刷新</span>
+                            </button>
+                            <button id="fullscreen-heatmap" class="btn-fullscreen">
+                                <span class="fullscreen-icon">⛶</span>
+                                <span class="fullscreen-text">全屏</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="heatmap-container">
+                        <div id="tag-heatmap" class="heatmap-canvas">
+                            <!-- 热力图将在这里渲染 -->
+                            <div class="heatmap-placeholder">
+                                <div class="placeholder-icon">📊</div>
+                                <p>正在加载热力图...</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 热力图图例 -->
+                        <div class="heatmap-legend">
+                            <div class="legend-title">图例</div>
+                            <div id="heatmap-legend-scale" class="legend-scale">
+                                <!-- 图例将根据选择的指标动态生成 -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 热力图统计信息 -->
+                    <div class="heatmap-stats">
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-label">最佳表现</span>
+                                <span id="best-performer" class="stat-value positive">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">最差表现</span>
+                                <span id="worst-performer" class="stat-value negative">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">平均涨跌幅</span>
+                                <span id="average-change" class="stat-value">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">总市值</span>
+                                <span id="total-market-cap" class="stat-value">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 上方过滤器区域 -->
+                <div class="filter-section">
+                    <div class="filter-header">
+                        <h3>筛选与排序</h3>
+                        <div class="filter-stats">
+                            <span id="total-stocks-display" class="stats-display">总计 - 只股票</span>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-controls">
+                        <div class="filter-group">
+                            <label for="sort-select" class="filter-label">排序方式</label>
+                            <select id="sort-select" class="sort-select">
+                                <option value="name-asc">按名称排序 ↑</option>
+                                <option value="name-desc">按名称排序 ↓</option>
+                                <option value="price-desc">按价格排序 ↓</option>
+                                <option value="price-asc">按价格排序 ↑</option>
+                                <option value="change-desc">按涨跌幅排序 ↓</option>
+                                <option value="change-asc">按涨跌幅排序 ↑</option>
+                                <option value="volume-desc">按成交量排序 ↓</option>
+                                <option value="volume-asc">按成交量排序 ↑</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="price-filter" class="filter-label">价格范围</label>
+                            <select id="price-filter" class="price-filter">
+                                <option value="all">全部价格</option>
+                                <option value="0-50">$0 - $50</option>
+                                <option value="50-100">$50 - $100</option>
+                                <option value="100-500">$100 - $500</option>
+                                <option value="500+">$500+</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="change-filter" class="filter-label">涨跌幅</label>
+                            <select id="change-filter" class="change-filter">
+                                <option value="all">全部</option>
+                                <option value="up">上涨</option>
+                                <option value="down">下跌</option>
+                                <option value="flat">平盘</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group view-controls">
+                            <label class="filter-label">视图模式</label>
+                            <div class="view-toggle">
+                                <button id="grid-view" class="view-btn active" title="网格视图">⊞</button>
+                                <button id="list-view" class="view-btn" title="列表视图">☰</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="content-layout">
+                    <!-- 左侧股票列表 -->
+                    <div class="left-panel">
+                        <!-- 股票列表区域 -->
+                        <section id="stock-list-section" class="stock-list-section">
+                            <div class="stock-list-header">
+                                <h3 id="stock-list-title">选中标签的股票</h3>
+                                <div class="stock-list-controls">
+                                    <div class="view-controls">
+                                        <button id="grid-view-2" class="view-btn active" title="网格视图">
+                                            <span class="view-icon">⊞</span>
+                                        </button>
+                                        <button id="list-view-2" class="view-btn" title="列表视图">
+                                            <span class="view-icon">☰</span>
+                                        </button>
+                                    </div>
+                                    <div class="sync-controls">
+                                        <label class="sync-label">
+                                            <input type="checkbox" id="sync-with-heatmap" checked>
+                                            <span class="sync-text">与热力图同步</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 加载状态 -->
+                            <div id="loading" class="loading-state">
+                                <div class="loading-spinner"></div>
+                                <p>正在加载股票数据...</p>
+                            </div>
+                            
+                            <!-- 错误状态 -->
+                            <div id="error" class="error-state hidden">
+                                <div class="error-icon">⚠️</div>
+                                <p id="error-message">加载失败，请重试</p>
+                                <button id="retry-btn" class="retry-btn">重新加载</button>
+                            </div>
+                            
+                            <!-- 股票列表 -->
+                            <div id="stock-list" class="stock-list"></div>
+                            
+                            <!-- 无限滚动加载指示器 -->
+                            <div id="infinite-loading" class="infinite-loading hidden">
+                                <div class="loading-spinner"></div>
+                                <p>正在加载更多股票...</p>
+                            </div>
+                            
+                            <!-- 加载完成提示 -->
+                            <div id="load-complete" class="load-complete hidden">
+                                <p>已加载全部股票</p>
+                            </div>
+                            
+                            <!-- 分页 -->
+                            <div id="pagination" class="pagination hidden"></div>
+                        </section>
+                    </div>
+                    
+                    <!-- 右侧侧边栏 -->
+                    <div class="right-panel">
+                        <!-- 热力图快速操作 -->
+                        <div class="heatmap-quick-actions">
+                            <div class="quick-actions-header">
+                                <h4>🔥 热力图操作</h4>
+                            </div>
+                            <div class="quick-actions-grid">
+                                <button class="quick-action-btn" onclick="toggleHeatmapView()">
+                                    <span class="action-icon">👁️</span>
+                                    <span class="action-text">切换视图</span>
+                                </button>
+                                <button class="quick-action-btn" onclick="exportHeatmap()">
+                                    <span class="action-icon">💾</span>
+                                    <span class="action-text">导出图片</span>
+                                </button>
+                                <button class="quick-action-btn" onclick="shareHeatmap()">
+                                    <span class="action-icon">🔗</span>
+                                    <span class="action-text">分享链接</span>
+                                </button>
+                                <button class="quick-action-btn" onclick="compareWithMarket()">
+                                    <span class="action-icon">📊</span>
+                                    <span class="action-text">对比大盘</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 相关标签云 -->
+                        <div class="tag-cloud-card">
+                            <div class="tag-cloud-header">
+                                <h4>🏷️ 相关标签</h4>
+                                <p class="tag-cloud-subtitle">点击探索其他分类</p>
+                            </div>
+                            <div id="related-tags" class="related-tags-compact"></div>
+                        </div>
+                        
+                        <!-- 标签统计卡片 -->
+                        <div class="stats-card">
+                            <div class="stats-header">
+                                <h4>📊 标签统计</h4>
+                            </div>
+                            <div class="stats-grid">
+                                <div class="stats-item">
+                                    <span class="stats-number" id="total-stocks">-</span>
+                                    <span class="stats-label">总股票数</span>
+                                </div>
+                                <div class="stats-item stats-up">
+                                    <span class="stats-number" id="rising-stocks">-</span>
+                                    <span class="stats-label">上涨</span>
+                                </div>
+                                <div class="stats-item stats-down">
+                                    <span class="stats-number" id="falling-stocks">-</span>
+                                    <span class="stats-label">下跌</span>
+                                </div>
+                                <div class="stats-item stats-flat">
+                                    <span class="stats-number" id="flat-stocks">-</span>
+                                    <span class="stats-label">平盘</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 快速导航 -->
+                        <div class="quick-nav-card">
+                            <div class="quick-nav-header">
+                                <h4>🚀 快速导航</h4>
+                            </div>
+                            <div class="quick-nav-links">
+                                <a href="index.html" class="quick-nav-link">
+                                    <span class="nav-icon">🏠</span>
+                                    <span class="nav-text">标签广场</span>
+                                </a>
+                                <a href="trending.html" class="quick-nav-link">
+                                    <span class="nav-icon">📈</span>
+                                    <span class="nav-text">趋势榜单</span>
+                                </a>
+                                <a href="heatmap-center.html" class="quick-nav-link">
+                                    <span class="nav-icon">🔥</span>
+                                    <span class="nav-text">热力图中心</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- 页脚 -->
+        <footer class="footer">
+            <div class="container">
+                <p>&copy; 2024 Stock Tag Explorer. 数据来源: Polygon.io & Finnhub</p>
+            </div>
+        </footer>
+        
+        <!-- Toast 通知 -->
+        <div id="toast" class="toast hidden"></div>
+        
+        <!-- 全局Toast消息 -->
+        <div id="toast-message" class="toast-message" style="display: none;"></div>
+        
+        <!-- 全屏热力图模态框 -->
+        <div id="heatmap-modal" class="heatmap-modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">全屏热力图</h3>
+                    <button class="modal-close" onclick="closeHeatmapModal()">
+                        <span class="close-icon">✕</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="fullscreen-heatmap-container" class="fullscreen-heatmap-container">
+                        <!-- 全屏热力图将在这里渲染 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- JavaScript -->
+    <script src="./scripts/DataProcessor.js"></script>
+    <script src="./scripts/HeatmapRenderer.js"></script>
+    <script src="./scripts/StockHeatmap.js"></script>
+    <script src="./scripts/stock-renderer.js"></script>
+    <script src="./scripts/tag-detail.js"></script>
+    <script src="./scripts/featured-content.js"></script>
+    <script src="./scripts/tag-detail-enhanced.js"></script>
+</body>
+</html>

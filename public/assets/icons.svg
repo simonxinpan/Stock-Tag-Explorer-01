@@ -1,0 +1,84 @@
+<!-- 股票标签探索器图标库 - 简洁版 -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <!-- 热力图图标 - 简洁网格 -->
+  <symbol id="icon-heatmap" viewBox="0 0 24 24">
+    <g>
+      <!-- 简化的3x3网格 -->
+      <rect x="3" y="3" width="5" height="5" fill="#ef4444" rx="1"/>
+      <rect x="10" y="3" width="5" height="5" fill="#22c55e" rx="1"/>
+      <rect x="17" y="3" width="4" height="5" fill="#fbbf24" rx="1"/>
+      
+      <rect x="3" y="10" width="5" height="5" fill="#22c55e" rx="1"/>
+      <rect x="10" y="10" width="5" height="5" fill="#ef4444" rx="1"/>
+      <rect x="17" y="10" width="4" height="5" fill="#22c55e" rx="1"/>
+      
+      <rect x="3" y="17" width="5" height="4" fill="#fbbf24" rx="1"/>
+      <rect x="10" y="17" width="5" height="4" fill="#22c55e" rx="1"/>
+      <rect x="17" y="17" width="4" height="4" fill="#ef4444" rx="1"/>
+    </g>
+  </symbol>
+
+  <!-- 趋势图标 - 简洁上升箭头 -->
+  <symbol id="icon-trending" viewBox="0 0 24 24">
+    <g>
+      <!-- 简洁上升趋势线 -->
+      <path d="M4 18L9 12L14 15L20 8" stroke="#22c55e" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      
+      <!-- 醒目箭头 -->
+      <path d="M16 8L20 8L20 12" stroke="#22c55e" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </symbol>
+
+  <!-- 标签图标 - 简洁标签 -->
+  <symbol id="icon-tag" viewBox="0 0 24 24">
+    <g>
+      <!-- 简洁标签形状 -->
+      <path d="M20.41 11.58L12.41 19.58C12.05 19.95 11.55 20.16 11.02 20.16C10.49 20.16 9.99 19.95 9.62 19.58L3.42 13.38C3.05 13.01 2.84 12.51 2.84 11.98V5.84C2.84 4.74 3.74 3.84 4.84 3.84H10.98C11.51 3.84 12.01 4.05 12.38 4.42L20.38 12.42C21.15 13.19 21.15 14.44 20.41 15.18L20.41 11.58Z" fill="#3b82f6"/>
+      
+      <!-- 标签孔 -->
+      <circle cx="7" cy="8" r="1.5" fill="#ffffff"/>
+    </g>
+  </symbol>
+
+  <!-- 股票图标 - 简洁柱状图 -->
+  <symbol id="icon-stock" viewBox="0 0 24 24">
+    <g>
+      <!-- 简洁柱状图 -->
+      <rect x="4" y="10" width="3" height="10" fill="#ef4444" rx="1"/>
+      <rect x="8" y="8" width="3" height="12" fill="#22c55e" rx="1"/>
+      <rect x="12" y="12" width="3" height="8" fill="#ef4444" rx="1"/>
+      <rect x="16" y="6" width="3" height="14" fill="#22c55e" rx="1"/>
+    </g>
+  </symbol>
+
+  <!-- 首页图标 - 简洁房屋 -->
+  <symbol id="icon-home" viewBox="0 0 24 24">
+    <g>
+      <path d="M3 12L12 3L21 12" stroke="#374151" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M5 12V19C5 19.55 5.45 20 6 20H18C18.55 20 19 19.55 19 19V12" stroke="#374151" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </symbol>
+
+  <!-- 搜索图标 - 简洁版 -->
+  <symbol id="icon-search" viewBox="0 0 24 24">
+    <g>
+      <circle cx="11" cy="11" r="7" stroke="#6b7280" stroke-width="2.5" fill="none"/>
+      <path d="M21 21L16.65 16.65" stroke="#6b7280" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </symbol>
+
+  <!-- 设置图标 - 简洁版 -->
+  <symbol id="icon-settings" viewBox="0 0 24 24">
+    <g>
+      <circle cx="12" cy="12" r="3" stroke="#6b7280" stroke-width="2.5" fill="none"/>
+      <path d="M12 1V6M12 18V23M4.22 4.22L7.86 7.86M16.14 16.14L19.78 19.78M1 12H6M18 12H23M4.22 19.78L7.86 16.14M16.14 7.86L19.78 4.22" stroke="#6b7280" stroke-width="2.5" stroke-linecap="round"/>
+    </g>
+  </symbol>
+
+  <!-- 下拉箭头图标 -->
+  <symbol id="icon-chevron-down" viewBox="0 0 24 24">
+    <g>
+      <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </symbol>
+</svg>
