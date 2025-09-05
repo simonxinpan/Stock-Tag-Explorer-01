@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>行业热力图聚合仪表盘 - Stock Tag Explorer</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/heatmap-center.css">
+    <link rel="stylesheet" href="styles/panoramic-heatmap.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* 下拉菜单样式 */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: var(--surface-color);
+            min-width: 200px;
+            box-shadow: var(--shadow-lg);
+            border-radius: var(--radius-md);
+            z-index: 1001;
+            top: 100%;
+            left: 0;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+        
+        .dropdown-content a {
+            color: var(--text-primary);
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            font-size: 0.9rem;
+            transition: background-color 0.2s ease;
+        }
+        
+        .dropdown-content a:hover {
+            background-color: var(--surface-hover);
+            color: var(--primary-color);
+        }
+        
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        
+        .dropdown-arrow {
+            margin-left: 4px;
+            font-size: 0.8rem;
+            transition: transform 0.2s ease;
+        }
+        
+        .dropdown:hover .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+        
+        /* 行业聚合仪表盘特定样式 */
+        .sector-dashboard {
+            padding: 2rem 0;
+        }
+        
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .dashboard-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+        
+        .dashboard-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .sector-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        
+        .sector-card {
+            background: var(--surface-color);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .sector-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .sector-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .sector-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .sector-change {
+            font-weight: 600;
+            padding: 0.25rem 0.5rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+        }
+        
+        .sector-change.positive {
+            color: var(--success-color);
+            background-color: rgba(16, 185, 129, 0.1);
+        }
+        
+        .sector-change.negative {
+            color: var(--danger-color);
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+        
+        .sector-heatmap {
+            height: 200px;
+            background: var(--surface-secondary);
+            border-radius: var(--radius-md);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+        }
+        
+        .sector-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+    </style>
+    <!-- 图标库 -->
+    <script>
+        // 加载图标库
+        fetch('./assets/icons.svg')
+            .then(response => response.text())
+            .then(data => {
+                const div = document.createElement('div');
+                div.innerHTML = data;
+                document.body.insertBefore(div, document.body.firstChild);
+            });
+    </script>
+</head>
+<body>
+    <!-- 全局导航栏 -->
+    <nav class="global-navbar">
+        <div class="navbar-container">
+            <a href="index.html" class="navbar-brand">
+                <span class="navbar-logo">📊</span>
+                <span class="navbar-title">Stock Explorer</span>
+            </a>
+            <ul class="navbar-links">
+                <li>
+                    <a href="https://stock-tag-explorer-01.vercel.app/index.html" class="global-nav-link">
+                        <svg class="nav-icon tag-icon">
+                            <use href="#icon-tag"></use>
+                        </svg>
+                        标签云广场
+                    </a>
+                </li>
+                <li>
+                    <a href="https://stock-tag-explorer-01.vercel.app/trending.html" class="global-nav-link">
+                        <svg class="nav-icon trending-icon">
+                            <use href="#icon-trending"></use>
+                        </svg>
+                        趋势风云榜
+                    </a>
+                </li>
+                <li class="dropdown">
+                    <a href="#" class="global-nav-link active">
+                        <svg class="nav-icon heatmap-icon">
+                            <use href="#icon-heatmap"></use>
+                        </svg>
+                        股票热力图
+                        <span class="dropdown-arrow">▼</span>
+                    </a>
+                    <div class="dropdown-content">
+                        <a href="https://heatmap-pro.vercel.app/">全景热力图</a>
+                        <a href="https://heatmap-lta2bq65x-simon-pans-projects.vercel.app/sector-aggregation.html">行业热力图 <span class="hot-badge">HOT</span></a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 主要内容区域 -->
+    <main class="main-content">
+        <div class="container">
+            <div class="sector-dashboard">
+                <!-- 仪表盘标题 -->
+                <div class="dashboard-header">
+                    <h1 class="dashboard-title">🏭 行业热力图聚合仪表盘</h1>
+                    <p class="dashboard-subtitle">
+                        深度分析各行业板块的实时表现，洞察市场热点与投资机会
+                    </p>
+                </div>
+
+                <!-- 行业热力图网格 -->
+                <div class="sector-grid">
+                    <!-- 科技行业 -->
+                    <div class="sector-card" onclick="window.open('https://stock-details-final-lckt58yeg-simon-pans-projects.vercel.app/?symbol=AAPL', '_blank')">
+                        <div class="sector-header">
+                            <h3 class="sector-name">💻 信息技术</h3>
+                            <span class="sector-change positive">+2.3%</span>
+                        </div>
+                        <div class="sector-heatmap">
+                            <div>科技股热力图加载中...</div>
+                        </div>
+                        <div class="sector-stats">
+                            <span>股票数: 75</span>
+                            <span>总市值: $12.5T</span>
+                        </div>
+                    </div>
+
+                    <!-- 医疗保健 -->
+                    <div class="sector-card" onclick="window.open('https://stock-details-final-lckt58yeg-simon-pans-projects.vercel.app/?symbol=JNJ', '_blank')">
+                        <div class="sector-header">
+                            <h3 class="sector-name">🏥 医疗保健</h3>
+                            <span class="sector-change positive">+1.8%</span>
+                        </div>
+                        <div class="sector-heatmap">
+                            <div>医疗股热力图加载中...</div>
+                        </div>
+                        <div class="sector-stats">
+                            <span>股票数: 62</span>
+                            <span>总市值: $6.2T</span>
+                        </div>
+                    </div>
+
+                    <!-- 金融服务 -->
+                    <div class="sector-card" onclick="window.open('https://stock-details-final-lckt58yeg-simon-pans-projects.vercel.app/?symbol=JPM', '_blank')">
+                        <div class="sector-header">
+                            <h3 class="sector-name">🏦 金融服务</h3>
+                            <span class="sector-change negative">-0.5%</span>
+                        </div>
+                        <div class="sector-heatmap">
+                            <div>金融股热力图加载中...</div>
+                        </div>
+                        <div class="sector-stats">
+                            <span>股票数: 68</span>
+                            <span>总市值: $4.8T</span>
+                        </div>
+                    </div>
+
+                    <!-- 消费品 -->
+                    <div class="sector-card" onclick="window.open('https://stock-details-final-lckt58yeg-simon-pans-projects.vercel.app/?symbol=AMZN', '_blank')">
+                        <div class="sector-header">
+                            <h3 class="sector-name">🛒 消费品</h3>
+                            <span class="sector-change positive">+1.2%</span>
+                        </div>
+                        <div class="sector-heatmap">
+                            <div>消费股热力图加载中...</div>
+                        </div>
+                        <div class="sector-stats">
+                            <span>股票数: 89</span>
+                            <span>总市值: $5.1T</span>
+                        </div>
+                    </div>
+
+                    <!-- 工业 -->
+                    <div class="sector-card" onclick="window.open('https://stock-details-final-lckt58yeg-simon-pans-projects.vercel.app/?symbol=BA', '_blank')">
+                        <div class="sector-header">
+                            <h3 class="sector-name">🏭 工业</h3>
+                            <span class="sector-change positive">+0.9%</span>
+                        </div>
+                        <div class="sector-heatmap">
+                            <div>工业股热力图加载中...</div>
+                        </div>
+                        <div class="sector-stats">
+                            <span>股票数: 71</span>
+                            <span>总市值: $3.8T</span>
+                        </div>
+                    </div>
+
+                    <!-- 能源 -->
+                    <div class="sector-card" onclick="window.open('https://stock-details-final-lckt58yeg-simon-pans-projects.vercel.app/?symbol=XOM', '_blank')">
+                        <div class="sector-header">
+                            <h3 class="sector-name">⚡ 能源</h3>
+                            <span class="sector-change negative">-1.1%</span>
+                        </div>
+                        <div class="sector-heatmap">
+                            <div>能源股热力图加载中...</div>
+                        </div>
+                        <div class="sector-stats">
+                            <span>股票数: 24</span>
+                            <span>总市值: $1.9T</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 市场概览统计 -->
+                <div class="market-overview">
+                    <div class="overview-header">
+                        <h2>📊 市场概览</h2>
+                        <p>实时市场数据统计</p>
+                    </div>
+                    <div class="overview-stats">
+                        <div class="stat-card">
+                            <div class="stat-number">389</div>
+                            <div class="stat-label">总股票数</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">+1.2%</div>
+                            <div class="stat-label">平均涨幅</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">$34.3T</div>
+                            <div class="stat-label">总市值</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">6</div>
+                            <div class="stat-label">主要行业</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 页面交互脚本
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('行业热力图聚合仪表盘已加载');
+            
+            // 可以在这里添加更多的交互功能
+            // 例如：实时数据更新、图表渲染等
+        });
+    </script>
+</body>
+</html>
