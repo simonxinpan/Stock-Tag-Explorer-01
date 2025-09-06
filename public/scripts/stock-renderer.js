@@ -5,7 +5,7 @@
 
 class StockRenderer {
     constructor() {
-        this.stockDetailBaseUrl = 'https://stock-details-final-1e1vcxew3-simon-pans-projects.vercel.app/';
+        this.stockDetailBaseUrl = 'https://stock-details-final.vercel.app/';
     }
 
     /**
