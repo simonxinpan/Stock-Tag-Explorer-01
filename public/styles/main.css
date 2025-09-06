@@ -575,7 +575,6 @@ body {
 }
 
 .stock-count {
-    background: currentColor;
     color: white;
     padding: 0.4rem 0.8rem;
     border-radius: 12px;
@@ -588,6 +587,31 @@ body {
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
     position: relative;
     overflow: hidden;
+}
+
+/* 股市表现类标签的股票数量样式 */
+.tag-group[data-type="performance"] .stock-count {
+    background: #166534;
+}
+
+/* 财务表现类标签的股票数量样式 */
+.tag-group[data-type="financial"] .stock-count {
+    background: #92400e;
+}
+
+/* 趋势排位类标签的股票数量样式 */
+.tag-group[data-type="trend"] .stock-count {
+    background: #6b21a8;
+}
+
+/* 行业分类标签的股票数量样式 */
+.tag-group[data-type="industry"] .stock-count {
+    background: #374151;
+}
+
+/* 特殊名单类标签的股票数量样式 */
+.tag-group[data-type="special"] .stock-count {
+    background: #991b1b;
 }
 
 .stock-count::before {
