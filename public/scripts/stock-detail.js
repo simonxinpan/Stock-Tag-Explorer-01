@@ -363,7 +363,7 @@ class StockDetailPage {
         this.relatedStocks.forEach(stock => {
             const stockEl = document.createElement('a');
             stockEl.className = 'related-stock';
-            stockEl.href = `stock-detail.html?symbol=${stock.symbol}`;
+            stockEl.href = `https://stock-details-final.vercel.app/?symbol=${stock.symbol}`;
             
             const changeClass = stock.change >= 0 ? 'positive' : 'negative';
             const changeSign = stock.change >= 0 ? '+' : '';
@@ -397,8 +397,8 @@ class StockDetailPage {
      * 导航到股票详情页
      */
     navigateToStockDetail(symbol) {
-        const url = `stock-detail.html?symbol=${encodeURIComponent(symbol)}`;
-        window.location.href = url;
+        const url = `https://stock-details-final.vercel.app/?symbol=${encodeURIComponent(symbol)}`;
+        window.open(url, '_blank');
     }
 
     /**

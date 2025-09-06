@@ -435,7 +435,7 @@ class TagDetailEnhanced {
         this.showToast(`查看 ${stock.name} (${stock.symbol}) 详情`, 'info');
         
         // 这里可以实现跳转到股票详情页或显示详情模态框
-        // window.open(`/stock-detail.html?symbol=${stock.symbol}`, '_blank');
+        window.open(`https://stock-details-final.vercel.app/?symbol=${stock.symbol}`, '_blank');
     }
     
     showHeatmapLoading() {

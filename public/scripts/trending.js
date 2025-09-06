@@ -126,7 +126,7 @@ class TrendingPage {
         if (!container) return;
         
         container.innerHTML = stocks.map((stock, index) => `
-            <div class="stock-item" data-symbol="${stock.symbol}">
+            <div class="stock-item" data-symbol="${stock.symbol}" style="cursor: pointer;">
                 <div class="stock-rank">${index + 1}</div>
                 <div class="stock-info">
                     <div class="stock-name">${stock.name}</div>
@@ -140,6 +140,14 @@ class TrendingPage {
                 </div>
             </div>
         `).join('');
+        
+        // 为股票项添加点击事件
+        container.querySelectorAll('.stock-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const symbol = item.dataset.symbol;
+                window.open(`https://stock-details-final.vercel.app/?symbol=${symbol}`, '_blank');
+            });
+        });
     }
 
     formatVolume(volume) {

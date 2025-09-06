@@ -484,8 +484,8 @@ class HeatmapCenter {
      * 处理股票点击事件
      */
     handleStockClick(stock) {
-        // 跳转到股票详情页
-        window.open(`stock-detail.html?symbol=${stock.symbol}`, '_blank');
+        // 跳转到生产服务器上的股票详情页
+        window.open(`https://stock-details-final.vercel.app/?symbol=${stock.symbol}`, '_blank');
     }
 
     /**
