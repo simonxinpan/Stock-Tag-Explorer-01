@@ -230,7 +230,7 @@ class TagHeatmapPage {
     convertToHeatmapData(stocksData) {
         return stocksData.map(stock => ({
             symbol: stock.symbol,
-            name: stock.name || stock.symbol,
+            name: stock.name_zh || stock.name || stock.symbol,
             value: stock.market_cap || Math.random() * 1000000000,
             change_percent: stock.change_percent || (Math.random() - 0.5) * 10,
             price: stock.price || Math.random() * 100,
