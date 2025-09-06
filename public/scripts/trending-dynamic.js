@@ -12,7 +12,7 @@ class TrendingDataManager {
       { id: 'value-picks-list', type: 'value_picks', title: '特色价值榜' }
     ];
     this.loadingStates = new Map();
-    this.detailsPageBase = 'https://stock-details-final-1e1vcxew3-simon-pans-projects.vercel.app/?symbol=';
+    this.detailsPageBase = 'https://stock-details-final.vercel.app/?symbol=';
   }
 
   // 初始化标签页切换功能

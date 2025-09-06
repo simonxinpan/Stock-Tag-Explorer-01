@@ -485,7 +485,7 @@ class HeatmapCenter {
      */
     handleStockClick(stock) {
         // 跳转到股票详情页
-        window.open(`stock-detail.html?symbol=${stock.symbol}`, '_blank');
+        window.open(`https://stock-details-final.vercel.app/?symbol=${stock.symbol}`, '_blank');
     }
 
     /**
