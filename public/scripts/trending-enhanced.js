@@ -885,7 +885,7 @@ function shareHeatmap() {
 }
 
 function compareCategories() {
-    window.open('/heatmap-center.html', '_blank');
+    window.open('https://heatmap-pro.vercel.app/sector-aggregation.html', '_blank');
 }
 
 function closeHeatmapModal() {
