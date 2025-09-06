@@ -194,7 +194,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 12px 20px;
+    padding: 10px 16px;
     background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
     color: white;
     border: none;
@@ -205,12 +205,15 @@
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
     text-decoration: none;
+    height: 44px;
 }
 
 .heatmap-btn:hover {
     background: linear-gradient(135deg, #ff5252 0%, #d63031 100%);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+    color: white;
+    text-decoration: none;
 }
 
 .heatmap-btn:active {
@@ -221,18 +224,12 @@
 .heatmap-icon {
     width: 16px;
     height: 16px;
-    margin-right: 6px;
     transition: all 0.3s ease;
 }
 
 .heatmap-btn:hover .heatmap-icon {
     transform: scale(1.1);
     filter: brightness(1.2);
-}
-
-.heatmap-text {
-    font-size: 14px;
-    font-weight: 600;
 }
 
 /* 页面布局 */
@@ -432,6 +429,9 @@
 
 .view-controls {
     justify-self: end;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
 .view-toggle {
