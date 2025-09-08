@@ -545,7 +545,8 @@ class TrendingEnhanced {
                     <div class="stocks-preview">
                         ${trend.stocks.slice(0, 5).map(stock => `
                             <div class="stock-preview" onclick="showStockDetails('${stock.symbol}')">
-                                <span class="stock-symbol">${stock.symbol}</span>
+                                <span class="stock-name">${stock.name_zh || stock.name || stock.company_name || stock.symbol}</span>
+                                <span class="stock-symbol">(${stock.symbol})</span>
                                 <span class="stock-change ${stock.change_percent >= 0 ? 'positive' : 'negative'}">
                                     ${stock.change_percent >= 0 ? '+' : ''}${stock.change_percent.toFixed(2)}%
                                 </span>
