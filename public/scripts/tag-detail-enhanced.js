@@ -91,7 +91,7 @@ class TagDetailEnhanced {
     async loadTagData() {
         try {
             // 模拟API调用 - 获取标签下的股票数据
-            const response = await fetch(`/api/tags/${encodeURIComponent(this.tagName)}/stocks`);
+            const response = await fetch(`/api/tags/${encodeURIComponent(this.tagName)}/stocks?sort=change-desc`);
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
