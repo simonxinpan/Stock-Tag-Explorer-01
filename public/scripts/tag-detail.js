@@ -13,7 +13,7 @@ class TagDetailPage {
         this.currentPage = 1;
         this.pageSize = 20; // 改为20只股票每页，匹配原网站设计
         this.totalPages = 1;
-        this.currentSort = 'name-asc';
+        this.currentSort = 'change-desc';
         this.currentView = 'grid';
         this.priceFilter = 'all';
         this.changeFilter = 'all';

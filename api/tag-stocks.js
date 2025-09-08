@@ -149,7 +149,7 @@ module.exports = async (req, res) => {
     }
     
     try {
-        const { tag, page = 1, limit = 20, sort = 'name-asc' } = req.query;
+        const { tag, page = 1, limit = 20, sort = 'change-desc' } = req.query;
         
         if (!tag) {
             res.status(400).json({
