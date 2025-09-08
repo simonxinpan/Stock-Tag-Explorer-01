@@ -204,6 +204,7 @@ module.exports = async (req, res) => {
                 SELECT DISTINCT
                     s.symbol,
                     s.name,
+                    s.name_zh,
                     s.current_price,
                     s.change_amount,
                     s.change_percent,

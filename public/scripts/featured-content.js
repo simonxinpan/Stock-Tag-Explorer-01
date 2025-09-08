@@ -315,7 +315,7 @@ class FeaturedContentManager {
             (avgChange >= 0 ? '+' : '') + avgChange.toFixed(2) + '%';
         document.getElementById('featured-sector-avg-change').className = 
             'stat-number ' + (avgChange >= 0 ? 'positive' : 'negative');
-        document.getElementById('featured-sector-top-stock').textContent = topStock.name;
+        document.getElementById('featured-sector-top-stock').textContent = topStock.name_zh || topStock.name;
     }
 
     /**
@@ -333,7 +333,7 @@ class FeaturedContentManager {
             (avgChange >= 0 ? '+' : '') + avgChange.toFixed(2) + '%';
         document.getElementById('featured-trending-avg-change').className = 
             'stat-number ' + (avgChange >= 0 ? 'positive' : 'negative');
-        document.getElementById('featured-trending-top-stock').textContent = topStock.name;
+        document.getElementById('featured-trending-top-stock').textContent = topStock.name_zh || topStock.name;
     }
 
     /**
@@ -351,7 +351,7 @@ class FeaturedContentManager {
             (avgChange >= 0 ? '+' : '') + avgChange.toFixed(2) + '%';
         document.getElementById('featured-tag-avg-change').className = 
             'stat-number ' + (avgChange >= 0 ? 'positive' : 'negative');
-        document.getElementById('featured-tag-top-stock').textContent = topStock.name;
+        document.getElementById('featured-tag-top-stock').textContent = topStock.name_zh || topStock.name;
     }
 
     /**

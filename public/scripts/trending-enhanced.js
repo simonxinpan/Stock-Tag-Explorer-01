@@ -707,7 +707,7 @@ class TrendingEnhanced {
     
     showStockDetails(stock) {
         // 显示股票详情
-        this.showToast(`查看 ${stock.name || stock.symbol} 详情`, 'info');
+        this.showToast(`查看 ${stock.name_zh || stock.name || stock.symbol} 详情`, 'info');
     }
     
     showHeatmapLoading() {

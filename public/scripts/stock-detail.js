@@ -370,7 +370,7 @@ class StockDetailPage {
             
             stockEl.innerHTML = `
                 <div class="related-stock-symbol">${stock.symbol}</div>
-                <div class="related-stock-name">${stock.name}</div>
+                <div class="related-stock-name">${stock.name_zh || stock.name}</div>
                 <div class="related-stock-price">$${stock.price.toFixed(2)}</div>
                 <div class="related-stock-change ${changeClass}">${changeSign}${stock.change.toFixed(2)}%</div>
             `;

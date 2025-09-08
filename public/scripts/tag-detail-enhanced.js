@@ -432,7 +432,7 @@ class TagDetailEnhanced {
     
     showStockDetails(stock) {
         // 显示股票详情（可以是模态框或侧边栏）
-        this.showToast(`查看 ${stock.name} (${stock.symbol}) 详情`, 'info');
+        this.showToast(`查看 ${stock.name_zh || stock.name} (${stock.symbol}) 详情`, 'info');
         
         // 这里可以实现跳转到股票详情页或显示详情模态框
         window.open(`https://stock-details-final.vercel.app/?symbol=${stock.symbol}`, '_blank');

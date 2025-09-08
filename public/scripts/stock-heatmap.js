@@ -167,7 +167,7 @@ class StockHeatmap {
         const changeValue = stock[this.options.metric];
         this.tooltip.innerHTML = `
             <div><strong>${stock.symbol}</strong></div>
-            <div>${stock.name}</div>
+            <div>${stock.name_zh || stock.name}</div>
             <div>价格: $${stock.price.toFixed(2)}</div>
             <div>变化: ${changeValue >= 0 ? '+' : ''}${changeValue.toFixed(2)}%</div>
             <div>市值: $${(stock.marketCap / 1000000000).toFixed(1)}B</div>
