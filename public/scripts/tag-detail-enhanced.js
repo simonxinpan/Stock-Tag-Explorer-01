@@ -86,6 +86,11 @@ class TagDetailEnhanced {
         document.getElementById('list-view')?.addEventListener('click', () => {
             this.setViewMode('list');
         });
+        
+        // 行业热力图按钮
+        document.getElementById('sector-heatmap-btn')?.addEventListener('click', () => {
+            this.goToSectorHeatmap();
+        });
     }
     
     async loadTagData() {
@@ -483,6 +488,24 @@ class TagDetailEnhanced {
         setTimeout(() => {
             toast.style.display = 'none';
         }, 3000);
+    }
+    
+    goToSectorHeatmap() {
+        if (!this.currentTagId) {
+            this.showToast('无法获取标签信息', 'error');
+            return;
+        }
+        
+        // 检查是否为行业标签
+        if (this.currentTagId.startsWith('sector_')) {
+            // 提取行业名称
+            const sectorName = this.currentTagId.replace('sector_', '');
+            // 跳转到行业详情热力图页面
+            window.open(`https://heatmap-pro.vercel.app/sector-detail.html?sector=${encodeURIComponent(sectorName)}`, '_blank');
+        } else {
+            // 跳转到行业聚合热力图页面
+            window.open('https://heatmap-pro.vercel.app/sector-aggregation.html', '_blank');
+        }
     }
     
     showError(message) {
