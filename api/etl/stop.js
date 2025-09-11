@@ -1,4 +1,4 @@
-import { Pool } from 'pg';
+const { Pool } = require('pg');
 
 // 数据库连接池
 const pool = new Pool({
@@ -26,7 +26,7 @@ function getEasternTime() {
   return new Date().toLocaleString("en-US", {timeZone: "America/New_York"});
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // 只允许 POST 请求
   if (req.method !== 'POST') {
     return res.status(405).json({ 

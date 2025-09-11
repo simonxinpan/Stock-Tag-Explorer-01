@@ -11,6 +11,7 @@
 - ✅ 改进时间判断算法，支持交易时间内的智能启动/停止
 - ✅ 增强API调用容错性，支持多种域名和认证配置
 - ✅ 更新数据解析逻辑，匹配新的etl_task_queue表结构
+- 🔧 **修复404错误**: 配置Vercel路由和模块格式
 
 ### 2. 高频ETL批处理优化
 
@@ -30,6 +31,25 @@
 - 🗃️ 使用独立的`etl_task_queue`表替代stocks表字段
 - 📊 改进任务状态跟踪（pending, processing, completed, failed）
 - 🔄 支持批次管理和错误处理
+
+### 4. 404错误修复
+
+**问题**: GitHub Actions工作流调用ETL API时出现404错误
+
+**根本原因**:
+- Vercel部署配置缺少API路由映射
+- API文件使用ES6模块格式，与Vercel运行时不兼容
+
+**修复措施**:
+- 📝 **更新vercel.json**: 添加API路由重写规则和函数配置
+- 🔄 **模块格式转换**: 将ES6 import/export改为CommonJS require/module.exports
+- 🧪 **测试脚本**: 创建test-etl-api.js用于本地和部署后的API测试
+
+**修复文件**:
+- `vercel.json` - 添加functions和rewrites配置
+- `api/etl/start.js` - 转换为CommonJS格式
+- `api/etl/stop.js` - 转换为CommonJS格式
+- `test-etl-api.js` - 新增API测试脚本
 
 ## 🚀 使用方法
 
@@ -61,11 +81,29 @@ POLYGON_API_KEY=your-polygon-key
 
 ## 🔍 故障排除
 
-如果工作流失败，请检查：
-1. GitHub Secrets配置是否完整
-2. API端点是否可访问
-3. 数据库连接是否正常
-4. 查看Actions日志获取详细错误信息
+### 常见问题解决
+
+**1. 404错误 - API端点无法访问**
+- ✅ 确认vercel.json包含正确的rewrites配置
+- ✅ 验证API文件使用CommonJS格式（require/module.exports）
+- ✅ 检查Vercel部署是否成功
+- 🧪 运行测试脚本：`node test-etl-api.js`
+
+**2. 工作流失败检查清单**
+- GitHub Secrets配置是否完整（DATABASE_URL, CRON_SECRET, VERCEL_DOMAIN）
+- API端点是否可访问（使用测试脚本验证）
+- 数据库连接是否正常
+- 查看Actions日志获取详细错误信息
+
+**3. 本地测试方法**
+```bash
+# 设置环境变量
+export VERCEL_DOMAIN=your-domain.vercel.app
+export CRON_SECRET=your-secret-token
+
+# 运行API测试
+node test-etl-api.js
+```
 
 ---
 
