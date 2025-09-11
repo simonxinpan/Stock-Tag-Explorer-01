@@ -139,7 +139,7 @@ class DataProcessor {
     processStockData(stocks) {
         return stocks.map(stock => ({
             symbol: stock.symbol,
-            name: stock.name || stock.symbol,
+            name: stock.name_zh || stock.name || stock.symbol,
             price: parseFloat(stock.price) || 0,
             change_percent: parseFloat(stock.change_percent) || 0,
             volume: parseInt(stock.volume) || 0,

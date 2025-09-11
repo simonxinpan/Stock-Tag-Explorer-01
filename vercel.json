@@ -1,4 +1,14 @@
 {
+  "rewrites": [
+    {
+      "source": "/api/etl/start",
+      "destination": "/api/etl/start.js"
+    },
+    {
+      "source": "/api/etl/stop",
+      "destination": "/api/etl/stop.js"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

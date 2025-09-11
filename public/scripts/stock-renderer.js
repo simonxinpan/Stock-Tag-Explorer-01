@@ -44,7 +44,7 @@ class StockRenderer {
         
         // 处理数据格式兼容性
         const symbol = stock.symbol || stock.ticker;
-        const name = stock.name || stock.company_name || symbol;
+        const name = stock.name_zh || stock.name || stock.company_name || symbol;
         const price = stock.price || stock.current_price || 0;
         const change = stock.change || stock.price_change || 0;
         const changePercent = stock.changePercent || stock.change_percent || 0;

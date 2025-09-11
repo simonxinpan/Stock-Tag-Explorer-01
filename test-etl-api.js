@@ -1,0 +1,100 @@
+const https = require('https');
+const http = require('http');
+
+// 测试配置
+const BASE_URL = 'http://localhost:3000'; // 本地测试
+// const BASE_URL = 'https://your-vercel-app.vercel.app'; // 生产环境测试
+
+// 测试认证token (如果需要)
+const AUTH_TOKEN = process.env.ETL_AUTH_TOKEN || 'your-test-token';
+
+// 测试ETL API端点
+async function testETLAPI() {
+  // 使用生产环境URL进行测试
+  const baseUrl = 'https://stock-tag-explorer-01.vercel.app';
+  
+  const authToken = AUTH_TOKEN;
+  
+  console.log('🧪 Testing ETL API endpoints...');
+  console.log(`📍 Base URL: ${baseUrl}`);
+  
+  // 测试start端点
+  try {
+    console.log('\n🔄 Testing /api/etl/start...');
+    const startResponse = await makeRequest(`${baseUrl}/api/etl/start`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+    
+    console.log('✅ Start endpoint response:', startResponse);
+  } catch (error) {
+    console.error('❌ Start endpoint failed:', error.message);
+  }
+  
+  // 等待一秒
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  // 测试stop端点
+  try {
+    console.log('\n🛑 Testing /api/etl/stop...');
+    const stopResponse = await makeRequest(`${baseUrl}/api/etl/stop`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+    
+    console.log('✅ Stop endpoint response:', stopResponse);
+  } catch (error) {
+    console.error('❌ Stop endpoint failed:', error.message);
+  }
+}
+
+// HTTP请求辅助函数
+function makeRequest(url, options) {
+  return new Promise((resolve, reject) => {
+    const lib = url.startsWith('https') ? https : http;
+    
+    const req = lib.request(url, options, (res) => {
+      let data = '';
+      
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      
+      res.on('end', () => {
+        try {
+          const response = {
+            statusCode: res.statusCode,
+            headers: res.headers,
+            body: data ? JSON.parse(data) : null
+          };
+          resolve(response);
+        } catch (error) {
+          resolve({
+            statusCode: res.statusCode,
+            headers: res.headers,
+            body: data
+          });
+        }
+      });
+    });
+    
+    req.on('error', (error) => {
+      reject(error);
+    });
+    
+    req.end();
+  });
+}
+
+// 运行测试
+if (require.main === module) {
+  testETLAPI().catch(console.error);
+}
+
+module.exports = { testETLAPI };
