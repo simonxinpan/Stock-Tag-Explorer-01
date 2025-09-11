@@ -9,14 +9,11 @@ on:
     - cron: '7,22 14-19 * * 1-5'   # 每小时的7分和22分执行（错开7分钟）
   workflow_dispatch:  # 允许手动触发
     inputs:
-      debug:
-        description: 'Enable debug mode'
+      force_run:
+        description: 'Force run outside trading hours'
         required: false
         default: 'false'
-        type: choice
-        options:
-          - 'true'
-          - 'false'
+        type: boolean
 
 # 防止并发执行，避免数据库冲突和API限制问题
 concurrency:
@@ -24,54 +21,98 @@ concurrency:
   cancel-in-progress: false  # 不取消正在运行的任务，而是等待完成
 
 jobs:
-  update-chinese-stocks-market-data:
+  chinese-stocks-etl-batch-process:
     runs-on: ubuntu-latest
-    timeout-minutes: 15  # 设置超时，防止任务卡死
+    timeout-minutes: 15  # 15分钟超时，确保11分钟运行时间限制有缓冲
     
-    # 添加交易时段检查
-    if: |
-      github.event_name == 'workflow_dispatch' || 
-      (github.event_name == 'schedule')
     
     steps:
+      - name: Check Trading Hours
+        id: check-trading-hours
+        run: |
+          # 检查是否在交易时间内或强制运行
+          force_run="${{ github.event.inputs.force_run || 'false' }}"
+          
+          if [ "$force_run" = "true" ]; then
+            echo "🔧 Force run enabled - bypassing trading hours check"
+            echo "should_run=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          # 获取当前UTC时间
+          current_hour=$(date -u +%H)
+          current_minute=$(date -u +%M)
+          current_day=$(date -u +%u)  # 1=Monday, 7=Sunday
+          
+          echo "⏰ Current UTC time: $(date -u '+%H:%M on %Y-%m-%d (day %u)')"
+          echo "🕐 Approximate ET time: $(date -d '-4 hours' '+%H:%M on %Y-%m-%d') (may vary with DST)"
+          
+          # 检查是否为工作日 (Monday=1 to Friday=5)
+          if [ "$current_day" -gt 5 ]; then
+            echo "📅 Weekend detected - skipping Chinese stocks ETL batch processing"
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          # 检查是否在交易时间内 (UTC 13:30-20:00 approximately ET 9:30-16:00)
+          trading_start_hour=13
+          trading_start_minute=30
+          trading_end_hour=20
+          trading_end_minute=0
+          
+          # 转换当前时间为分钟数便于比较
+          current_minutes=$((current_hour * 60 + current_minute))
+          trading_start_minutes=$((trading_start_hour * 60 + trading_start_minute))
+          trading_end_minutes=$((trading_end_hour * 60 + trading_end_minute))
+          
+          if [ "$current_minutes" -ge "$trading_start_minutes" ] && [ "$current_minutes" -le "$trading_end_minutes" ]; then
+            echo "📈 Within trading hours - proceeding with Chinese stocks ETL batch processing"
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "🌙 Outside trading hours - skipping Chinese stocks ETL batch processing"
+            echo "💰 This saves approximately 60% of database costs"
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          fi
+          
       - name: Checkout repository
+        if: steps.check-trading-hours.outputs.should_run == 'true'
         uses: actions/checkout@v4
         
       - name: Setup Node.js
+        if: steps.check-trading-hours.outputs.should_run == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
           
       - name: Install dependencies
+        if: steps.check-trading-hours.outputs.should_run == 'true'
         run: npm ci
         
-      - name: Health check - Verify API and DB connectivity
+      - name: Run Chinese Stocks ETL Batch Process
+        if: steps.check-trading-hours.outputs.should_run == 'true'
         env:
           CHINESE_STOCKS_DATABASE_URL: ${{ secrets.CHINESE_STOCKS_DATABASE_URL }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+          BATCH_SIZE: 50
+          DELAY_SECONDS: 13
+          MAX_RUNTIME_MINUTES: 11
         run: |
-          echo "🔍 Checking Finnhub API connectivity..."
-          curl -f "https://finnhub.io/api/v1/quote?symbol=BABA&token=$FINNHUB_API_KEY" || exit 1
-          echo "✅ Finnhub API is accessible"
+          echo "🚀 Starting Chinese Stocks ETL Smart Batch Processor at $(date)"
+          echo "📋 Processing Chinese stocks with 11-minute runtime limit..."
+          echo "⏱️ Each batch: 50 stocks, 13-second delay (Polygon API limit)"
           
-      - name: Run Chinese stocks market data update (Finnhub)
-        env:
-          CHINESE_STOCKS_DATABASE_URL: ${{ secrets.CHINESE_STOCKS_DATABASE_URL }}
-          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
-          DEBUG: ${{ github.event.inputs.debug || 'false' }}
-          MARKET_TYPE: chinese_stocks
-        run: |
-          echo "🚀 Starting Chinese stocks Finnhub market data update..."
-          echo "📊 Expected runtime: 10-12 minutes for Chinese stocks"
-          echo "⚡ Rate limit: 1 request/second (60/minute)"
-          node _scripts/update-market-data-finnhub.mjs
+          # 运行中概股智能分批处理器，每次处理1批50只股票，11分钟运行时间限制（像素级模仿标普500）
+          node _scripts/etl-chinese-stocks-batch-processor.mjs
+          
+          echo "✅ Chinese Stocks ETL Smart Batch Processor completed at $(date)"
           
       - name: Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: chinese-stocks-market-update-logs
+          name: chinese-stocks-etl-batch-logs
           path: |
             /home/runner/work/Stock-Tag-Explorer-01/Stock-Tag-Explorer-01/*.log
           retention-days: 7
