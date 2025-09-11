@@ -63,6 +63,11 @@ jobs:
           echo "🕐 Corresponding ET time: approximately $(date -d '-4 hours' '+%H:%M on %Y-%m-%d') (may vary with DST)"
       
       - name: Execute ETL Action
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          API_SECRET: ${{ secrets.API_SECRET }}
+          VERCEL_DOMAIN: ${{ secrets.VERCEL_DOMAIN }}
+          VERCEL_URL: ${{ secrets.VERCEL_URL }}
         run: |
           action="${{ steps.determine-action.outputs.action }}"
           
@@ -82,10 +87,10 @@ jobs:
           
           # 调用相应的ETL API端点
           # 构建API URL - 支持多种域名配置
-          if [ -n "${{ secrets.VERCEL_DOMAIN }}" ]; then
-            api_url="https://${{ secrets.VERCEL_DOMAIN }}/api/etl/$endpoint"
-          elif [ -n "${{ secrets.VERCEL_URL }}" ]; then
-            api_url="${{ secrets.VERCEL_URL }}/api/etl/$endpoint"
+          if [ -n "$VERCEL_DOMAIN" ]; then
+            api_url="https://$VERCEL_DOMAIN/api/etl/$endpoint"
+          elif [ -n "$VERCEL_URL" ]; then
+            api_url="$VERCEL_URL/api/etl/$endpoint"
           else
             echo "❌ Error: Neither VERCEL_DOMAIN nor VERCEL_URL is configured in secrets"
             exit 1
@@ -93,23 +98,21 @@ jobs:
           
           echo "🌐 Calling API: $api_url"
           
-          # 构建授权头 - 支持多种认证方式
-          auth_header=""
-          if [ -n "${{ secrets.CRON_SECRET }}" ]; then
-            auth_header="-H 'Authorization: Bearer ${{ secrets.CRON_SECRET }}'"
-          elif [ -n "${{ secrets.API_SECRET }}" ]; then
-            auth_header="-H 'Authorization: Bearer ${{ secrets.API_SECRET }}'"
-          else
-            echo "⚠️ Warning: No authentication secret found, proceeding without auth"
-          fi
-          
-          # 执行API调用
-          if [ -n "$auth_header" ]; then
+          # 执行API调用 - 使用正确的环境变量引用
+          if [ -n "$CRON_SECRET" ]; then
+            echo "🔐 Using CRON_SECRET for authentication"
             response=$(curl -s -w "\n%{http_code}" -X POST \
               -H "Content-Type: application/json" \
-              $auth_header \
+              -H "Authorization: Bearer $CRON_SECRET" \
+              "$api_url")
+          elif [ -n "$API_SECRET" ]; then
+            echo "🔐 Using API_SECRET for authentication"
+            response=$(curl -s -w "\n%{http_code}" -X POST \
+              -H "Content-Type: application/json" \
+              -H "Authorization: Bearer $API_SECRET" \
               "$api_url")
           else
+            echo "⚠️ Warning: No authentication secret found, proceeding without auth"
             response=$(curl -s -w "\n%{http_code}" -X POST \
               -H "Content-Type: application/json" \
               "$api_url")
