@@ -75,7 +75,7 @@ async function initializeDailyETLQueue(client) {
     
     // 获取所有中概股并初始化任务队列
     const { rows: stocks } = await client.query(`
-        SELECT ticker FROM chinese_stocks 
+        SELECT ticker FROM stocks 
         ORDER BY ticker
     `);
     
@@ -234,7 +234,7 @@ async function processStock(client, ticker, finnhubApiKey, polygonApiKey) {
         
         // 更新数据库
         await client.query(`
-            UPDATE chinese_stocks 
+            UPDATE stocks 
             SET ${setClause}
             WHERE ticker = $1
         `, values);
