@@ -1,5 +1,26 @@
 // public/js/trending.js
 
+// 获取当前市场类型
+function getCurrentMarket() {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get('market') || 'sp500'; // 默认为标普500
+}
+
+// 更新次级导航栏的激活状态
+function updateMarketNavigation() {
+  const currentMarket = getCurrentMarket();
+  const marketTabs = document.querySelectorAll('.market-tab');
+  
+  marketTabs.forEach(tab => {
+    const tabMarket = tab.getAttribute('data-market');
+    if (tabMarket === currentMarket) {
+      tab.classList.add('active');
+    } else {
+      tab.classList.remove('active');
+    }
+  });
+}
+
 // 定义我们需要加载的所有榜单
 const TRENDING_LISTS_CONFIG = [
   { id: 'top-gainers-list', type: 'top_gainers' },
@@ -183,7 +204,8 @@ async function loadAndRenderList(listConfig) {
   listElement.innerHTML = '<li class="loading">正在加载数据...</li>';
 
   try {
-    const response = await fetch(`/api/trending?type=${listConfig.type}`);
+    const currentMarket = getCurrentMarket();
+    const response = await fetch(`/api/trending?type=${listConfig.type}&market=${currentMarket}`);
     if (!response.ok) throw new Error(`API 请求失败，状态码: ${response.status}`);
     let data = await response.json();
 
@@ -192,8 +214,16 @@ async function loadAndRenderList(listConfig) {
       throw new Error(data.message || data.error);
     }
 
+    // 处理包装格式的响应 {success: true, data: []}
+    let stocksArray = data;
+    if (data.success && Array.isArray(data.data)) {
+      stocksArray = data.data;
+    } else if (!Array.isArray(data)) {
+      throw new Error('API返回的数据格式不正确');
+    }
+
     // 确保数据类型正确，进行类型转换
-    let stocks = data.map(stock => ({
+    let stocks = stocksArray.map(stock => ({
       ...stock,
       last_price: Number(stock.last_price) || 0,
       change_percent: Number(stock.change_percent) || 0,
@@ -220,12 +250,26 @@ async function loadAndRenderList(listConfig) {
  */
 async function handleMoreButtonClick(type) {
   try {
-    const response = await fetch(`/api/trending?type=${type}`);
+    const currentMarket = getCurrentMarket();
+    const response = await fetch(`/api/trending?type=${type}&market=${currentMarket}`);
     if (!response.ok) throw new Error(`API 请求失败，状态码: ${response.status}`);
-    let stocks = await response.json();
+    let data = await response.json();
+
+    // 检查是否是错误响应
+    if (data.error) {
+      throw new Error(data.message || data.error);
+    }
+
+    // 处理包装格式的响应 {success: true, data: []}
+    let stocksArray = data;
+    if (data.success && Array.isArray(data.data)) {
+      stocksArray = data.data;
+    } else if (!Array.isArray(data)) {
+      throw new Error('API返回的数据格式不正确');
+    }
 
     // 确保数据类型正确
-    stocks = stocks.map(stock => ({
+    let stocks = stocksArray.map(stock => ({
       ...stock,
       last_price: Number(stock.last_price) || 0,
       change_percent: Number(stock.change_percent) || 0,
@@ -300,11 +344,24 @@ function getRankingTitle(type) {
 function formatLargeNumber(value, isCurrency = false) {
   const num = parseFloat(value);
   if (isNaN(num)) return '--';
-  const prefix = isCurrency ? '$' : '';
-  if (num >= 1e12) return `${prefix}${(num / 1e12).toFixed(2)}万亿`; // 万亿
-  if (num >= 1e9) return `${prefix}${(num / 1e9).toFixed(2)}B`;  // 十亿
-  if (num >= 1e6) return `${prefix}${(num / 1e6).toFixed(1)}M`;  // 百万
-  return `${prefix}${num.toLocaleString()}`; // 普通数字加千位分隔符
+  
+  // 根据当前市场类型决定格式
+  const currentMarket = getCurrentMarket();
+  const prefix = isCurrency ? (currentMarket === 'chinese_stocks' ? '¥' : '$') : '';
+  
+  if (currentMarket === 'chinese_stocks') {
+    // 中概股使用中文数字格式
+    if (num >= 1e12) return `${prefix}${(num / 1e12).toFixed(2)}万亿`; // 万亿
+    if (num >= 1e8) return `${prefix}${(num / 1e8).toFixed(2)}亿`;   // 亿
+    if (num >= 1e4) return `${prefix}${(num / 1e4).toFixed(1)}万`;   // 万
+    return `${prefix}${num.toLocaleString('zh-CN')}`; // 中文千位分隔符
+  } else {
+    // 标普500使用英文数字格式
+    if (num >= 1e12) return `${prefix}${(num / 1e12).toFixed(2)}T`; // 万亿
+    if (num >= 1e9) return `${prefix}${(num / 1e9).toFixed(2)}B`;  // 十亿
+    if (num >= 1e6) return `${prefix}${(num / 1e6).toFixed(1)}M`;  // 百万
+    return `${prefix}${num.toLocaleString('en-US')}`; // 英文千位分隔符
+  }
 }
 
 // 辅助函数：格式化成交额显示（保持向后兼容）
@@ -315,7 +372,8 @@ function formatTurnover(value) {
 // 新函数：获取并渲染市场汇总数据
 async function loadAndRenderSummaryData() {
   try {
-    const response = await fetch('/api/market-summary');
+    const currentMarket = getCurrentMarket();
+    const response = await fetch(`/api/market-summary?market=${currentMarket}`);
     if (!response.ok) throw new Error('API request failed');
     const data = await response.json();
 
@@ -336,6 +394,9 @@ async function loadAndRenderSummaryData() {
 // 当整个页面加载完成后，开始执行我们的脚本
 document.addEventListener('DOMContentLoaded', () => {
   console.log('📈 页面加载完成，开始获取所有趋势榜单数据...');
+  
+  // 更新市场导航状态
+  updateMarketNavigation();
   
   // 并发地加载所有榜单和汇总数据
   loadAndRenderSummaryData(); // <-- 新增的调用

@@ -1,11 +1,24 @@
 // 趋势榜单API - 支持多种榜单类型查询
 const { Pool } = require('pg');
 
-// 数据库连接池
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || process.env.NEON_DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+// 根据市场类型获取数据库连接字符串
+function getDatabaseUrl(market) {
+  switch (market) {
+    case 'chinese_stocks':
+      return process.env.CHINESE_STOCKS_DATABASE_URL;
+    case 'sp500':
+    default:
+      return process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
+  }
+}
+
+// 创建数据库连接池
+function createPool(market) {
+  return new Pool({
+    connectionString: getDatabaseUrl(market),
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  });
+}
 
 module.exports = async function handler(req, res) {
   // CORS已在server.js中处理
@@ -14,12 +27,15 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { type } = req.query;
+  const { type, market = 'sp500' } = req.query;
 
   if (!type) {
     return res.status(400).json({ error: 'type parameter is required' });
   }
 
+  // 根据市场类型创建对应的数据库连接池
+  const pool = createPool(market);
+  
   let client;
   try {
     client = await pool.connect();
