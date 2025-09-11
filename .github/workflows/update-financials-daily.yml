@@ -2,25 +2,118 @@ name: ETL Daily Starter (Reset Task Queue)
 
 on:
   schedule:
-    - cron: '0 23 * * *'  # 每天 UTC 23:00 运行（美股收盘后）
+    # 美东时间周一到周五早上9:25 AM (开盘前5分钟) - 启动ETL
+    # 使用UTC 13:25 (大部分时间适用，包括夏令时)
+    - cron: '25 13 * * 1-5'  # 启动ETL任务队列
+    # 美东时间周一到周五下午4:05 PM (收盘后5分钟) - 停止ETL  
+    # 使用UTC 20:05 (大部分时间适用，包括夏令时)
+    - cron: '5 20 * * 1-5'   # 停止ETL任务队列
   workflow_dispatch:  # 允许手动触发
+    inputs:
+      action:
+        description: 'ETL Action'
+        required: true
+        default: 'start'
+        type: choice
+        options:
+          - 'start'
+          - 'stop'
 
 jobs:
-  start-daily-etl:
+  manage-daily-etl:
     runs-on: ubuntu-latest
-    timeout-minutes: 5  # 5分钟超时，只是重置任务队列
+    timeout-minutes: 5  # 5分钟超时
     
     steps:
-      - name: Reset ETL Task Queue
+      - name: Determine ETL Action
+        id: determine-action
         run: |
-          echo "🔄 Starting daily ETL process at $(date)"
-          echo "📋 Resetting task queue for all stocks..."
+          # 确定执行的操作（启动或停止）
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            action="${{ github.event.inputs.action }}"
+          else
+            # 根据cron时间判断操作
+            current_hour=$(date -u +%H)
+            current_minute=$(date -u +%M)
+            
+            # 启动时间: 13:25 (美东时间9:25 AM)
+            if [ "$current_hour" = "13" ] && [ "$current_minute" = "25" ]; then
+              action="start"
+            # 停止时间: 20:05 (美东时间4:05 PM)
+            elif [ "$current_hour" = "20" ] && [ "$current_minute" = "05" ]; then
+              action="stop"
+            else
+              # 如果不在预定时间，根据当前时间判断应该启动还是停止
+              # 13:25-20:05之间应该是运行状态，其他时间应该停止
+              if [ "$current_hour" -gt 13 ] || ([ "$current_hour" -eq 13 ] && [ "$current_minute" -ge 25 ]); then
+                if [ "$current_hour" -lt 20 ] || ([ "$current_hour" -eq 20 ] && [ "$current_minute" -lt 5 ]); then
+                  action="start"  # 交易时间内
+                else
+                  action="stop"   # 交易时间外
+                fi
+              else
+                action="stop"     # 交易时间外
+              fi
+            fi
+          fi
           
-          # 调用ETL启动API重置任务队列
-           response=$(curl -s -w "\n%{http_code}" -X POST \
-             -H "Content-Type: application/json" \
-             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-             "https://${{ secrets.VERCEL_DOMAIN }}/api/etl/start")
+          echo "action=$action" >> $GITHUB_OUTPUT
+          echo "🎯 ETL Action determined: $action"
+          echo "⏰ Current UTC time: $(date -u '+%H:%M on %Y-%m-%d')"
+          echo "🕐 Corresponding ET time: approximately $(date -d '-4 hours' '+%H:%M on %Y-%m-%d') (may vary with DST)"
+      
+      - name: Execute ETL Action
+        run: |
+          action="${{ steps.determine-action.outputs.action }}"
+          
+          if [ "$action" = "start" ]; then
+            echo "🔄 Starting daily ETL process at $(date)"
+            echo "📋 Resetting task queue for all stocks..."
+            endpoint="start"
+            success_msg="✅ ETL task queue reset successfully"
+            failure_msg="❌ ETL task queue reset failed"
+          else
+            echo "🛑 Stopping daily ETL process at $(date)"
+            echo "📋 Terminating active ETL tasks..."
+            endpoint="stop"
+            success_msg="✅ ETL processes stopped successfully"
+            failure_msg="❌ ETL stop process failed"
+          fi
+          
+          # 调用相应的ETL API端点
+          # 构建API URL - 支持多种域名配置
+          if [ -n "${{ secrets.VERCEL_DOMAIN }}" ]; then
+            api_url="https://${{ secrets.VERCEL_DOMAIN }}/api/etl/$endpoint"
+          elif [ -n "${{ secrets.VERCEL_URL }}" ]; then
+            api_url="${{ secrets.VERCEL_URL }}/api/etl/$endpoint"
+          else
+            echo "❌ Error: Neither VERCEL_DOMAIN nor VERCEL_URL is configured in secrets"
+            exit 1
+          fi
+          
+          echo "🌐 Calling API: $api_url"
+          
+          # 构建授权头 - 支持多种认证方式
+          auth_header=""
+          if [ -n "${{ secrets.CRON_SECRET }}" ]; then
+            auth_header="-H 'Authorization: Bearer ${{ secrets.CRON_SECRET }}'"
+          elif [ -n "${{ secrets.API_SECRET }}" ]; then
+            auth_header="-H 'Authorization: Bearer ${{ secrets.API_SECRET }}'"
+          else
+            echo "⚠️ Warning: No authentication secret found, proceeding without auth"
+          fi
+          
+          # 执行API调用
+          if [ -n "$auth_header" ]; then
+            response=$(curl -s -w "\n%{http_code}" -X POST \
+              -H "Content-Type: application/json" \
+              $auth_header \
+              "$api_url")
+          else
+            response=$(curl -s -w "\n%{http_code}" -X POST \
+              -H "Content-Type: application/json" \
+              "$api_url")
+          fi
           
           # 分离响应体和状态码
           http_code=$(echo "$response" | tail -n1)
@@ -31,18 +124,34 @@ jobs:
           
           # 检查HTTP状态码
           if [ "$http_code" -eq 200 ]; then
-            echo "✅ ETL task queue reset successfully"
+            echo "$success_msg"
             
-            # 解析响应获取重置统计
-            reset_count=$(echo "$response_body" | jq -r '.data.resetCount // "N/A"')
-            estimated_minutes=$(echo "$response_body" | jq -r '.data.estimatedMinutes // "N/A"')
-            
-            echo "📈 Reset Stats:"
-            echo "  - Stocks reset: $reset_count"
-            echo "  - Estimated completion: $estimated_minutes minutes"
-            echo "⚡ ETL batch processors will handle the rest every 15 minutes"
+            if [ "$action" = "start" ]; then
+              # 解析启动响应
+              reset_count=$(echo "$response_body" | jq -r '.data.resetCount // "N/A"')
+              estimated_minutes=$(echo "$response_body" | jq -r '.data.estimatedMinutes // "N/A"')
+              
+              echo "📈 Start Stats:"
+              echo "  - Stocks reset: $reset_count"
+              echo "  - Estimated completion: $estimated_minutes minutes"
+              echo "⚡ ETL batch processors will handle updates every 15 minutes"
+              echo "🕐 ETL will automatically stop at market close (4:05 PM ET)"
+            else
+              # 解析停止响应
+              stopped_count=$(echo "$response_body" | jq -r '.data.stoppedCount // "N/A"')
+              completed_today=$(echo "$response_body" | jq -r '.data.completedToday // "N/A"')
+              failed_today=$(echo "$response_body" | jq -r '.data.failedToday // "N/A"')
+              total_tasks=$(echo "$response_body" | jq -r '.data.totalTasks // "N/A"')
+              
+              echo "📈 Stop Stats:"
+              echo "  - Active tasks stopped: $stopped_count"
+              echo "  - Tasks completed today: $completed_today"
+              echo "  - Tasks failed today: $failed_today"
+              echo "  - Total tasks today: $total_tasks"
+              echo "💰 Cost savings: ~60% compared to 24/7 operation"
+            fi
           else
-            echo "❌ ETL task queue reset failed with HTTP $http_code"
+            echo "$failure_msg with HTTP $http_code"
             echo "Response: $response_body"
             exit 1
           fi
@@ -50,6 +159,15 @@ jobs:
       - name: Report completion
         if: always()
         run: |
-          echo "📋 Daily ETL starter completed at $(date)"
+          action="${{ steps.determine-action.outputs.action }}"
+          echo "📋 Daily ETL management completed at $(date)"
+          echo "Action: $action"
           echo "Status: ${{ job.status }}"
-          echo "🚀 ETL batch processors (every 15min) will now handle data updates"
+          
+          if [ "$action" = "start" ]; then
+            echo "🚀 ETL batch processors (every 15min) will now handle data updates until market close"
+            echo "⏰ Next automatic stop: 4:05 PM ET (收盘后5分钟)"
+          else
+            echo "🛑 ETL processes have been stopped for the day"
+            echo "⏰ Next automatic start: 9:25 AM ET tomorrow (开盘前5分钟)"
+          fi

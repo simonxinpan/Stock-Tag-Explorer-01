@@ -48,17 +48,21 @@ class HeatmapRenderer {
         this.tooltip.className = 'heatmap-tooltip';
         this.tooltip.style.cssText = `
             position: absolute;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 12px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.95));
+            color: #1a202c;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             pointer-events: none;
             z-index: 1000;
             opacity: 0;
-            transition: opacity 0.2s;
-            max-width: 200px;
-            word-wrap: break-word;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(8px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            min-width: 180px;
         `;
         document.body.appendChild(this.tooltip);
     }
@@ -67,32 +71,50 @@ class HeatmapRenderer {
         const style = document.createElement('style');
         style.textContent = `
             .heatmap-cell {
-                stroke: #fff;
-                stroke-width: 1;
+                stroke: rgba(255, 255, 255, 0.8);
+                stroke-width: 0.5;
                 cursor: pointer;
-                transition: all 0.2s ease;
+                transition: all 0.3s ease;
+                filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
             }
             
             .heatmap-cell:hover {
                 stroke-width: 2;
-                stroke: #333;
+                stroke: rgba(0, 0, 0, 0.6);
+                filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.2));
             }
             
             .heatmap-label {
-                font-family: Arial, sans-serif;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 font-size: 11px;
-                fill: #333;
+                fill: #fff;
                 text-anchor: middle;
                 dominant-baseline: central;
                 pointer-events: none;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+                font-weight: 500;
             }
             
             .heatmap-group {
-                transition: transform 0.2s ease;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             }
             
             .heatmap-group:hover {
-                transform: scale(1.02);
+                transform: scale(1.05);
+                z-index: 10;
+            }
+            
+            .stock-heatmap-container {
+                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+                border-radius: 12px;
+                padding: 16px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            }
+            
+            .heatmap-canvas {
+                background: #fff;
+                border-radius: 8px;
+                box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
             }
         `;
         document.head.appendChild(style);
@@ -130,28 +152,124 @@ class HeatmapRenderer {
         const availableWidth = width - 2 * padding;
         const availableHeight = height - 2 * padding;
         
-        // 计算网格尺寸
-        const aspectRatio = availableWidth / availableHeight;
-        const totalArea = availableWidth * availableHeight;
+        if (!data || data.length === 0) {
+            return [];
+        }
+        
+        // 使用Treemap算法进行更紧凑的布局
+        return this.calculateTreemapLayout(data, availableWidth, availableHeight, padding);
+    }
+    
+    calculateTreemapLayout(data, width, height, padding) {
+        // 计算总权重（使用市值或交易量作为权重）
+        const totalWeight = data.reduce((sum, item) => {
+            const weight = item.market_cap || item.volume || item.size || 1;
+            return sum + Math.abs(weight);
+        }, 0);
+        
+        if (totalWeight === 0) {
+            return this.fallbackGridLayout(data, width, height, padding);
+        }
+        
+        // 为每个项目计算相对面积
+        const items = data.map((item, index) => {
+            const weight = Math.abs(item.market_cap || item.volume || item.size || 1);
+            const area = (weight / totalWeight) * width * height;
+            return {
+                ...item,
+                weight,
+                area,
+                index
+            };
+        });
+        
+        // 按权重排序（大的在前）
+        items.sort((a, b) => b.weight - a.weight);
+        
+        // 递归分割布局
+        const layout = [];
+        this.squarify(items, [], width, height, padding, padding, layout);
+        
+        return layout;
+    }
+    
+    squarify(items, row, w, h, x, y, layout) {
+        if (items.length === 0) {
+            this.layoutRow(row, w, h, x, y, layout);
+            return;
+        }
+        
+        if (row.length === 0) {
+            row.push(items.shift());
+            this.squarify(items, row, w, h, x, y, layout);
+            return;
+        }
+        
+        const item = items[0];
+        const newRow = [...row, item];
+        
+        if (this.worst(row, w, h) >= this.worst(newRow, w, h)) {
+            row.push(items.shift());
+            this.squarify(items, row, w, h, x, y, layout);
+        } else {
+            const rowArea = row.reduce((sum, item) => sum + item.area, 0);
+            const totalArea = w * h;
+            
+            if (w >= h) {
+                const rowWidth = rowArea / h;
+                this.layoutRow(row, rowWidth, h, x, y, layout);
+                this.squarify(items, [], w - rowWidth, h, x + rowWidth, y, layout);
+            } else {
+                const rowHeight = rowArea / w;
+                this.layoutRow(row, w, rowHeight, x, y, layout);
+                this.squarify(items, [], w, h - rowHeight, x, y + rowHeight, layout);
+            }
+        }
+    }
+    
+    layoutRow(row, w, h, x, y, layout) {
+        const totalArea = row.reduce((sum, item) => sum + item.area, 0);
+        let currentY = y;
+        
+        row.forEach(item => {
+            const itemHeight = (item.area / totalArea) * h;
+            layout.push({
+                ...item,
+                x: x,
+                y: currentY,
+                width: w - 2, // 留出边距
+                height: itemHeight - 2,
+            });
+            currentY += itemHeight;
+        });
+    }
+    
+    worst(row, w, h) {
+        if (row.length === 0) return Infinity;
+        
+        const totalArea = row.reduce((sum, item) => sum + item.area, 0);
+        const minArea = Math.min(...row.map(item => item.area));
+        const maxArea = Math.max(...row.map(item => item.area));
+        
+        const s2 = totalArea * totalArea;
+        const r2 = Math.min(w, h) * Math.min(w, h);
+        
+        return Math.max(
+            (s2 * maxArea) / (r2 * minArea * minArea),
+            (r2 * minArea * minArea) / (s2 * maxArea)
+        );
+    }
+    
+    fallbackGridLayout(data, width, height, padding) {
+        const aspectRatio = width / height;
         const cellCount = data.length;
         
-        // 计算最佳网格布局
         let cols = Math.ceil(Math.sqrt(cellCount * aspectRatio));
         let rows = Math.ceil(cellCount / cols);
         
-        // 调整以更好地利用空间
-        while (cols * rows < cellCount) {
-            if (cols * availableHeight / rows < availableWidth) {
-                cols++;
-            } else {
-                rows++;
-            }
-        }
+        const cellWidth = width / cols;
+        const cellHeight = height / rows;
         
-        const cellWidth = availableWidth / cols;
-        const cellHeight = availableHeight / rows;
-        
-        // 为每个数据项计算位置和大小
         return data.map((item, index) => {
             const col = index % cols;
             const row = Math.floor(index / cols);
@@ -160,7 +278,7 @@ class HeatmapRenderer {
                 ...item,
                 x: padding + col * cellWidth,
                 y: padding + row * cellHeight,
-                width: cellWidth - 2, // 留出边距
+                width: cellWidth - 2,
                 height: cellHeight - 2,
                 index: index
             };
@@ -172,7 +290,7 @@ class HeatmapRenderer {
         const values = data.map(d => this.getValue(d, metric)).filter(v => !isNaN(v));
         
         if (values.length === 0) {
-            this.scales.color = () => '#ccc';
+            this.scales.color = () => '#e0e0e0';
             this.scales.size = () => 1;
             return;
         }
@@ -181,36 +299,44 @@ class HeatmapRenderer {
         const maxValue = Math.max(...values);
         const absMax = Math.max(Math.abs(minValue), Math.abs(maxValue));
         
-        // 颜色比例尺 - 简化为绿红配色方案
+        // 现代化颜色映射 - 使用HSL色彩空间实现平滑渐变
         this.scales.color = (value) => {
-            if (isNaN(value)) return '#e0e0e0'; // 灰色
+            if (isNaN(value)) return '#f5f5f5'; // 中性灰
             
-            const normalized = value / absMax;
+            const normalized = Math.max(-1, Math.min(1, value / absMax));
             
-            // 上涨 - 绿色系
-            if (normalized > 0.6) return '#1b5e20'; // 深绿
-            if (normalized > 0.3) return '#2e7d32'; // 绿色
-            if (normalized > 0.1) return '#4caf50'; // 浅绿
-            if (normalized > 0.01) return '#81c784'; // 淡绿
+            if (Math.abs(normalized) < 0.005) {
+                // 接近零值 - 中性色
+                return '#e8eaf6';
+            }
             
-            // 平盘 - 灰色
-            if (normalized >= -0.01) return '#9e9e9e'; // 灰色
-            
-            // 下跌 - 红色系
-            if (normalized > -0.1) return '#ef5350'; // 淡红
-            if (normalized > -0.3) return '#f44336'; // 红色
-            if (normalized > -0.6) return '#d32f2f'; // 深红
-            return '#b71c1c'; // 极深红
+            if (normalized > 0) {
+                // 正值 - 绿色渐变 (120° hue)
+                const intensity = Math.pow(normalized, 0.7); // 使用幂函数增强对比
+                const lightness = Math.max(25, 85 - intensity * 60); // 25% - 85%
+                const saturation = Math.min(90, 40 + intensity * 50); // 40% - 90%
+                return `hsl(120, ${saturation}%, ${lightness}%)`;
+            } else {
+                // 负值 - 红色渐变 (0° hue)
+                const intensity = Math.pow(Math.abs(normalized), 0.7);
+                const lightness = Math.max(25, 85 - intensity * 60); // 25% - 85%
+                const saturation = Math.min(90, 40 + intensity * 50); // 40% - 90%
+                return `hsl(0, ${saturation}%, ${lightness}%)`;
+            }
         };
         
-        // 大小比例尺（基于市值或成交量）
+        // 优化大小比例尺
         const sizeValues = data.map(d => d.market_cap || d.volume || d.size || 1);
         const minSize = Math.min(...sizeValues);
         const maxSize = Math.max(...sizeValues);
         
         this.scales.size = (value) => {
             if (isNaN(value) || maxSize === minSize) return 1;
-            return 0.5 + 0.5 * (value - minSize) / (maxSize - minSize);
+            // 使用对数缩放避免极端差异
+            const logMin = Math.log(minSize + 1);
+            const logMax = Math.log(maxSize + 1);
+            const logValue = Math.log(value + 1);
+            return 0.3 + 0.7 * (logValue - logMin) / (logMax - logMin);
         };
     }
     
@@ -222,41 +348,59 @@ class HeatmapRenderer {
             // 创建矩形
             const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
             const value = this.getValue(item, metric);
-            const sizeScale = this.scales.size(item.market_cap || item.volume || item.size || 1);
             
-            // 计算实际大小
-            const actualWidth = item.width * sizeScale;
-            const actualHeight = item.height * sizeScale;
-            const offsetX = (item.width - actualWidth) / 2;
-            const offsetY = (item.height - actualHeight) / 2;
-            
-            rect.setAttribute('x', item.x + offsetX);
-            rect.setAttribute('y', item.y + offsetY);
-            rect.setAttribute('width', actualWidth);
-            rect.setAttribute('height', actualHeight);
+            // 使用完整的单元格大小，不再缩放
+            rect.setAttribute('x', item.x);
+            rect.setAttribute('y', item.y);
+            rect.setAttribute('width', item.width);
+            rect.setAttribute('height', item.height);
             rect.setAttribute('fill', this.scales.color(value));
             rect.setAttribute('class', 'heatmap-cell');
             rect.setAttribute('data-index', index);
+            rect.setAttribute('rx', '4'); // 添加圆角
+            rect.setAttribute('ry', '4');
             
             group.appendChild(rect);
             
-            // 添加标签
-            if (this.options.showLabels && actualWidth > 40 && actualHeight > 20) {
-                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text.setAttribute('x', item.x + item.width / 2);
-                text.setAttribute('y', item.y + item.height / 2 - 5);
-                text.setAttribute('class', 'heatmap-label');
-                text.textContent = item.symbol || item.name || '';
+            // 添加标签 - 优化显示逻辑
+            if (this.options.showLabels) {
+                const minDimension = Math.min(item.width, item.height);
+                const centerX = item.x + item.width / 2;
+                const centerY = item.y + item.height / 2;
                 
-                const valueText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                valueText.setAttribute('x', item.x + item.width / 2);
-                valueText.setAttribute('y', item.y + item.height / 2 + 8);
-                valueText.setAttribute('class', 'heatmap-label');
-                valueText.style.fontSize = '10px';
-                valueText.textContent = this.formatValue(value, metric);
-                
-                group.appendChild(text);
-                group.appendChild(valueText);
+                // 根据单元格大小调整标签显示
+                if (minDimension > 60) {
+                    // 大单元格：显示股票代码和数值
+                    const symbolText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    symbolText.setAttribute('x', centerX);
+                    symbolText.setAttribute('y', centerY - 8);
+                    symbolText.setAttribute('class', 'heatmap-label');
+                    symbolText.style.fontSize = '12px';
+                    symbolText.style.fontWeight = 'bold';
+                    symbolText.textContent = item.symbol || item.name || '';
+                    
+                    const valueText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    valueText.setAttribute('x', centerX);
+                    valueText.setAttribute('y', centerY + 8);
+                    valueText.setAttribute('class', 'heatmap-label');
+                    valueText.style.fontSize = '10px';
+                    valueText.textContent = this.formatValue(value, metric);
+                    
+                    group.appendChild(symbolText);
+                    group.appendChild(valueText);
+                } else if (minDimension > 30) {
+                    // 中等单元格：只显示股票代码
+                    const symbolText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    symbolText.setAttribute('x', centerX);
+                    symbolText.setAttribute('y', centerY);
+                    symbolText.setAttribute('class', 'heatmap-label');
+                    symbolText.style.fontSize = '10px';
+                    symbolText.style.fontWeight = 'bold';
+                    symbolText.textContent = item.symbol || '';
+                    
+                    group.appendChild(symbolText);
+                }
+                // 小单元格：不显示标签，避免拥挤
             }
             
             // 添加交互事件
@@ -305,24 +449,33 @@ class HeatmapRenderer {
         if (!this.tooltip) return;
         
         const value = this.getValue(data, this.metric);
+        const changeColor = value >= 0 ? '#10b981' : '#ef4444';
+        const changeIcon = value >= 0 ? '↗' : '↘';
         
         this.tooltip.innerHTML = `
-            <div style="font-weight: bold; margin-bottom: 4px;">
-                ${data.name || data.symbol || '未知'}
+            <div style="font-weight: 600; margin-bottom: 8px; font-size: 14px; color: #111827;">
+                ${data.name || data.symbol || '未知股票'}
             </div>
-            <div>${this.getMetricDisplayName(this.metric)}: ${this.formatValue(value, this.metric)}</div>
-            ${data.market_cap ? `<div>市值: ${this.formatMarketCap(data.market_cap)}</div>` : ''}
-            ${data.volume ? `<div>成交量: ${this.formatNumber(data.volume)}</div>` : ''}
-            ${data.industry ? `<div>行业: ${data.industry}</div>` : ''}
+            <div style="display: flex; align-items: center; margin-bottom: 6px;">
+                <span style="color: ${changeColor}; font-weight: 600; margin-right: 4px;">${changeIcon}</span>
+                <span style="color: ${changeColor}; font-weight: 600;">
+                    ${this.getMetricDisplayName(this.metric)}: ${this.formatValue(value, this.metric)}
+                </span>
+            </div>
+            ${data.market_cap ? `<div style="color: #6b7280; font-size: 12px; margin-bottom: 3px;">💰 市值: ${this.formatMarketCap(data.market_cap)}</div>` : ''}
+            ${data.volume ? `<div style="color: #6b7280; font-size: 12px; margin-bottom: 3px;">📊 成交量: ${this.formatNumber(data.volume)}</div>` : ''}
+            ${data.industry ? `<div style="color: #6b7280; font-size: 12px;">🏢 ${data.industry}</div>` : ''}
         `;
         
         this.updateTooltipPosition(event);
         this.tooltip.style.opacity = '1';
+        this.tooltip.style.transform = 'translateY(0)';
     }
     
     hideTooltip() {
         if (this.tooltip) {
             this.tooltip.style.opacity = '0';
+            this.tooltip.style.transform = 'translateY(8px)';
         }
     }
     

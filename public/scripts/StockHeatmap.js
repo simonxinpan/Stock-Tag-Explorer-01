@@ -559,8 +559,8 @@ class StockHeatmap {
     handleCellClick(data, index) {
         // 默认点击处理逻辑
         if (data.symbol) {
-            // 跳转到股票详情页
-            window.open(`/stock/${data.symbol}`, '_blank');
+            // 跳转到生产服务器上的股票详情页
+            window.open(`https://stock-details-final.vercel.app/?symbol=${data.symbol}`, '_blank');
         } else if (data.tag) {
             // 跳转到标签详情页
             window.open(`/tag/${data.tag}`, '_blank');

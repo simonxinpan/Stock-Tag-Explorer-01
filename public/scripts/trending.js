@@ -129,7 +129,7 @@ class TrendingPage {
             <div class="stock-item" data-symbol="${stock.symbol}">
                 <div class="stock-rank">${index + 1}</div>
                 <div class="stock-info">
-                    <div class="stock-name">${stock.name}</div>
+                    <div class="stock-name">${stock.name_zh || stock.name}</div>
                     <div class="stock-symbol">${stock.symbol}</div>
                 </div>
                 <div class="stock-price">
