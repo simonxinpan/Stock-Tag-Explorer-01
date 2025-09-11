@@ -33,7 +33,7 @@ const pool = new Pool({
 });
 
 console.log(`🎯 Market Type: ${marketType}`);
-console.log(`🔗 Database: ${databaseUrl.split('@')[1]?.split('/')[1] || 'Unknown'}`);}]}}}
+console.log(`🔗 Database: ${databaseUrl.split('@')[1]?.split('/')[1] || 'Unknown'}`);
 
 // ETL任务队列状态
 const ETL_STATUS = {

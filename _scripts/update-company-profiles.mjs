@@ -29,7 +29,7 @@ const pool = new Pool({
 });
 
 console.log(`🎯 Market Type: ${marketType}`);
-console.log(`🔗 Database: ${databaseUrl.split('@')[1]?.split('/')[1] || 'Unknown'}`);}]}}}
+console.log(`🔗 Database: ${databaseUrl.split('@')[1]?.split('/')[1] || 'Unknown'}`);
 
 // 获取 Finnhub 公司资料
 async function getFinnhubProfile(symbol, apiKey) {

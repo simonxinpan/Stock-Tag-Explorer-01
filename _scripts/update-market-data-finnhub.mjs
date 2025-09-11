@@ -28,7 +28,7 @@ const pool = new Pool({
 });
 
 console.log(`🎯 Market Type: ${marketType}`);
-console.log(`🔗 Database: ${databaseUrl.split('@')[1]?.split('/')[1] || 'Unknown'}`);}]}}}
+console.log(`🔗 Database: ${databaseUrl.split('@')[1]?.split('/')[1] || 'Unknown'}`);
 
 // 延迟函数
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
