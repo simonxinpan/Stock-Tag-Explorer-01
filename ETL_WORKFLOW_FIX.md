@@ -39,16 +39,19 @@
 **根本原因**:
 - Vercel部署配置缺少API路由映射
 - API文件使用ES6模块格式，与Vercel运行时不兼容
+- 函数导出格式与Vercel API规范不匹配
 
 **修复措施**:
-- 📝 **更新vercel.json**: 添加API路由重写规则和函数配置
+- 📝 **更新vercel.json**: 添加API路由重写规则，移除不兼容的functions配置
 - 🔄 **模块格式转换**: 将ES6 import/export改为CommonJS require/module.exports
+- 🏗️ **API格式重构**: 采用同步handler函数包装异步逻辑，参考工作正常的tags.js格式
+- 🌐 **CORS头设置**: 添加标准跨域请求头支持
 - 🧪 **测试脚本**: 创建test-etl-api.js用于本地和部署后的API测试
 
 **修复文件**:
-- `vercel.json` - 添加functions和rewrites配置
-- `api/etl/start.js` - 转换为CommonJS格式
-- `api/etl/stop.js` - 转换为CommonJS格式
+- `vercel.json` - 路由配置优化
+- `api/etl/start.js` - 完整格式重构
+- `api/etl/stop.js` - 完整格式重构
 - `test-etl-api.js` - 新增API测试脚本
 
 ## 🚀 使用方法

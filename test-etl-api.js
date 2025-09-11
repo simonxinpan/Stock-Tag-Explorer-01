@@ -1,13 +1,20 @@
 const https = require('https');
 const http = require('http');
 
+// 测试配置
+const BASE_URL = 'http://localhost:3000'; // 本地测试
+// const BASE_URL = 'https://your-vercel-app.vercel.app'; // 生产环境测试
+
+// 测试认证token (如果需要)
+const AUTH_TOKEN = process.env.ETL_AUTH_TOKEN || 'your-test-token';
+
 // 测试ETL API端点
 async function testETLAPI() {
   const baseUrl = process.env.VERCEL_DOMAIN 
     ? `https://${process.env.VERCEL_DOMAIN}` 
-    : 'http://localhost:3000';
+    : BASE_URL;
   
-  const authToken = process.env.CRON_SECRET || 'test-token';
+  const authToken = AUTH_TOKEN;
   
   console.log('🧪 Testing ETL API endpoints...');
   console.log(`📍 Base URL: ${baseUrl}`);
