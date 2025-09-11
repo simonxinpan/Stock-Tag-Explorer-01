@@ -195,7 +195,7 @@ async function processStock(client, ticker, finnhubApiKey, polygonApiKey) {
         
         // 准备更新数据
         const updateData = {
-            current_price: quote.c,
+            last_price: quote.c,
             change: quote.d,
             change_percent: quote.dp,
             high: quote.h,
@@ -396,11 +396,11 @@ async function main() {
                 errorCount++;
             }
             
-            // API速率限制延迟（Polygon: 5次/分钟）
+            // API速率限制延迟（Polygon: 5次/分钟，Finnhub: 每只股票10秒间隔）
             if (POLYGON_API_KEY) {
                 await new Promise(resolve => setTimeout(resolve, 13000)); // 13秒延迟
             } else {
-                await new Promise(resolve => setTimeout(resolve, 1000)); // 1秒延迟
+                await new Promise(resolve => setTimeout(resolve, 10000)); // 10秒延迟
             }
         }
         
