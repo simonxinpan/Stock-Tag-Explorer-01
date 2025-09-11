@@ -2,10 +2,33 @@
 import { Pool } from 'pg';
 import 'dotenv/config';
 
+// 根据市场类型获取数据库连接字符串
+function getDatabaseUrl(marketType) {
+  switch (marketType) {
+    case 'chinese_stocks':
+      return process.env.CHINESE_STOCKS_DATABASE_URL;
+    case 'sp500':
+    default:
+      return process.env.NEON_DATABASE_URL || process.env.DATABASE_URL;
+  }
+}
+
+// 获取市场类型
+const marketType = process.env.MARKET_TYPE || 'sp500';
+const databaseUrl = getDatabaseUrl(marketType);
+
+if (!databaseUrl) {
+  console.error(`❌ Database URL not found for market type: ${marketType}`);
+  process.exit(1);
+}
+
 const pool = new Pool({ 
-    connectionString: process.env.NEON_DATABASE_URL || process.env.DATABASE_URL, 
+    connectionString: databaseUrl, 
     ssl: { rejectUnauthorized: false } 
 });
+
+console.log(`🎯 Market Type: ${marketType}`);
+console.log(`🔗 Database: ${databaseUrl.split('@')[1]?.split('/')[1] || 'Unknown'}`);}]}}}
 
 // 延迟函数
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));

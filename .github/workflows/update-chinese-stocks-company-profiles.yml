@@ -1,0 +1,38 @@
+name: Update Chinese Stocks Company Profiles (Weekly)
+
+on:
+  schedule:
+    - cron: '0 4 * * 0'  # 每周日凌晨4点执行（与标普500错开2小时）
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  update-chinese-stocks-profiles:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120  # 2小时超时
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run Chinese stocks company profiles update script
+        env:
+          CHINESE_STOCKS_DATABASE_URL: ${{ secrets.CHINESE_STOCKS_DATABASE_URL }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+          MARKET_TYPE: chinese_stocks
+        run: node _scripts/update-company-profiles.mjs
+        
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "Chinese stocks company profiles update failed!"
+          echo "Please check the logs and fix any issues."
