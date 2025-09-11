@@ -1,12 +1,4 @@
 {
-  "functions": {
-    "api/etl/start.js": {
-      "runtime": "nodejs18.x"
-    },
-    "api/etl/stop.js": {
-      "runtime": "nodejs18.x"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/etl/start",
