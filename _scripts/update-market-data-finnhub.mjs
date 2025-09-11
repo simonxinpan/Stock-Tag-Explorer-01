@@ -1,5 +1,6 @@
 // /_scripts/update-market-data-finnhub.mjs
 import { Pool } from 'pg';
+import fs from 'fs/promises';
 import 'dotenv/config';
 
 // 根据市场类型获取数据库连接字符串
@@ -171,6 +172,18 @@ async function getFinnhubMarketData(tickers, apiKey, client = null, pool = null)
 async function main() {
     console.log("===== Starting HIGH-FREQUENCY market data update job =====");
     
+    // --- 核心修改：智能"燃料选择"逻辑 ---
+    const marketType = process.env.MARKET_TYPE || 'sp500'; // 默认为标普500
+    let stockListFile;
+
+    console.log(`🎯 Market Type selected: ${marketType}`);
+
+    if (marketType === 'chinese_stocks') {
+        stockListFile = './china_stocks.json';
+    } else {
+        stockListFile = './sp500_stocks.json';
+    }
+    
     const { NEON_DATABASE_URL, DATABASE_URL, FINNHUB_API_KEY } = process.env;
     const dbUrl = NEON_DATABASE_URL || DATABASE_URL;
     
@@ -196,12 +209,11 @@ async function main() {
     try {
         client = await connectWithRetry(pool);
         
-        // 获取所有股票代码
-        const { rows: companies } = await client.query('SELECT ticker FROM stocks');
-        console.log(`📋 Found ${companies.length} stocks to update`);
-        
-        // 提取股票代码列表
-        const tickers = companies.map(company => company.ticker);
+        // --- 后续的所有代码，都将使用这个【动态加载】的 tickers 数组 ---
+        // 从对应的 JSON 文件中，加载正确的股票列表
+        const tickers = JSON.parse(await fs.readFile(stockListFile, 'utf-8'));
+        console.log(`📋 Loaded ${tickers.length} stocks to process from ${stockListFile}.`);
+        console.log(`🎯 Market Type: ${marketType} | Database: ${databaseUrl.split('@')[1]?.split('/')[1] || 'Unknown'}`);
         
         // 获取市场数据（逐一获取，传递数据库连接用于保活检查）
         console.log("🔄 Starting API data collection phase...");
