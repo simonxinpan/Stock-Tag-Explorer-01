@@ -10,9 +10,8 @@ const AUTH_TOKEN = process.env.ETL_AUTH_TOKEN || 'your-test-token';
 
 // 测试ETL API端点
 async function testETLAPI() {
-  const baseUrl = process.env.VERCEL_DOMAIN 
-    ? `https://${process.env.VERCEL_DOMAIN}` 
-    : BASE_URL;
+  // 使用生产环境URL进行测试
+  const baseUrl = 'https://stock-tag-explorer-01.vercel.app';
   
   const authToken = AUTH_TOKEN;
   
