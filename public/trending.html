@@ -74,6 +74,8 @@
         </div>
     </nav>
     
+
+    
     <div id="app">
         <!-- 头部 -->
         <header class="header">
@@ -84,10 +86,18 @@
                         <p class="subtitle">实时追踪市场热点 - 发现投资机会</p>
                     </div>
                     <div class="header-right">
-                        <nav class="nav-links">
-                            <a href="index.html" class="nav-link">标签广场</a>
-                            <a href="trending.html" class="nav-link active">趋势榜单</a>
-                        </nav>
+                        <div class="market-tabs">
+                            <a href="?market=sp500" class="market-tab active" data-market="sp500">
+                                <span class="market-flag">🇺🇸</span>
+                                <span class="market-name">标普500</span>
+                                <span class="market-count" id="sp500-count">502</span>
+                            </a>
+                            <a href="?market=chinese_stocks" class="market-tab" data-market="chinese_stocks">
+                                <span class="market-flag">🇨🇳</span>
+                                <span class="market-name">中概股</span>
+                                <span class="market-count" id="chinese-stocks-count">193</span>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -1,0 +1,76 @@
+name: Update Chinese Stocks Market Data (High Frequency)
+
+on:
+  schedule:
+    # 中概股交易时段运行（UTC 21:30-04:00，周一至周五）
+    # 对应美东时间 9:30 AM - 4:00 PM
+    - cron: '30,0 21-23 * * 1-5'  # 每30分钟执行一次，21:30-23:30
+    - cron: '30,0 0-3 * * 2-6'    # 每30分钟执行一次，00:30-03:30（次日）
+  workflow_dispatch:  # 允许手动触发
+    inputs:
+      debug:
+        description: 'Enable debug mode'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+# 防止并发执行，避免数据库冲突和API限制问题
+concurrency:
+  group: chinese-stocks-market-data-update
+  cancel-in-progress: false  # 不取消正在运行的任务，而是等待完成
+
+jobs:
+  update-chinese-stocks-market-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15  # 设置超时，防止任务卡死
+    
+    # 添加交易时段检查
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      (github.event_name == 'schedule')
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Health check - Verify API and DB connectivity
+        env:
+          CHINESE_STOCKS_DATABASE_URL: ${{ secrets.CHINESE_STOCKS_DATABASE_URL }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+        run: |
+          echo "🔍 Checking Finnhub API connectivity..."
+          curl -f "https://finnhub.io/api/v1/quote?symbol=BABA&token=$FINNHUB_API_KEY" || exit 1
+          echo "✅ Finnhub API is accessible"
+          
+      - name: Run Chinese stocks market data update (Finnhub)
+        env:
+          CHINESE_STOCKS_DATABASE_URL: ${{ secrets.CHINESE_STOCKS_DATABASE_URL }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          DEBUG: ${{ github.event.inputs.debug || 'false' }}
+          MARKET_TYPE: chinese_stocks
+        run: |
+          echo "🚀 Starting Chinese stocks Finnhub market data update..."
+          echo "📊 Expected runtime: 10-12 minutes for Chinese stocks"
+          echo "⚡ Rate limit: 1 request/second (60/minute)"
+          node _scripts/update-market-data-finnhub.mjs
+          
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chinese-stocks-market-update-logs
+          path: |
+            /home/runner/work/Stock-Tag-Explorer-01/Stock-Tag-Explorer-01/*.log
+          retention-days: 7

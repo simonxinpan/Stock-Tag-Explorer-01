@@ -5,11 +5,24 @@
 
 const { Pool } = require('pg');
 
-// 数据库连接配置
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL || process.env.NEON_DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+// 根据市场类型获取数据库连接字符串
+function getDatabaseUrl(market) {
+    switch (market) {
+        case 'chinese_stocks':
+            return process.env.CHINESE_STOCKS_DATABASE_URL;
+        case 'sp500':
+        default:
+            return process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
+    }
+}
+
+// 创建数据库连接池
+function createPool(market) {
+    return new Pool({
+        connectionString: getDatabaseUrl(market),
+        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    });
+}
 
 // 备用模拟数据
 const getMockStocksByTag = (tagName) => {
@@ -149,7 +162,7 @@ module.exports = async (req, res) => {
     }
     
     try {
-        const { tag, page = 1, limit = 20, sort = 'change-desc' } = req.query;
+        const { tag, page = 1, limit = 20, sort = 'change-desc', market = 'sp500' } = req.query;
         
         if (!tag) {
             res.status(400).json({
@@ -164,6 +177,9 @@ module.exports = async (req, res) => {
         const pageNum = parseInt(page);
         const limitNum = parseInt(limit);
         const offset = (pageNum - 1) * limitNum;
+        
+        // 根据市场类型创建对应的数据库连接池
+        const pool = createPool(market);
         
         console.log(`获取标签「${tagName}」的股票列表，页码: ${pageNum}, 限制: ${limitNum}`);
         

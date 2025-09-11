@@ -1,0 +1,114 @@
+name: Chinese Stocks ETL Daily Starter (Reset Task Queue)
+
+on:
+  schedule:
+    # 中概股交易时间：美东时间周一到周五早上9:25 AM (开盘前5分钟) - 启动ETL
+    # 使用UTC 13:25 (大部分时间适用，包括夏令时)
+    - cron: '27 13 * * 1-5'  # 启动ETL任务队列（比标普500晚2分钟）
+    # 美东时间周一到周五下午4:05 PM (收盘后5分钟) - 停止ETL  
+    # 使用UTC 20:05 (大部分时间适用，包括夏令时)
+    - cron: '7 20 * * 1-5'   # 停止ETL任务队列（比标普500晚2分钟）
+  workflow_dispatch:  # 允许手动触发
+    inputs:
+      action:
+        description: 'ETL Action'
+        required: true
+        default: 'start'
+        type: choice
+        options:
+          - 'start'
+          - 'stop'
+
+jobs:
+  manage-chinese-stocks-daily-etl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5  # 5分钟超时
+    
+    steps:
+      - name: Determine ETL Action
+        id: determine-action
+        run: |
+          # 确定执行的操作（启动或停止）
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            action="${{ github.event.inputs.action }}"
+          else
+            # 根据cron时间判断操作
+            current_hour=$(date -u +%H)
+            current_minute=$(date -u +%M)
+            
+            # 启动时间: 13:27 (美东时间9:27 AM)
+            if [ "$current_hour" = "13" ] && [ "$current_minute" = "27" ]; then
+              action="start"
+            # 停止时间: 20:07 (美东时间4:07 PM)
+            elif [ "$current_hour" = "20" ] && [ "$current_minute" = "07" ]; then
+              action="stop"
+            else
+              # 如果不在预定时间，根据当前时间判断应该启动还是停止
+              # 13:27-20:07之间应该是运行状态，其他时间应该停止
+              if [ "$current_hour" -gt 13 ] || ([ "$current_hour" -eq 13 ] && [ "$current_minute" -ge 27 ]); then
+                if [ "$current_hour" -lt 20 ] || ([ "$current_hour" -eq 20 ] && [ "$current_minute" -lt 7 ]); then
+                  action="start"  # 交易时间内
+                else
+                  action="stop"   # 交易时间外
+                fi
+              else
+                action="stop"     # 交易时间外
+              fi
+            fi
+          fi
+          
+          echo "action=$action" >> $GITHUB_OUTPUT
+          echo "🎯 ETL Action determined: $action"
+          
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Start Chinese Stocks ETL Task Queue
+        if: steps.determine-action.outputs.action == 'start'
+        env:
+          CHINESE_STOCKS_DATABASE_URL: ${{ secrets.CHINESE_STOCKS_DATABASE_URL }}
+          MARKET_TYPE: 'chinese_stocks'
+        run: |
+          echo "🚀 Starting Chinese Stocks ETL Task Queue..."
+          echo "📊 Market: Chinese Stocks"
+          echo "⏰ Trading hours: 9:30 AM - 4:00 PM ET"
+          node _scripts/etl-smart-batch-processor.mjs start
+          
+      - name: Stop Chinese Stocks ETL Task Queue
+        if: steps.determine-action.outputs.action == 'stop'
+        env:
+          CHINESE_STOCKS_DATABASE_URL: ${{ secrets.CHINESE_STOCKS_DATABASE_URL }}
+          MARKET_TYPE: 'chinese_stocks'
+        run: |
+          echo "🛑 Stopping Chinese Stocks ETL Task Queue..."
+          echo "📊 Market: Chinese Stocks"
+          echo "⏰ After trading hours"
+          node _scripts/etl-smart-batch-processor.mjs stop
+          
+      - name: Verify ETL Status
+        env:
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+          CHINESE_STOCKS_DATABASE_URL: ${{ secrets.CHINESE_STOCKS_DATABASE_URL }}
+          MARKET_TYPE: chinese_stocks
+        run: |
+          echo "🔍 Verifying Chinese Stocks ETL status..."
+          node _scripts/etl-smart-batch-processor.mjs status
+          
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chinese-stocks-etl-logs
+          path: |
+            /home/runner/work/Stock-Tag-Explorer-01/Stock-Tag-Explorer-01/*.log
+          retention-days: 7

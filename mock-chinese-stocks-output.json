@@ -1,0 +1,54 @@
+{
+  "success": true,
+  "timestamp": "2025-09-11T09:41:11.489Z",
+  "market": "chinese_stocks",
+  "data": [
+    {
+      "symbol": "BABA",
+      "name": "阿里巴巴集团",
+      "price": 85.42,
+      "change": 2.15,
+      "changePercent": 2.58,
+      "volume": 12500000,
+      "marketCap": 205800000000
+    },
+    {
+      "symbol": "JD",
+      "name": "京东集团",
+      "price": 32.18,
+      "change": -0.87,
+      "changePercent": -2.63,
+      "volume": 8900000,
+      "marketCap": 48200000000
+    },
+    {
+      "symbol": "TCEHY",
+      "name": "腾讯控股",
+      "price": 42.35,
+      "change": 1.23,
+      "changePercent": 2.99,
+      "volume": 6700000,
+      "marketCap": 405600000000
+    },
+    {
+      "symbol": "BIDU",
+      "name": "百度",
+      "price": 98.76,
+      "change": 3.45,
+      "changePercent": 3.62,
+      "volume": 4200000,
+      "marketCap": 34500000000
+    },
+    {
+      "symbol": "NIO",
+      "name": "蔚来汽车",
+      "price": 8.92,
+      "change": 0.34,
+      "changePercent": 3.96,
+      "volume": 15600000,
+      "marketCap": 15800000000
+    }
+  ],
+  "count": 5,
+  "note": "🧪 模拟数据演示中概股功能"
+}

@@ -1,0 +1,134 @@
+name: Update Chinese Stocks Market Data (Low Frequency)
+
+on:
+  schedule:
+    # 每日数据更新（UTC 05:00）- 美东时间 1:00 AM
+    - cron: '0 5 * * 1-6'  # 周一至周六（包含周五夜盘后）
+    # 每周深度数据更新（UTC 06:00 周日）- 美东时间周日 2:00 AM
+    - cron: '0 6 * * 0'
+  workflow_dispatch:  # 允许手动触发
+    inputs:
+      debug:
+        description: 'Enable debug mode'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      update_type:
+        description: 'Update type'
+        required: false
+        default: 'daily'
+        type: choice
+        options:
+          - 'daily'
+          - 'weekly'
+          - 'full'
+
+# 防止并发执行
+concurrency:
+  group: chinese-stocks-market-data-update-low
+  cancel-in-progress: false
+
+jobs:
+  update-chinese-stocks-market-data-low:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Health check - Verify API and DB connectivity
+        env:
+          CHINESE_STOCKS_DATABASE_URL: ${{ secrets.CHINESE_STOCKS_DATABASE_URL }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+        run: |
+          echo "🔍 Checking Finnhub API connectivity..."
+          curl -f "https://finnhub.io/api/v1/quote?symbol=BABA&token=$FINNHUB_API_KEY" || exit 1
+          echo "✅ Finnhub API is accessible"
+          
+      - name: Determine update type
+        id: update_type
+        run: |
+          if [ "${{ github.event.schedule }}" = "0 6 * * 0" ]; then
+            echo "type=weekly" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.inputs.update_type }}" != "" ]; then
+            echo "type=${{ github.event.inputs.update_type }}" >> $GITHUB_OUTPUT
+          else
+            echo "type=daily" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Run daily Chinese stocks data update
+        if: steps.update_type.outputs.type == 'daily'
+        env:
+          CHINESE_STOCKS_DATABASE_URL: ${{ secrets.CHINESE_STOCKS_DATABASE_URL }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          DEBUG: ${{ github.event.inputs.debug || 'false' }}
+          MARKET_TYPE: chinese_stocks
+          UPDATE_FREQUENCY: daily
+        run: |
+          echo "🌅 Starting Chinese stocks daily update..."
+          echo "📊 Expected runtime: 6-8 minutes for Chinese stocks"
+          node _scripts/update-market-data-finnhub.mjs
+          
+      - name: Run weekly Chinese stocks comprehensive update
+        if: steps.update_type.outputs.type == 'weekly' || steps.update_type.outputs.type == 'full'
+        env:
+          CHINESE_STOCKS_DATABASE_URL: ${{ secrets.CHINESE_STOCKS_DATABASE_URL }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          DEBUG: ${{ github.event.inputs.debug || 'false' }}
+          MARKET_TYPE: chinese_stocks
+          UPDATE_FREQUENCY: weekly
+        run: |
+          echo "📅 Starting Chinese stocks weekly comprehensive update..."
+          echo "📊 Expected runtime: 15-20 minutes for Chinese stocks"
+          
+          # 1. 更新市场数据
+          echo "📈 Step 1: Updating market data..."
+          node _scripts/update-market-data-finnhub.mjs
+          
+          # 2. 更新公司资料
+          echo "🏢 Step 2: Updating company profiles..."
+          node _scripts/update-company-profiles.mjs
+          
+          # 3. 更新财务数据
+          echo "💰 Step 3: Updating financial data..."
+          node _scripts/update-financials-daily.mjs
+          
+          # 4. 更新标签分配
+          echo "🏷️ Step 4: Updating tag assignments..."
+          node _scripts/comprehensive-tag-assignment.js
+          
+      - name: Data completeness check
+        env:
+          CHINESE_STOCKS_DATABASE_URL: ${{ secrets.CHINESE_STOCKS_DATABASE_URL }}
+          MARKET_TYPE: chinese_stocks
+        run: |
+          echo "🔍 Running data completeness check..."
+          node _scripts/check-data-completeness.mjs
+          
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chinese-stocks-market-update-low-logs
+          path: |
+            /home/runner/work/Stock-Tag-Explorer-01/Stock-Tag-Explorer-01/*.log
+          retention-days: 7
+          
+      - name: Notify completion
+        if: success() && (steps.update_type.outputs.type == 'weekly' || steps.update_type.outputs.type == 'full')
+        run: |
+          echo "✅ Chinese stocks weekly update completed successfully"
+          echo "📊 All data sources updated and validated"
