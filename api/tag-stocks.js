@@ -196,10 +196,10 @@ module.exports = async (req, res) => {
                     orderClause = 'ORDER BY s.symbol DESC';
                     break;
                 case 'price-asc':
-                    orderClause = 'ORDER BY s.current_price ASC';
+                    orderClause = 'ORDER BY s.last_price ASC';
                     break;
                 case 'price-desc':
-                    orderClause = 'ORDER BY s.current_price DESC';
+                    orderClause = 'ORDER BY s.last_price DESC';
                     break;
                 case 'change-asc':
                     orderClause = 'ORDER BY s.change_percent ASC';
@@ -220,7 +220,7 @@ module.exports = async (req, res) => {
                 SELECT DISTINCT
                     s.symbol,
                     s.name,
-                    s.current_price,
+                    s.last_price,
                     s.change_amount,
                     s.change_percent,
                     s.volume,
@@ -232,7 +232,7 @@ module.exports = async (req, res) => {
                 JOIN stock_tags st ON s.symbol = st.symbol
                 JOIN tags t ON st.tag_id = t.id
                 WHERE t.tag_name = $1
-                AND s.current_price IS NOT NULL
+                AND s.last_price IS NOT NULL
                 ${orderClause}
                 LIMIT $2 OFFSET $3
             `;
@@ -244,7 +244,7 @@ module.exports = async (req, res) => {
                 JOIN stock_tags st ON s.symbol = st.symbol
                 JOIN tags t ON st.tag_id = t.id
                 WHERE t.tag_name = $1
-                AND s.current_price IS NOT NULL
+                AND s.last_price IS NOT NULL
             `;
             
             const [stockResult, countResult] = await Promise.all([
@@ -275,7 +275,7 @@ module.exports = async (req, res) => {
         const formattedStocks = stockData.map(stock => ({
             symbol: stock.symbol,
             name: stock.name,
-            price: parseFloat(stock.current_price || stock.price || 0),
+            price: parseFloat(stock.last_price || stock.price || 0),
             change: parseFloat(stock.change_amount || stock.change || 0),
             changePercent: parseFloat(stock.change_percent || stock.change_percent || 0),
             volume: parseInt(stock.volume || 0),

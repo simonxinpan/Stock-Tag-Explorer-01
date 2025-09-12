@@ -1,11 +1,11 @@
-# ====================================================================
-#  中概股高频数据更新工作流 (最终版)
-# ====================================================================
-name: Update Chinese Stocks Market Data (High Frequency)
+# 文件: .github/workflows/update-chinese-stocks-hf.yml
+# 版本: Final Standalone Version
+name: Update Chinese Stocks Data (High Frequency)
 
 on:
   schedule:
     # 中概股更新: 在美股交易时段的每小时 05, 20, 35, 50 分执行
+    # UTC 13:00-20:00 覆盖美东时间 9:00-16:00 (夏令时/冬令时)
     - cron: '5,20,35,50 13-20 * * 1-5'
   workflow_dispatch:
     inputs:
@@ -14,7 +14,6 @@ on:
         required: true
         default: 'false'
         type: choice
-        options:
           - 'true'
           - 'false'
 
@@ -39,8 +38,9 @@ jobs:
 
       - name: Run Chinese Stocks Update Script
         env:
+          # 关键: 确保这个secret指向'chinese_stocks_db'
           DATABASE_URL: ${{ secrets.CHINESE_STOCKS_DB_URL }} 
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           DEBUG: ${{ github.event.inputs.debug_mode || 'false' }}
-        
+        # 关键: 确保运行的是我们刚刚修复好的新脚本
         run: node _scripts/update-chinese-stocks-data.mjs

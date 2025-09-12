@@ -1,6 +1,7 @@
 // /_scripts/update-company-profiles.mjs
 // 专门用于更新股票公司静态信息的脚本
 import { Pool } from 'pg';
+import fs from 'fs/promises';
 import 'dotenv/config';
 
 // 根据市场类型获取数据库连接字符串

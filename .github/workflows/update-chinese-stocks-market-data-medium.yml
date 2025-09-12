@@ -2,10 +2,10 @@ name: Update Chinese Stocks Market Data (Medium Frequency)
 
 on:
   schedule:
-    # 中概股盘前盘后时段运行（UTC 12:00, 20:00）
-    # 对应美东时间 8:00 AM（盘前）和 4:00 PM（盘后）
-    - cron: '0 12 * * 1-5'  # 盘前数据更新
-    - cron: '0 20 * * 1-5'  # 盘后数据更新
+    # 中概股中频更新 - 非交易时段运行，避免与高频工作流冲突
+    # 盘前盘后时段，错开高频工作流的交易时段（UTC 13:30-20:00）
+    - cron: '0 11 * * 1-5'  # 盘前数据更新（UTC 11:00，美东7:00 AM）
+    - cron: '30 20 * * 1-5'  # 盘后数据更新（UTC 20:30，美东4:30 PM）
   workflow_dispatch:  # 允许手动触发
     inputs:
       debug:
