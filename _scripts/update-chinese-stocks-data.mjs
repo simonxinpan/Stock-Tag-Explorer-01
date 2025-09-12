@@ -1,100 +1,48 @@
-// 文件: /_scripts/update-chinese-stocks-data.mjs
-// 版本: Final Robust Version
-import pg from 'pg';
-const { Pool } = pg;
-import fs from 'fs/promises';
-import 'dotenv/config';
+# ====================================================================
+#  中概股高频数据更新工作流 (最终修复版)
+#  版本: 5.0 - Aligned Environment Variables
+# ====================================================================
+name: Update Chinese Stocks Market Data (High Frequency)
 
-const DATABASE_URL = process.env.DATABASE_URL;
-const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
-const STOCK_LIST_FILE = './china_stocks.json';
-const SCRIPT_NAME = "Chinese Stocks Update (Robust)";
-const DEBUG = process.env.DEBUG === 'true';
+on:
+  schedule:
+    # 中概股更新: 在美股交易时段的每小时 05, 20, 35, 50 分执行
+    - cron: '5,20,35,50 13-20 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      debug_mode:
+        description: 'Enable debug mode for detailed logs? (开启调试日志?)'
+        required: true
+        default: 'false'
+        type: choice
+          - 'true'
+          - 'false'
 
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+jobs:
+  update_chinese_stocks:
+    name: "🐉 Update Chinese Stocks Data"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-async function fetchQuote(ticker) {
-  const url = `https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${FINNHUB_API_KEY}`;
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      console.error(`❌ [${ticker}] API HTTP Error: ${response.status}`);
-      return null;
-    }
-    const text = await response.text();
-    if (!text.startsWith('{')) {
-      console.error(`❌ [${ticker}] Invalid API Response (not JSON). Received: ${text.substring(0, 100)}...`);
-      return null;
-    }
-    const data = JSON.parse(text);
-    if (data.c === 0 && data.pc === 0) {
-      console.warn(`⚠️ [${ticker}] Received zero data, likely an invalid or delisted ticker.`);
-      return null;
-    }
-    return data;
-  } catch (error) {
-    console.error(`❌ [${ticker}] Fetch or Parse Error:`, error.message);
-    return null;
-  }
-}
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
 
-async function main() {
-  console.log(`🚀 ===== Starting ${SCRIPT_NAME} Job =====`);
-  if (!DATABASE_URL || !FINNHUB_API_KEY) {
-    console.error("❌ FATAL: Missing DATABASE_URL or FINNHUB_API_KEY environment variables.");
-    process.exit(1);
-  }
-  const pool = new Pool({ connectionString: DATABASE_URL });
-  let client;
-  try {
-    client = await pool.connect();
-    console.log(`✅ [DB] Connected to Chinese Stocks database.`);
-    const tickers = JSON.parse(await fs.readFile(STOCK_LIST_FILE, 'utf-8'));
-    console.log(`📋 Found ${tickers.length} stocks to update from ${STOCK_LIST_FILE}.`);
-    let updatedCount = 0;
-    let failedCount = 0;
-    for (const ticker of tickers) {
-      if (DEBUG) console.log(`🔄 Processing ${ticker}...`);
-      const quote = await fetchQuote(ticker);
-      if (quote && typeof quote.pc === 'number' && quote.pc > 0) {
-        const change_amount = quote.c - quote.pc;
-        const change_percent = (change_amount / quote.pc) * 100;
-        const sql = `
-          UPDATE stocks SET 
-            last_price = $1, change_amount = $2, change_percent = $3, 
-            high_price = $4, low_price = $5, open_price = $6, 
-            previous_close = $7, last_updated = NOW() 
-          WHERE ticker = $8;
-        `;
-        const params = [quote.c, change_amount, change_percent, quote.h, quote.l, quote.o, quote.pc, ticker];
-        try {
-          const result = await client.query(sql, params);
-          if (result.rowCount > 0) {
-            updatedCount++;
-            if (DEBUG) console.log(`   -> ✅ Updated ${ticker} with price ${quote.c}`);
-          } else {
-            console.warn(`   -> ⚠️ No rows updated for ${ticker}.`);
-          }
-        } catch (dbError) {
-          console.error(`   -> ❌ DB Error for ${ticker}: ${dbError.message}`);
-          failedCount++;
-        }
-      } else {
-        console.warn(`⏭️ Skipping ${ticker} due to invalid or missing API data.`);
-        failedCount++;
-      }
-      await delay(1100);
-    }
-    console.log(`🎉 ===== Job Finished =====`);
-    console.log(`   - Successfully updated: ${updatedCount} stocks`);
-    console.log(`   - Failed or skipped: ${failedCount} stocks`);
-  } catch (error) {
-    console.error("❌ JOB FAILED WITH UNEXPECTED ERROR:", error.message);
-    process.exit(1);
-  } finally {
-    if (client) client.release();
-    if (pool) pool.end();
-    console.log("🚪 Database connection closed.");
-  }
-}
-main();
+      - name: Run Chinese Stocks Update Script
+        env:
+          # 关键修正: 确保这里的变量名与脚本读取的、以及Secrets中设置的完全一致
+          CHINESE_STOCKS_DB_URL: ${{ secrets.CHINESE_STOCKS_DB_URL }} 
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          DEBUG: ${{ github.event.inputs.debug_mode || 'false' }}
+        
+        # 运行我们100%确认正确的脚本
+        run: node _scripts/update-chinese-stocks-data.mjs
