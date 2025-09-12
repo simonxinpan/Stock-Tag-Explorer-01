@@ -1,0 +1,36 @@
+# 文件: .github/workflows/update-chinese-stocks-hf.yml
+name: Update Chinese Stocks Data (High Frequency)
+
+on:
+  schedule:
+    # 中概股更新: 在美股交易时段的每小时 05, 20, 35, 50 分执行
+    - cron: '5,20,35,50 13-20 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      debug_mode:
+        description: 'Enable debug mode for detailed logs?'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  update_chinese_stocks:
+    name: "🐉 Update Chinese Stocks Data"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - run: npm ci
+      - name: Run Chinese Stocks Update Script
+        env:
+          CHINESE_STOCKS_DB_URL: ${{ secrets.CHINESE_STOCKS_DB_URL }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          DEBUG: ${{ github.event.inputs.debug_mode || 'false' }}
+        run: node _scripts/update-chinese-stocks-data.mjs
