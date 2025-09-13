@@ -1,5 +1,5 @@
 // 文件: /_scripts/update-chinese-stocks-data.mjs
-// 版本: 6.0 - Final Diagnostic & Reporting
+// 版本: 7.0 - Production Write-Enabled
 import pg from 'pg';
 const { Pool } = pg;
 import 'dotenv/config';
@@ -7,117 +7,110 @@ import 'dotenv/config';
 // --- 配置区 ---
 const DATABASE_URL = process.env.DATABASE_URL;
 const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
-const SCRIPT_NAME = "Chinese Stocks Final Coverage Test";
+const SCRIPT_NAME = "Chinese Stocks Production Update";
 const DEBUG = process.env.DEBUG === 'true';
-const DELAY_SECONDS = 1.1; // 我们可以用稍快一点的速度，因为写入操作被注释了
+const DELAY_SECONDS = 2.1;
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 async function fetchApiData(url, ticker, apiName) {
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      if (response.status === 429) return { error: 'RATE_LIMIT' };
-      return { error: `HTTP_${response.status}` };
+    // ... (此函数无需修改，与诊断版相同)
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            if (response.status === 429) { console.warn(`🔶 [${ticker}] ${apiName} Rate Limit Hit (429).`); }
+            else { console.error(`❌ [${ticker}] ${apiName} HTTP Error: ${response.status}`); }
+            return null;
+        }
+        const text = await response.text();
+        if (!text || !text.startsWith('{')) {
+            console.error(`❌ [${ticker}] ${apiName} Invalid Response. Received: ${text.substring(0, 100)}...`);
+            return null;
+        }
+        const data = JSON.parse(text);
+        if (Object.keys(data).length === 0 || (data.c === 0 && data.pc === 0)) {
+            console.warn(`⚠️ [${ticker}] ${apiName} returned empty or zero data.`);
+            return null;
+        }
+        return data;
+    } catch (error) {
+        console.error(`❌ [${ticker}] ${apiName} Fetch/Parse Error:`, error.message);
+        return null;
     }
-    const text = await response.text();
-    if (!text || !text.startsWith('{')) return { error: 'INVALID_RESPONSE' };
-    
-    const data = JSON.parse(text);
-    if (Object.keys(data).length === 0 || (data.c === 0 && data.pc === 0)) {
-      return { error: 'ZERO_DATA' };
-    }
-    return { data }; // 成功时返回带data键的对象
-  } catch (error) {
-    return { error: 'FETCH_ERROR' };
-  }
 }
 
 async function main() {
-  console.log(`🚀 ===== Starting ${SCRIPT_NAME} =====`);
-  if (!DATABASE_URL || !FINNHUB_API_KEY) {
-    console.error("❌ FATAL: Missing DATABASE_URL or FINNHUB_API_KEY env vars.");
-    process.exit(1);
-  }
-  const pool = new Pool({ connectionString: DATABASE_URL });
-  let client;
-  try {
-    client = await pool.connect();
-    console.log(`✅ [DB] Connected to Chinese Stocks database.`);
-    
-    const tickerRes = await client.query('SELECT ticker FROM stocks ORDER BY ticker;');
-    const tickers = tickerRes.rows.map(r => r.ticker);
-    console.log(`📋 Found ${tickers.length} stocks in the database to test.`);
-    
-    const results = {
-      success: [],
-      zero_data: [],
-      invalid_response: [],
-      rate_limit: [],
-      http_error: [],
-      fetch_error: []
-    };
-
-    for (const [index, ticker] of tickers.entries()) {
-      console.log(`[${index + 1}/${tickers.length}] Testing ${ticker}...`);
-      
-      const quoteResult = await fetchApiData(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${FINNHUB_API_KEY}`, ticker, 'Quote');
-
-      if (quoteResult.data) {
-        console.log(`   -> ✅ SUCCESS: Found valid quote data for ${ticker}.`);
-        results.success.push(ticker);
+    console.log(`🚀 ===== Starting ${SCRIPT_NAME} Job =====`);
+    if (!DATABASE_URL || !FINNHUB_API_KEY) {
+        console.error("❌ FATAL: Missing DATABASE_URL or FINNHUB_API_KEY env vars.");
+        process.exit(1);
+    }
+    const pool = new Pool({ connectionString: DATABASE_URL });
+    let client;
+    try {
+        client = await pool.connect();
+        console.log(`✅ [DB] Connected to Chinese Stocks database.`);
         
-        // ================================================================
-        // == 安全诊断模式：数据库更新操作已被注释掉 ==
-        // ================================================================
-        /*
-        const quote = quoteResult.data;
-        const sql = `UPDATE stocks SET last_price = $1, ... WHERE ticker = $2;`;
-        const params = [quote.c, ..., ticker];
-        await client.query(sql, params);
-        */
-        // ================================================================
+        const tickerRes = await client.query('SELECT ticker FROM stocks ORDER BY ticker;');
+        const tickers = tickerRes.rows.map(r => r.ticker);
+        console.log(`📋 Found ${tickers.length} high-quality stocks to update from the database.`);
+        
+        let updatedCount = 0;
+        let failedCount = 0;
 
-      } else {
-        console.log(`   -> ❌ FAILED: Reason - ${quoteResult.error}`);
-        results[quoteResult.error.toLowerCase()]?.push(ticker);
-      }
-      await delay(DELAY_SECONDS * 1000);
+        for (const ticker of tickers) {
+            if (DEBUG) console.log(`🔄 Processing ${ticker}...`);
+
+            const quote = await fetchApiData(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${FINNHUB_API_KEY}`, ticker, 'Quote');
+
+            if (quote && typeof quote.pc === 'number' && quote.pc > 0) {
+                const change_amount = quote.c - quote.pc;
+                const change_percent = (change_amount / quote.pc) * 100;
+                
+                // 关键变更：恢复数据库写入操作
+                const sql = `
+                    UPDATE stocks SET 
+                        last_price = $1, 
+                        change_amount = $2,
+                        change_percent = $3, 
+                        high_price = $4,
+                        low_price = $5,
+                        open_price = $6,
+                        previous_close = $7,
+                        last_updated = NOW() 
+                    WHERE ticker = $8;
+                `;
+                const params = [quote.c, change_amount, change_percent, quote.h, quote.l, quote.o, quote.pc, ticker];
+                
+                try {
+                    const result = await client.query(sql, params);
+                    if (result.rowCount > 0) {
+                        updatedCount++;
+                        if (DEBUG) console.log(`   -> ✅ Updated ${ticker}`);
+                    }
+                } catch (dbError) {
+                    console.error(`   -> ❌ DB Error for ${ticker}: ${dbError.message}`);
+                    failedCount++;
+                }
+            } else {
+                console.warn(`⏭️ Skipping ${ticker} due to invalid or missing quote data.`);
+                failedCount++;
+            }
+            await delay(DELAY_SECONDS * 1000);
+        }
+        
+        console.log(`🎉 ===== Job Finished =====`);
+        console.log(`   - Successfully updated: ${updatedCount} stocks`);
+        console.log(`   - Failed or skipped: ${failedCount} stocks`);
+
+    } catch (error) {
+        console.error("❌ JOB FAILED WITH UNEXPECTED ERROR:", error.message);
+        process.exit(1);
+    } finally {
+        if (client) client.release();
+        if (pool) pool.end();
+        console.log("🚪 Database connection closed.");
     }
-    
-    // --- 生成最终报告 ---
-    const total = tickers.length;
-    const successCount = results.success.length;
-    const successRate = total > 0 ? (successCount / total * 100).toFixed(2) : 0;
-
-    console.log(`\n\n🎉🎉🎉 ===== FINAL COVERAGE REPORT ===== 🎉🎉🎉`);
-    console.log(`\n- Total Stocks Tested: ${total}`);
-    console.log(`- ✅ Successful Fetches: ${successCount}`);
-    console.log(`- 📊 Final Success Rate: ${successRate}%`);
-    console.log(`\n--- Failure Analysis ---`);
-    console.log(`- ⚠️ Returned Zero Data (likely delisted/unsupported): ${results.zero_data.length} tickers`);
-    if (results.zero_data.length > 0) console.log(`  (${results.zero_data.join(', ')})`);
-    console.log(`- 📄 Invalid API Response (HTML page): ${results.invalid_response.length} tickers`);
-    if (results.invalid_response.length > 0) console.log(`  (${results.invalid_response.join(', ')})`);
-    console.log(`- ⏳ Rate Limit Hits (429): ${results.rate_limit.length} tickers`);
-    console.log(`- 🌐 Other HTTP/Fetch Errors: ${results.http_error.length + results.fetch_error.length} tickers`);
-    
-    console.log(`\n--- Decision Support ---`);
-    if (successRate >= 80) {
-        console.log("DECISION: ✅ GO! The success rate is high. The list is viable.");
-    } else {
-        console.log("DECISION: ❌ NO-GO. The success rate is below 80%. The data source is not comprehensive enough for this list.");
-        console.log("   Recommended Action: Pivot to a curated 'Top Chinese Stocks' list, or find an alternative data API.");
-    }
-    console.log(`\n🚪 ===== Test Finished: Database connection closed. =====`);
-
-  } catch (error) {
-    console.error("❌ JOB FAILED WITH UNEXPECTED ERROR:", error.message);
-    process.exit(1);
-  } finally {
-    if (client) client.release();
-    if (pool) pool.end();
-  }
 }
 
 main();
