@@ -24,6 +24,7 @@ function updateMarketNavigation() {
 // 定义我们需要加载的所有榜单
 const TRENDING_LISTS_CONFIG = [
   { id: 'top-gainers-list', type: 'top_gainers' },
+  { id: 'top-market-cap-list', type: 'top_market_cap' },
   { id: 'new-highs-list', type: 'new_highs' },
   { id: 'top-turnover-list', type: 'top_turnover' },
   { id: 'top-volatility-list', type: 'top_volatility' },
@@ -123,6 +124,11 @@ function createStockListItemHTML(stock, type, rank) {
       const momentumScore = stock.momentum_score ? Number(stock.momentum_score).toFixed(2) : 'N/A';
       const momentumVolume = stock.volume ? formatLargeNumber(stock.volume) : 'N/A';
       mainMetricHTML = `<div class="price">评分: ${momentumScore}</div><div class="metric-small">${momentumVolume}</div>`;
+      break;
+    case 'top_market_cap':
+      // 市值榜显示市值和价格
+      const marketCapFormatted = stock.market_cap ? formatMarketCap(stock.market_cap) : 'N/A';
+      mainMetricHTML = `<div class="price">${marketCapFormatted}</div><div class="metric-small">$${price.toFixed(2)}</div>`;
       break;
     default: // 涨幅榜等默认显示价格和涨跌幅
       mainMetricHTML = `<div class="price">$${price.toFixed(2)}</div>`;
@@ -325,6 +331,7 @@ async function handleMoreButtonClick(type) {
 function getRankingTitle(type) {
   const titles = {
     'top_gainers': '🚀 涨幅榜 - 完整榜单',
+    'top_market_cap': '💰 市值榜 - 完整榜单',
     'top_losers': '📉 跌幅榜 - 完整榜单',
     'high_volume': '💰 成交额榜 - 完整榜单',
     'new_highs': '🎯 创年内新高 - 完整榜单',

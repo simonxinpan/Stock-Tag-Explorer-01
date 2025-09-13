@@ -66,6 +66,17 @@ module.exports = async function handler(req, res) {
         queryParams = [];
         break;
 
+      case 'top_market_cap': // 市值榜 - 按市值排序
+        query = `
+          SELECT ticker, name_zh as name, last_price, change_percent, market_cap
+          FROM stocks 
+          WHERE market_cap IS NOT NULL AND market_cap > 0
+          ORDER BY market_cap DESC 
+          LIMIT 25
+        `;
+        queryParams = [];
+        break;
+
       case 'top_turnover': // 成交额榜 - 取turnover前25名
         query = `
           SELECT ticker, name_zh as name, last_price, change_percent, market_cap, volume, turnover
