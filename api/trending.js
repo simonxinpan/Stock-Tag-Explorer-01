@@ -46,7 +46,7 @@ module.exports = async function handler(req, res) {
     switch (type) {
       case 'top_gainers': // 涨幅榜 - 取change_percent前5%（约25名）
         query = `
-          SELECT ticker as symbol, name_zh as name, last_price, change_percent, market_cap
+          SELECT ticker, name_zh as name, last_price, change_percent, market_cap
           FROM stocks 
           WHERE change_percent IS NOT NULL AND last_price IS NOT NULL
           ORDER BY change_percent DESC 
@@ -57,7 +57,7 @@ module.exports = async function handler(req, res) {
 
       case 'top_losers': // 跌幅榜 - 取change_percent最后5%（约25名）
         query = `
-          SELECT ticker as symbol, name_zh as name, last_price, change_percent, market_cap
+          SELECT ticker, name_zh as name, last_price, change_percent, market_cap
           FROM stocks 
           WHERE change_percent IS NOT NULL AND last_price IS NOT NULL
           ORDER BY change_percent ASC 
@@ -68,7 +68,7 @@ module.exports = async function handler(req, res) {
 
       case 'top_turnover': // 成交额榜 - 取turnover前25名
         query = `
-          SELECT ticker as symbol, name_zh as name, last_price, change_percent, market_cap, volume, turnover
+          SELECT ticker, name_zh as name, last_price, change_percent, market_cap, volume, turnover
           FROM stocks 
           WHERE turnover IS NOT NULL AND turnover > 0
           ORDER BY turnover DESC 
@@ -79,7 +79,7 @@ module.exports = async function handler(req, res) {
         
       case 'top_volatility': // 振幅榜 - 计算日内振幅
         query = `
-          SELECT ticker as symbol, name_zh as name, last_price, change_percent, market_cap, 
+          SELECT ticker, name_zh as name, last_price, change_percent, market_cap, 
                  high_price, low_price,
                  CASE 
                    WHEN low_price > 0 THEN ((high_price - low_price) / low_price) * 100
@@ -95,7 +95,7 @@ module.exports = async function handler(req, res) {
         
       case 'top_gap_up': // 高开缺口榜 - 开盘价高于前收盘价
         query = `
-          SELECT ticker as symbol, name_zh as name, last_price, change_percent, market_cap, 
+          SELECT ticker, name_zh as name, last_price, change_percent, market_cap, 
                  open_price, previous_close,
                  CASE 
                    WHEN previous_close > 0 THEN ((open_price - previous_close) / previous_close) * 100
@@ -112,7 +112,7 @@ module.exports = async function handler(req, res) {
 
       case 'new_highs': // 创年内新高前15名
         query = `
-          SELECT ticker as symbol, name_zh as name, last_price, change_percent, market_cap, week_52_high
+          SELECT ticker, name_zh as name, last_price, change_percent, market_cap, week_52_high
           FROM stocks 
           WHERE last_price IS NOT NULL AND week_52_high IS NOT NULL 
                 AND last_price >= week_52_high * 0.99
@@ -124,7 +124,7 @@ module.exports = async function handler(req, res) {
 
       case 'new_lows': // 创年内新低前15名
         query = `
-          SELECT ticker as symbol, name_zh as name, last_price, change_percent, market_cap, week_52_low
+          SELECT ticker, name_zh as name, last_price, change_percent, market_cap, week_52_low
           FROM stocks 
           WHERE last_price IS NOT NULL AND week_52_low IS NOT NULL 
                 AND last_price <= week_52_low * 1.01

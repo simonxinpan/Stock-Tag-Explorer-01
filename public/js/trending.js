@@ -225,6 +225,7 @@ async function loadAndRenderList(listConfig) {
     // 确保数据类型正确，进行类型转换
     let stocks = stocksArray.map(stock => ({
       ...stock,
+      ticker: stock.ticker || stock.symbol || 'N/A', // 确保ticker字段存在
       last_price: Number(stock.last_price) || 0,
       change_percent: Number(stock.change_percent) || 0,
       market_cap: Number(stock.market_cap) || 0
@@ -268,9 +269,10 @@ async function handleMoreButtonClick(type) {
       throw new Error('API返回的数据格式不正确');
     }
 
-    // 确保数据类型正确
+    // 确保数据类型正确，进行类型转换
     let stocks = stocksArray.map(stock => ({
       ...stock,
+      ticker: stock.ticker || stock.symbol || 'N/A', // 确保ticker字段存在
       last_price: Number(stock.last_price) || 0,
       change_percent: Number(stock.change_percent) || 0,
       market_cap: Number(stock.market_cap) || 0
