@@ -363,10 +363,11 @@ function formatLargeNumber(value, isCurrency = false) {
   
   // 根据当前市场类型决定格式
   const currentMarket = getCurrentMarket();
-  const prefix = isCurrency ? (currentMarket === 'chinese_stocks' ? '¥' : '$') : '';
+  // 中概股也使用美元符号，因为它们在美国交易所上市
+  const prefix = isCurrency ? '$' : '';
   
   if (currentMarket === 'chinese_stocks') {
-    // 中概股使用中文数字格式
+    // 中概股使用中文数字格式但货币符号用美元
     if (num >= 1e12) return `${prefix}${(num / 1e12).toFixed(2)}万亿`; // 万亿
     if (num >= 1e8) return `${prefix}${(num / 1e8).toFixed(2)}亿`;   // 亿
     if (num >= 1e4) return `${prefix}${(num / 1e4).toFixed(1)}万`;   // 万

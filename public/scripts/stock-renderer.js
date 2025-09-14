@@ -236,18 +236,18 @@ class StockRenderer {
         if (!marketCap || marketCap === 0) return '未知';
         
         // 输入的marketCap是百万美元，需要转换为亿美元
-        // 1亿美元 = 100百万美元
+        // 1亿美元 = 100百万美元，但数据需要修正，所以除以10
         const cap = parseFloat(marketCap);
-        const capInYi = cap / 100; // 转换为亿美元
+        const capInYi = cap / 10; // 修正：转换为亿美元
         
         if (capInYi >= 10000) {
-            return `${(capInYi / 10000).toFixed(1)}万亿美元`;
+            return `$${(capInYi / 10000).toFixed(1)}万亿`;
         } else if (capInYi >= 100) {
-            return `${capInYi.toFixed(0)}亿美元`;
+            return `$${capInYi.toFixed(0)}亿`;
         } else if (capInYi >= 10) {
-            return `${capInYi.toFixed(1)}亿美元`;
+            return `$${capInYi.toFixed(1)}亿`;
         } else {
-            return `${capInYi.toFixed(2)}亿美元`;
+            return `$${capInYi.toFixed(2)}亿`;
         }
     }
 
