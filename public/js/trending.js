@@ -160,19 +160,19 @@ function createStockListItemHTML(stock, type, rank) {
 function formatMarketCap(marketCap) {
   if (!marketCap || marketCap === 0) return 'N/A';
   
-  // 输入的marketCap是百万美元，需要转换为亿美元
-  // 1亿美元 = 100百万美元
+  // 输入的marketCap是美元单位
   const cap = parseFloat(marketCap);
-  const capInYi = cap / 100; // 转换为亿美元
   
-  if (capInYi >= 10000) {
-    return `${(capInYi / 10000).toFixed(1)}万亿美元`;
-  } else if (capInYi >= 100) {
-    return `${capInYi.toFixed(0)}亿美元`;
-  } else if (capInYi >= 10) {
-    return `${capInYi.toFixed(1)}亿美元`;
+  if (cap >= 1000000000000) {
+    return `${(cap / 1000000000000).toFixed(1)}万亿美元`;
+  } else if (cap >= 100000000000) {
+    return `${(cap / 100000000000).toFixed(0)}千亿美元`;
+  } else if (cap >= 1000000000) {
+    return `${(cap / 1000000000).toFixed(1)}十亿美元`;
+  } else if (cap >= 100000000) {
+    return `${(cap / 100000000).toFixed(1)}亿美元`;
   } else {
-    return `${capInYi.toFixed(2)}亿美元`;
+    return `${(cap / 1000000).toFixed(1)}百万美元`;
   }
 }
 

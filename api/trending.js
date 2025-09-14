@@ -311,12 +311,14 @@ function formatMarketCap(marketCap) {
   if (!marketCap || marketCap === 0) return 'N/A';
   
   const cap = parseFloat(marketCap);
-  if (cap >= 1000000) {
-    return (cap / 1000000).toFixed(1) + 'T';
-  } else if (cap >= 1000) {
-    return (cap / 1000).toFixed(1) + 'B';
+  if (cap >= 1000000000000) {
+    return (cap / 1000000000000).toFixed(1) + 'T';
+  } else if (cap >= 1000000000) {
+    return (cap / 1000000000).toFixed(1) + 'B';
+  } else if (cap >= 1000000) {
+    return (cap / 1000000).toFixed(1) + 'M';
   } else {
-    return cap.toFixed(1) + 'M';
+    return cap.toFixed(0);
   }
 }
 
