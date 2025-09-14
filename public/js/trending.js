@@ -287,13 +287,31 @@ async function loadAndRenderList(listConfig) {
       throw new Error('API返回的数据格式不正确');
     }
 
-    // 确保数据类型正确，进行类型转换
+    // ================================================================
+    // == 最终的断点调试 ==
+    // ================================================================
+    console.log("--- FINAL DEBUG ---");
+    console.log("Received data from API:", stocksArray);
+
+    // 检查第一条数据的 market_cap 的类型
+    if (stocksArray && stocksArray.length > 0) {
+        console.log("Type of first stock's market_cap:", typeof stocksArray[0].market_cap);
+        console.log("Value of first stock's market_cap:", stocksArray[0].market_cap);
+        console.log("Does the first stock object have a 'market_cap' key?", 'market_cap' in stocksArray[0]);
+    }
+    
+    // 设置一个断点，让程序在这里暂停
+    debugger;
+    // ================================================================
+
+    // 确保数据类型正确，但不强制转换market_cap为Number（避免精度丢失）
     let stocks = stocksArray.map(stock => ({
       ...stock,
       ticker: stock.ticker || stock.symbol || 'N/A', // 确保ticker字段存在
       last_price: Number(stock.last_price) || 0,
       change_percent: Number(stock.change_percent) || 0,
-      market_cap: Number(stock.market_cap) || 0,
+      // 关键修正：保持market_cap原始类型，不强制转换为Number
+      market_cap: stock.market_cap, // 保持原始类型（可能是字符串）
       // 保留后端返回的格式化字段
       market_cap_formatted: stock.market_cap_formatted
     }));
