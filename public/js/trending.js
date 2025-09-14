@@ -200,18 +200,39 @@ function formatChineseStockMarketCap(marketCapInUSD) {
 }
 
 /**
- * 根据市场类型格式化市值显示
- * @param {string|number} marketCap - 市值
- * @returns {string} - 格式化后的市值字符串
+ * 【最终健壮版】智能市值格式化函数
+ * @param {number | string | null | undefined} marketCapValue - 从API获取的原始市值 (可能是数字或字符串)
+ * @returns {string} - 格式化后的字符串
  */
-function formatMarketCap(marketCap) {
-  const currentMarket = getCurrentMarket();
-  
-  if (currentMarket === 'chinese_stocks') {
-    return formatChineseStockMarketCap(marketCap);
-  } else {
-    return formatSP500MarketCap(marketCap);
+function formatMarketCap(marketCapValue) {
+  // 关键修正：在检查前，先尝试将输入转换为浮点数
+  const numericMarketCap = parseFloat(marketCapValue);
+
+  // 现在，用转换后的数字进行检查
+  if (isNaN(numericMarketCap) || numericMarketCap === 0) {
+    return 'N/A';
   }
+
+  const currentMarket = getCurrentMarket();
+  let marketCapInUSD;
+
+  if (currentMarket === 'chinese_stocks') {
+    // 中概股的市值已经是美元单位
+    marketCapInUSD = numericMarketCap;
+  } else {
+    // 标普500的市值是百万美元单位
+    marketCapInUSD = numericMarketCap * 1000000;
+  }
+
+  const BILLION = 1_000_000_000; // 十亿
+  const marketCapInBillionUSD = marketCapInUSD / BILLION;
+
+  const formattedValue = marketCapInBillionUSD.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  return `$${formattedValue}亿`;
 }
 
 /**
