@@ -316,8 +316,8 @@ module.exports = async function handler(req, res) {
 function formatMarketCap(marketCap) {
   if (!marketCap || marketCap === 0) return '未知';
   
-  // 输入的marketCap已经是亿美元单位
-  const capInYi = parseFloat(marketCap);
+  // 输入的marketCap是美元单位，需要转换为亿美元
+  const capInYi = parseFloat(marketCap) / 100000000; // 除以1亿转换为亿美元单位
   
   if (capInYi >= 10000) {
     return `$${(capInYi / 10000).toFixed(1)}万亿美元`;
@@ -435,14 +435,13 @@ function getMockChineseStocksData(req, res, type) {
 function getMockSP500Data(req, res, type) {
   const mockStocks = [
     {
-      symbol: 'AAPL',
-      name: 'Apple Inc.',
-      name_zh: '苹果公司',
+      symbol: 'NVDA',
+      name: 'NVIDIA Corporation',
+      name_zh: '英伟达',
       current_price: 177.17,
       change_percent: 0.47,
-      market_cap: 27500.0, // 亿美元单位
-      volume: 45200000,
-      market_cap_formatted: '$2.75万亿美元'
+      market_cap: 4315000000000, // 美元单位
+      volume: 52100000
     },
     {
       symbol: 'MSFT',
@@ -450,9 +449,17 @@ function getMockSP500Data(req, res, type) {
       name_zh: '微软公司',
       current_price: 501.01,
       change_percent: 0.13,
-      market_cap: 37200.0, // 亿美元单位
-      volume: 28100000,
-      market_cap_formatted: '$3.72万亿美元'
+      market_cap: 3766000000000, // 美元单位
+      volume: 28100000
+    },
+    {
+      symbol: 'AAPL',
+      name: 'Apple Inc.',
+      name_zh: '苹果公司',
+      current_price: 230.03,
+      change_percent: 1.43,
+      market_cap: 3364000000000, // 美元单位
+      volume: 45200000
     },
     {
       symbol: 'GOOGL',
@@ -460,29 +467,17 @@ function getMockSP500Data(req, res, type) {
       name_zh: '谷歌C类',
       current_price: 240.78,
       change_percent: 0.51,
-      market_cap: 29800.0, // 亿美元单位
-      volume: 32500000,
-      market_cap_formatted: '$2.98万亿美元'
+      market_cap: 2915000000000, // 美元单位
+      volume: 32500000
     },
     {
       symbol: 'AMZN',
       name: 'Amazon.com Inc.',
       name_zh: '亚马逊',
-      current_price: 230.03,
-      change_percent: 1.43,
-      market_cap: 24100.0, // 亿美元单位
-      volume: 41800000,
-      market_cap_formatted: '$2.41万亿美元'
-    },
-    {
-      symbol: 'NVDA',
-      name: 'NVIDIA Corporation',
-      name_zh: '英伟达',
-      current_price: 875.28,
-      change_percent: 5.52,
-      market_cap: 21500.0, // 亿美元单位
-      volume: 52100000,
-      market_cap_formatted: '$2.15万亿美元'
+      current_price: 185.50,
+      change_percent: 2.15,
+      market_cap: 1980000000000, // 美元单位
+      volume: 41800000
     },
     {
       symbol: 'TSLA',
@@ -490,9 +485,8 @@ function getMockSP500Data(req, res, type) {
       name_zh: '特斯拉',
       current_price: 248.50,
       change_percent: -4.72,
-      market_cap: 7900.0, // 亿美元单位
-      volume: 67300000,
-      market_cap_formatted: '$7900.0亿美元'
+      market_cap: 790000000000, // 美元单位
+      volume: 67300000
     },
     {
       symbol: 'META',
@@ -500,9 +494,8 @@ function getMockSP500Data(req, res, type) {
       name_zh: 'Meta平台',
       current_price: 484.20,
       change_percent: 3.35,
-      market_cap: 12300.0, // 亿美元单位
-      volume: 19400000,
-      market_cap_formatted: '$1.23万亿美元'
+      market_cap: 1230000000000, // 美元单位
+      volume: 19400000
     },
     {
       symbol: 'BRK.B',
@@ -510,9 +503,8 @@ function getMockSP500Data(req, res, type) {
       name_zh: '伯克希尔哈撒韦',
       current_price: 548.32,
       change_percent: 2.15,
-      market_cap: 8900.0, // 亿美元单位
-      volume: 3200000,
-      market_cap_formatted: '$8900.0亿美元'
+      market_cap: 890000000000, // 美元单位
+      volume: 3200000
     },
     {
       symbol: 'JPM',
@@ -520,9 +512,8 @@ function getMockSP500Data(req, res, type) {
       name_zh: '摩根大通',
       current_price: 165.42,
       change_percent: 1.87,
-      market_cap: 4800.0, // 亿美元单位
-      volume: 12500000,
-      market_cap_formatted: '$4800.0亿美元'
+      market_cap: 480000000000, // 美元单位
+      volume: 12500000
     },
     {
       symbol: 'JNJ',
@@ -530,9 +521,8 @@ function getMockSP500Data(req, res, type) {
       name_zh: '强生公司',
       current_price: 159.73,
       change_percent: 1.42,
-      market_cap: 4200.0, // 亿美元单位
-      volume: 8700000,
-      market_cap_formatted: '$4200.0亿美元'
+      market_cap: 420000000000, // 美元单位
+      volume: 8700000
     }
   ];
 
