@@ -1,16 +1,16 @@
 # ====================================================================
-#  中概股高频数据更新工作流 (最终版)
+#  中概股高频数据更新工作流 (最终环境变量修正版)
+#  版本: 7.0 - Final Env Var Synchronization
 # ====================================================================
 name: Update Chinese Stocks Market Data (High Frequency)
 
 on:
   schedule:
-    # 中概股更新: 在美股交易时段的每小时 05, 20, 35, 50 分执行
     - cron: '5,20,35,50 13-20 * * 1-5'
   workflow_dispatch:
     inputs:
       debug_mode:
-        description: 'Enable debug mode for detailed logs? (开启调试日志?)'
+        description: 'Enable debug mode for detailed logs?'
         required: true
         default: 'false'
         type: choice
@@ -20,7 +20,7 @@ on:
 
 jobs:
   update_chinese_stocks:
-    name: "🐉 Update Chinese Stocks Data"
+    name: "🐉 Update Chinese Stocks Data (Polygon-Powered)"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     
@@ -39,8 +39,10 @@ jobs:
 
       - name: Run Chinese Stocks Update Script
         env:
-          DATABASE_URL: ${{ secrets.CHINESE_STOCKS_DB_URL }} 
+          # 关键修正: 确保这里的每一个 secret 名称都与您GitHub仓库中设置的完全一致
+          DATABASE_URL: ${{ secrets.CHINESE_STOCKS_DB_URL }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
           DEBUG: ${{ github.event.inputs.debug_mode || 'false' }}
         
         run: node _scripts/update-chinese-stocks-data.mjs
