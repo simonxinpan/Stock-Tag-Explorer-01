@@ -284,7 +284,7 @@ async function loadAndRenderList(listConfig) {
       listElement.innerHTML = top5HTML;
     }
   } catch (error) {
-    console.error(`加载榜单 "${listConfig.title}" 失败:`, error);
+    console.error(`加载榜单 "${listConfig.type}" 失败:`, error);
     listElement.innerHTML = `<li class="error">数据库连接失败<br><small>${error.message}</small></li>`;
   }
 }

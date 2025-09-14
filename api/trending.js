@@ -278,6 +278,14 @@ module.exports = async function handler(req, res) {
     
     // 格式化市值数据
     // 根据市场类型使用不同的格式化函数
+    // 如果是中概股市场且查询结果为空，使用模拟数据
+    if (market === 'chinese_stocks' && result.rows.length === 0) {
+      console.log('🔄 中概股数据库查询结果为空，使用模拟数据...');
+      return getMockChineseStocksData(req, res, type);
+    }
+    
+    // 格式化市值数据
+    // 根据市场类型使用不同的格式化函数
     const formattedStocks = result.rows.map(stock => ({
       ...stock,
       market_cap_formatted: market === 'chinese_stocks' 
@@ -289,9 +297,10 @@ module.exports = async function handler(req, res) {
 
   } catch (error) {
     console.error('趋势榜单API错误:', error);
+    console.log('🔍 调试信息 - market:', market, 'error.message:', error.message);
     
     // 如果是中概股市场且数据库连接失败，使用模拟数据
-    if (market === 'chinese_stocks' && (error.message.includes('password authentication') || error.message.includes('ECONNREFUSED'))) {
+    if (market === 'chinese_stocks' && (error.message.includes('password authentication') || error.message.includes('ECONNREFUSED') || error.message.includes('client password must be a string'))) {
       console.log('🔄 中概股数据库连接失败，使用模拟数据...');
       return getMockChineseStocksData(req, res, type);
     }
@@ -446,6 +455,7 @@ function getMockChineseStocksData(req, res, type) {
     case 'top_volume':
       sortedStocks.sort((a, b) => b.volume - a.volume);
       break;
+    case 'top_market_cap':
     case 'market_cap':
     default:
       sortedStocks.sort((a, b) => b.market_cap - a.market_cap);
@@ -456,7 +466,16 @@ function getMockChineseStocksData(req, res, type) {
   const result = sortedStocks.slice(0, 25);
   
   console.log(`📊 返回中概股模拟数据 (${type}): ${result.length} 条记录`);
-  res.status(200).json(result);
+  
+  // 返回标准格式的响应
+  res.status(200).json({
+    success: true,
+    type: type,
+    data: result,
+    count: result.length,
+    timestamp: new Date().toISOString(),
+    note: "🧪 使用模拟数据展示中概股功能"
+  });
 }
 
 // 标普500模拟数据函数
