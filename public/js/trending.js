@@ -269,7 +269,9 @@ async function loadAndRenderList(listConfig) {
       ticker: stock.ticker || stock.symbol || 'N/A', // 确保ticker字段存在
       last_price: Number(stock.last_price) || 0,
       change_percent: Number(stock.change_percent) || 0,
-      market_cap: Number(stock.market_cap) || 0
+      market_cap: Number(stock.market_cap) || 0,
+      // 保留后端返回的格式化字段
+      market_cap_formatted: stock.market_cap_formatted
     }));
 
     if (stocks.length === 0) {
