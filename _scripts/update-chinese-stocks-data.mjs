@@ -1,5 +1,5 @@
 // 文件: /_scripts/update-chinese-stocks-data.mjs
-// 版本: 14.0 - Simplified HKD-to-USD Conversion
+// 版本: 15.0 - Final Automated Data Correction
 import pg from 'pg';
 const { Pool } = pg;
 import 'dotenv/config';
@@ -7,13 +7,14 @@ import 'dotenv/config';
 // --- 配置区 ---
 const DATABASE_URL = process.env.DATABASE_URL;
 const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
-const SCRIPT_NAME = "Chinese Stocks Simplified Currency Update";
+const SCRIPT_NAME = "Chinese Stocks Automated Correction Update";
 const DEBUG = process.env.DEBUG === 'true';
 const DELAY_SECONDS = 2.1;
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 async function fetchApiData(url, ticker, apiName) {
+  // ... (此函数无需修改)
   try {
     const response = await fetch(url);
     if (!response.ok) {
@@ -29,7 +30,6 @@ async function fetchApiData(url, ticker, apiName) {
   }
 }
 
-// 精简版：只获取港元汇率
 async function getHkdToUsdRate() {
     try {
         const response = await fetch('https://api.exchangerate-api.com/v4/latest/HKD');
@@ -40,7 +40,7 @@ async function getHkdToUsdRate() {
         throw new Error('Invalid rate API response');
     } catch (error) {
         console.error("❌ Failed to fetch HKD to USD exchange rate, using fallback.", error);
-        return 0.128; // 提供稳定的备用汇率
+        return 0.128;
     }
 }
 
@@ -86,12 +86,21 @@ async function main() {
             currency = profile.currency;
             exchange = profile.exchange;
             
-            // 关键的、简化的转换逻辑
+            // ================================================================
+            // == 关键的、全自动化的数据修正逻辑 ==
+            // ================================================================
+            // 规则：如果交易所是香港，则货币必须是港元！
+            if (exchange && exchange.toUpperCase().includes('HONG KONG')) {
+                currency = 'HKD';
+                if (DEBUG) console.log(`   -> 🏢 Hong Kong exchange detected. Forcing currency to HKD.`);
+            }
+
+            // 现在，基于修正后的currency进行转换
             if (currency === 'HKD') {
                 market_cap_usd = market_cap_original * hkdToUsdRate;
-                if (DEBUG) console.log(`   -> 🇭🇰 HKD detected for ${ticker}. Converted to ${market_cap_usd} USD.`);
+                if (DEBUG) console.log(`   -> 🇭🇰 HKD currency confirmed. Converted to ${market_cap_usd} USD.`);
             } else {
-                // 如果不是HKD (无论是USD, CNY, 还是其他), 都直接视为美元
+                // 如果不是HKD，都视为USD
                 market_cap_usd = market_cap_original;
             }
         }
