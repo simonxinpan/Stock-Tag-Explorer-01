@@ -1,16 +1,19 @@
 # ====================================================================
-#  中概股高频数据更新工作流 (最终版)
+#  中概股高频数据更新工作流 (最终安全版)
+#  版本: 8.0 - Secure Trigger & Job-Level Env
 # ====================================================================
 name: Update Chinese Stocks Market Data (High Frequency)
 
 on:
+  # 触发器1: 定时运行 (只在默认分支上运行，能访问secrets)
   schedule:
-    # 中概股更新: 在美股交易时段的每小时 05, 20, 35, 50 分执行
     - cron: '5,20,35,50 13-20 * * 1-5'
+  
+  # 触发器2: 手动运行 (只在您选择的分支上运行，能访问secrets)
   workflow_dispatch:
     inputs:
       debug_mode:
-        description: 'Enable debug mode for detailed logs? (开启调试日志?)'
+        description: 'Enable debug mode for detailed logs?'
         required: true
         default: 'false'
         type: choice
@@ -20,10 +23,17 @@ on:
 
 jobs:
   update_chinese_stocks:
-    name: "🐉 Update Chinese Stocks Data"
+    name: "🐉 Update Chinese Stocks Data (Polygon-Powered)"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     
+    # 关键变更: 将环境变量设置在 Job 层面
+    env:
+      DATABASE_URL: ${{ secrets.CHINESE_STOCKS_DB_URL }}
+      FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+      POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+      DEBUG: ${{ github.event.inputs.debug_mode || 'false' }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -38,9 +48,5 @@ jobs:
         run: npm ci
 
       - name: Run Chinese Stocks Update Script
-        env:
-          DATABASE_URL: ${{ secrets.CHINESE_STOCKS_DB_URL }} 
-          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
-          DEBUG: ${{ github.event.inputs.debug_mode || 'false' }}
-        
+        # 脚本运行时，会自动继承上面 Job 层面定义的 env
         run: node _scripts/update-chinese-stocks-data.mjs

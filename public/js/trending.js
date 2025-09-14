@@ -24,6 +24,7 @@ function updateMarketNavigation() {
 // 定义我们需要加载的所有榜单
 const TRENDING_LISTS_CONFIG = [
   { id: 'top-gainers-list', type: 'top_gainers' },
+  { id: 'top-market-cap-list', type: 'top_market_cap' },
   { id: 'new-highs-list', type: 'new_highs' },
   { id: 'top-turnover-list', type: 'top_turnover' },
   { id: 'top-volatility-list', type: 'top_volatility' },
@@ -124,6 +125,11 @@ function createStockListItemHTML(stock, type, rank) {
       const momentumVolume = stock.volume ? formatLargeNumber(stock.volume) : 'N/A';
       mainMetricHTML = `<div class="price">评分: ${momentumScore}</div><div class="metric-small">${momentumVolume}</div>`;
       break;
+    case 'top_market_cap':
+      // 市值榜显示市值和价格
+      const marketCapFormatted = stock.market_cap ? formatMarketCap(stock.market_cap) : 'N/A';
+      mainMetricHTML = `<div class="price">${marketCapFormatted}</div><div class="metric-small">$${price.toFixed(2)}</div>`;
+      break;
     default: // 涨幅榜等默认显示价格和涨跌幅
       mainMetricHTML = `<div class="price">$${price.toFixed(2)}</div>`;
       break;
@@ -151,23 +157,30 @@ function createStockListItemHTML(stock, type, rank) {
  * @param {string|number} marketCap - 市值
  * @returns {string} - 格式化后的市值字符串
  */
-function formatMarketCap(marketCap) {
-  if (!marketCap || marketCap === 0) return 'N/A';
-  
-  // 输入的marketCap是百万美元，需要转换为亿美元
-  // 1亿美元 = 100百万美元
-  const cap = parseFloat(marketCap);
-  const capInYi = cap / 100; // 转换为亿美元
-  
-  if (capInYi >= 10000) {
-    return `${(capInYi / 10000).toFixed(1)}万亿美元`;
-  } else if (capInYi >= 100) {
-    return `${capInYi.toFixed(0)}亿美元`;
-  } else if (capInYi >= 10) {
-    return `${capInYi.toFixed(1)}亿美元`;
-  } else {
-    return `${capInYi.toFixed(2)}亿美元`;
+/**
+ * 将一个以美元为单位的巨大数字，格式化为符合中文习惯的、带单位的字符串。
+ * @param {number} marketCapInUSD - 从API获取的、以美元为单位的原始市值。
+ * @returns {string} - 格式化后的字符串，例如 "$1,234.56亿美元"。
+ */
+function formatMarketCap(marketCapInUSD) {
+  if (typeof marketCapInUSD !== 'number' || isNaN(marketCapInUSD)) {
+    return 'N/A'; // 或返回 '未知'
   }
+
+  const B = 1_000_000_000; // 十亿
+  const M = 1_000_000;     // 百万
+
+  // 我们统一使用"亿美元"作为单位，以获得最佳的可读性和可比性
+  const marketCapInBillion = marketCapInUSD / B;
+
+  // 使用 toFixed(2) 来保留两位小数，确保精度
+  // 使用 toLocaleString() 来添加千位分隔符，例如 1,234.56
+  const formattedValue = marketCapInBillion.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  return `$${formattedValue}亿美元`;
 }
 
 /**
@@ -325,6 +338,7 @@ async function handleMoreButtonClick(type) {
 function getRankingTitle(type) {
   const titles = {
     'top_gainers': '🚀 涨幅榜 - 完整榜单',
+    'top_market_cap': '💰 市值榜 - 完整榜单',
     'top_losers': '📉 跌幅榜 - 完整榜单',
     'high_volume': '💰 成交额榜 - 完整榜单',
     'new_highs': '🎯 创年内新高 - 完整榜单',
