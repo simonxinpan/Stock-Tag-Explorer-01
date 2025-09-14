@@ -45,9 +45,10 @@ const TRENDING_LISTS_CONFIG = [
  * @param {object} stock - 股票数据对象
  * @param {string} type - 榜单类型
  * @param {number} rank - 排名
+ * @param {string} marketType - 市场类型 ('chinese_stocks' 或 'sp500')
  * @returns {string} - 代表一个 <li> 元素的 HTML 字符串
  */
-function createStockListItemHTML(stock, type, rank) {
+function createStockListItemHTML(stock, type, rank, marketType = 'sp500') {
   const changePercent = parseFloat(stock.change_percent) || 0;
   const price = parseFloat(stock.last_price) || 0;
   const colorClass = changePercent >= 0 ? 'text-green-500' : 'text-red-500';
@@ -126,8 +127,17 @@ function createStockListItemHTML(stock, type, rank) {
       mainMetricHTML = `<div class="price">评分: ${momentumScore}</div><div class="metric-small">${momentumVolume}</div>`;
       break;
     case 'top_market_cap':
-      // 市值榜显示市值和价格
-      const marketCapFormatted = stock.market_cap ? formatMarketCap(stock.market_cap) : 'N/A';
+      // 市值榜显示市值和价格，根据市场类型调用不同的格式化函数
+      let marketCapFormatted = 'N/A';
+      if (stock.market_cap) {
+        if (marketType === 'chinese_stocks') {
+          // 中概股：调用中概股专属函数（输入为美元）
+          marketCapFormatted = formatChineseStockMarketCap(stock.market_cap);
+        } else {
+          // 标普500：调用标普500专属函数（输入为百万美元）
+          marketCapFormatted = formatSP500MarketCap(stock.market_cap);
+        }
+      }
       mainMetricHTML = `<div class="price">${marketCapFormatted}</div><div class="metric-small">$${price.toFixed(2)}</div>`;
       break;
     default: // 涨幅榜等默认显示价格和涨跌幅
@@ -181,6 +191,44 @@ function formatMarketCap(marketCapInUSD) {
   });
 
   return `$${formattedValue}亿美元`;
+}
+
+/**
+ * 【标普500专用函数】
+ * 将一个以【百万美元】为单位的数字，格式化为"X.XX万亿美元"的格式。
+ */
+function formatSP500MarketCap(marketCapInMillions) {
+  const numericMarketCap = parseFloat(marketCapInMillions);
+  if (isNaN(numericMarketCap) || numericMarketCap === 0) return 'N/A';
+  
+  const TRILLION = 1_000_000; // 1万亿 = 1,000,000个百万
+  
+  const marketCapInTrillions = numericMarketCap / TRILLION;
+  
+  const formattedValue = marketCapInTrillions.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return `$${formattedValue}万亿`;
+}
+
+/**
+ * 【中概股专用函数】
+ * 将一个以【美元】为单位的数字，格式化为"X,XXX.X亿美元"的格式。
+ */
+function formatChineseStockMarketCap(marketCapInUSD) {
+  const numericMarketCap = parseFloat(marketCapInUSD);
+  if (isNaN(numericMarketCap) || numericMarketCap === 0) return 'N/A';
+  
+  const BILLION = 100_000_000; // 1亿 = 100,000,000
+  
+  const marketCapInHundredMillions = numericMarketCap / BILLION;
+  
+  const formattedValue = marketCapInHundredMillions.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return `$${formattedValue}亿`;
 }
 
 /**
@@ -249,7 +297,7 @@ async function loadAndRenderList(listConfig) {
     } else {
       // 只显示前5条数据
       const top5Stocks = stocks.slice(0, 5);
-      const top5HTML = top5Stocks.map((stock, index) => createStockListItemHTML(stock, listConfig.type, index + 1)).join('');
+      const top5HTML = top5Stocks.map((stock, index) => createStockListItemHTML(stock, listConfig.type, index + 1, currentMarket)).join('');
       listElement.innerHTML = top5HTML;
     }
   } catch (error) {
@@ -302,7 +350,7 @@ async function handleMoreButtonClick(type) {
         </div>
         <div class="modal-body">
           <ul class="ranking-list-full">
-            ${stocks.map((stock, index) => createStockListItemHTML(stock, type, index + 1)).join('')}
+            ${stocks.map((stock, index) => createStockListItemHTML(stock, type, index + 1, currentMarket)).join('')}
           </ul>
         </div>
       </div>
@@ -398,8 +446,18 @@ async function loadAndRenderSummaryData() {
     document.getElementById('summary-rising-stocks').textContent = data.risingStocks;
     document.getElementById('summary-falling-stocks').textContent = data.fallingStocks;
      
-    // 注意：总市值需要进行单位换算，因为数据库存的是百万美元
-    document.getElementById('summary-total-market-cap').textContent = formatLargeNumber(data.totalMarketCap * 1000000, true);
+    // 根据市场类型使用不同的格式化函数显示总市值
+    let totalMarketCapFormatted = 'N/A';
+    if (data.totalMarketCap) {
+      if (currentMarket === 'chinese_stocks') {
+        // 中概股：数据库存储的是美元，直接使用中概股格式化函数
+        totalMarketCapFormatted = formatChineseStockMarketCap(data.totalMarketCap);
+      } else {
+        // 标普500：数据库存储的是百万美元，使用标普500格式化函数
+        totalMarketCapFormatted = formatSP500MarketCap(data.totalMarketCap);
+      }
+    }
+    document.getElementById('summary-total-market-cap').textContent = totalMarketCapFormatted;
 
   } catch (error) {
     console.error('加载市场汇总数据失败:', error);
