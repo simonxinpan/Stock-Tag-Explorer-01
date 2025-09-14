@@ -332,42 +332,42 @@ function getMockChineseStocksData(req, res, type) {
     {
       symbol: 'BABA',
       name: 'Alibaba Group Holding Limited',
-      name_zh: '阿里巴巴集团',
-      current_price: 85.42,
-      change_percent: 2.58,
-      market_cap: 205800000000,
+      name_zh: '阿里巴巴',
+      current_price: 155.06,
+      change_percent: -0.24,
+      market_cap: 350794.5, // 百万美元单位
       volume: 12500000,
-      market_cap_formatted: '205.8B'
+      market_cap_formatted: '$3507.9亿'
     },
     {
       symbol: 'PDD',
       name: 'PDD Holdings Inc',
       name_zh: '拼多多',
-      current_price: 142.33,
-      change_percent: 4.15,
-      market_cap: 89400000000,
+      current_price: 125.44,
+      change_percent: -0.22,
+      market_cap: 174596.2, // 百万美元单位
       volume: 5400000,
-      market_cap_formatted: '89.4B'
+      market_cap_formatted: '$1746.0亿'
     },
     {
-      symbol: 'TCEHY',
-      name: 'Tencent Holdings Limited',
-      name_zh: '腾讯控股',
-      current_price: 42.35,
-      change_percent: 2.99,
-      market_cap: 405600000000,
+      symbol: 'NTES',
+      name: 'NetEase Inc',
+      name_zh: '网易',
+      current_price: 152.80,
+      change_percent: 1.80,
+      market_cap: 90637.0, // 百万美元单位
       volume: 6700000,
-      market_cap_formatted: '405.6B'
+      market_cap_formatted: '$906.4亿'
     },
     {
-      symbol: 'BIDU',
-      name: 'Baidu Inc',
-      name_zh: '百度',
-      current_price: 98.76,
-      change_percent: 3.62,
-      market_cap: 34500000000,
+      symbol: 'TCOM',
+      name: 'Trip.com Group Limited',
+      name_zh: '携程',
+      current_price: 73.87,
+      change_percent: -1.28,
+      market_cap: 48436.5, // 百万美元单位
       volume: 4200000,
-      market_cap_formatted: '34.5B'
+      market_cap_formatted: '$484.4亿'
     },
     {
       symbol: 'NIO',
@@ -375,9 +375,9 @@ function getMockChineseStocksData(req, res, type) {
       name_zh: '蔚来汽车',
       current_price: 8.92,
       change_percent: 3.96,
-      market_cap: 15800000000,
+      market_cap: 15800, // 百万美元单位
       volume: 15600000,
-      market_cap_formatted: '15.8B'
+      market_cap_formatted: '$158.0亿'
     },
     {
       symbol: 'JD',
@@ -385,19 +385,9 @@ function getMockChineseStocksData(req, res, type) {
       name_zh: '京东集团',
       current_price: 32.18,
       change_percent: -2.63,
-      market_cap: 48200000000,
+      market_cap: 48200, // 百万美元单位
       volume: 8900000,
-      market_cap_formatted: '48.2B'
-    },
-    {
-      symbol: 'NTES',
-      name: 'NetEase Inc',
-      name_zh: '网易',
-      current_price: 98.21,
-      change_percent: -1.45,
-      market_cap: 32100000000,
-      volume: 3200000,
-      market_cap_formatted: '32.1B'
+      market_cap_formatted: '$482.0亿'
     },
     {
       symbol: 'BILI',
@@ -405,9 +395,9 @@ function getMockChineseStocksData(req, res, type) {
       name_zh: '哔哩哔哩',
       current_price: 23.45,
       change_percent: 5.01,
-      market_cap: 8900000000,
+      market_cap: 8900, // 百万美元单位
       volume: 8700000,
-      market_cap_formatted: '8.9B'
+      market_cap_formatted: '$89.0亿'
     }
   ];
 
