@@ -157,23 +157,30 @@ function createStockListItemHTML(stock, type, rank) {
  * @param {string|number} marketCap - 市值
  * @returns {string} - 格式化后的市值字符串
  */
-function formatMarketCap(marketCap) {
-  if (!marketCap || marketCap === 0) return 'N/A';
-  
-  // 输入的marketCap是美元单位
-  const cap = parseFloat(marketCap);
-  
-  if (cap >= 1000000000000) {
-    return `${(cap / 1000000000000).toFixed(1)}万亿美元`;
-  } else if (cap >= 100000000000) {
-    return `${(cap / 100000000000).toFixed(0)}千亿美元`;
-  } else if (cap >= 1000000000) {
-    return `${(cap / 1000000000).toFixed(1)}十亿美元`;
-  } else if (cap >= 100000000) {
-    return `${(cap / 100000000).toFixed(1)}亿美元`;
-  } else {
-    return `${(cap / 1000000).toFixed(1)}百万美元`;
+/**
+ * 将一个以美元为单位的巨大数字，格式化为符合中文习惯的、带单位的字符串。
+ * @param {number} marketCapInUSD - 从API获取的、以美元为单位的原始市值。
+ * @returns {string} - 格式化后的字符串，例如 "$1,234.56亿美元"。
+ */
+function formatMarketCap(marketCapInUSD) {
+  if (typeof marketCapInUSD !== 'number' || isNaN(marketCapInUSD)) {
+    return 'N/A'; // 或返回 '未知'
   }
+
+  const B = 1_000_000_000; // 十亿
+  const M = 1_000_000;     // 百万
+
+  // 我们统一使用"亿美元"作为单位，以获得最佳的可读性和可比性
+  const marketCapInBillion = marketCapInUSD / B;
+
+  // 使用 toFixed(2) 来保留两位小数，确保精度
+  // 使用 toLocaleString() 来添加千位分隔符，例如 1,234.56
+  const formattedValue = marketCapInBillion.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  return `$${formattedValue}亿美元`;
 }
 
 /**
