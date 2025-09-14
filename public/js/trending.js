@@ -310,8 +310,9 @@ async function loadAndRenderList(listConfig) {
       ticker: stock.ticker || stock.symbol || 'N/A', // 确保ticker字段存在
       last_price: Number(stock.last_price) || 0,
       change_percent: Number(stock.change_percent) || 0,
-      // 关键修正：保持market_cap原始类型，不强制转换为Number
-      market_cap: stock.market_cap, // 保持原始类型（可能是字符串）
+      // 关键修正：直接使用从API接收到的原始值 (字符串或数字)，
+      // 让下游的 formatMarketCap 函数自己去处理解析。
+      market_cap: stock.market_cap,
       // 保留后端返回的格式化字段
       market_cap_formatted: stock.market_cap_formatted
     }));
