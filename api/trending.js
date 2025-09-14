@@ -455,7 +455,12 @@ function getMockChineseStocksData(req, res, type) {
     case 'top_market_cap':
     case 'market_cap':
     default:
-      sortedStocks.sort((a, b) => b.market_cap - a.market_cap);
+      // 对于中概股模拟数据，market_cap已经是亿美元单位的数值
+      sortedStocks.sort((a, b) => {
+        const aMarketCap = parseFloat(a.market_cap) || 0;
+        const bMarketCap = parseFloat(b.market_cap) || 0;
+        return bMarketCap - aMarketCap;
+      });
       break;
   }
 
