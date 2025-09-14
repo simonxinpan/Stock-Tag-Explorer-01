@@ -183,6 +183,19 @@ function formatMarketCap(marketCapInUSD) {
   return `$${formattedValue}亿美元`;
 }
 
+// 中概股专属格式化函数
+function formatChineseStockMarketCap(marketCapInUSD) {
+  const numericMarketCap = parseFloat(marketCapInUSD);
+  if (isNaN(numericMarketCap) || numericMarketCap === 0) return 'N/A';
+  const BILLION = 1_000_000_000;
+  const marketCapInBillionUSD = numericMarketCap / BILLION;
+  const formattedValue = marketCapInBillionUSD.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return `$${formattedValue}亿`;
+}
+
 /**
  * 格式化大数字（用于成交量、成交额等）
  * @param {string|number} value - 需要格式化的数值
@@ -387,6 +400,90 @@ function formatTurnover(value) {
 }
 
 // 新函数：获取并渲染市场汇总数据
+// 统一的数据加载和渲染函数
+async function loadAndRenderData(apiUrl, marketType) {
+  try {
+    console.log(`📈 开始加载${marketType === 'chinese_stocks' ? '中概股' : '标普500'}数据...`);
+    
+    // 显示加载动画
+    const loadingElements = document.querySelectorAll('.loading');
+    loadingElements.forEach(el => el.style.display = 'block');
+    
+    const response = await fetch(apiUrl);
+    const stocks = await response.json();
+    
+    // 排序
+    stocks.sort((a, b) => (parseFloat(b.market_cap) || 0) - (parseFloat(a.market_cap) || 0));
+    
+    // 渲染列表
+    const tableBody = document.getElementById('stock-list-body');
+    if (tableBody) {
+      tableBody.innerHTML = '';
+      stocks.slice(0, 10).forEach((stock, index) => {
+        const row = tableBody.insertRow();
+        
+        // 排名
+        const rankCell = row.insertCell();
+        rankCell.textContent = index + 1;
+        
+        // 股票代码
+        const symbolCell = row.insertCell();
+        symbolCell.textContent = stock.ticker || stock.symbol;
+        
+        // 公司名称
+        const nameCell = row.insertCell();
+        nameCell.textContent = marketType === 'chinese_stocks' ? (stock.name_zh || stock.name) : stock.name;
+        
+        // 股价
+        const priceCell = row.insertCell();
+        priceCell.textContent = `$${parseFloat(stock.last_price || stock.price || 0).toFixed(2)}`;
+        
+        // 涨跌幅
+        const changeCell = row.insertCell();
+        const changePercent = parseFloat(stock.change_percent || 0);
+        changeCell.textContent = `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`;
+        changeCell.className = changePercent >= 0 ? 'positive' : 'negative';
+        
+        // 市值
+        const marketCapCell = row.insertCell();
+        if (marketType === 'chinese_stocks') {
+          marketCapCell.textContent = formatChineseStockMarketCap(stock.market_cap);
+        } else {
+          marketCapCell.textContent = formatMarketCap(stock.market_cap);
+        }
+      });
+    }
+    
+    // 渲染总市值
+    const totalMarketCapElement = document.getElementById('summary-total-market-cap');
+    if (totalMarketCapElement && stocks.length > 0) {
+      const totalMarketCap = stocks.reduce((sum, stock) => sum + (parseFloat(stock.market_cap) || 0), 0);
+      if (marketType === 'chinese_stocks') {
+        totalMarketCapElement.textContent = formatChineseStockMarketCap(totalMarketCap);
+      } else {
+        totalMarketCapElement.textContent = formatMarketCap(totalMarketCap);
+      }
+    }
+    
+    // 更新其他统计数据
+    const risingStocks = stocks.filter(stock => parseFloat(stock.change_percent || 0) > 0).length;
+    const fallingStocks = stocks.filter(stock => parseFloat(stock.change_percent || 0) < 0).length;
+    
+    const risingElement = document.getElementById('summary-rising-stocks');
+    const fallingElement = document.getElementById('summary-falling-stocks');
+    
+    if (risingElement) risingElement.textContent = risingStocks;
+    if (fallingElement) fallingElement.textContent = fallingStocks;
+    
+  } catch (error) {
+    console.error(`Error loading data for ${marketType}:`, error);
+  } finally {
+    // 隐藏加载动画
+    const loadingElements = document.querySelectorAll('.loading');
+    loadingElements.forEach(el => el.style.display = 'none');
+  }
+}
+
 async function loadAndRenderSummaryData() {
   try {
     const currentMarket = getCurrentMarket();
@@ -410,14 +507,20 @@ async function loadAndRenderSummaryData() {
 
 // 当整个页面加载完成后，开始执行我们的脚本
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('📈 页面加载完成，开始获取所有趋势榜单数据...');
+  const urlParams = new URLSearchParams(window.location.search);
+  const market = urlParams.get('market');
+
+  if (market === 'chinese_stocks') {
+    document.title = "中概股市值榜 | Stock Tag Explorer";
+    loadAndRenderData('/api/chinese-stocks-summary', 'chinese_stocks');
+  } else {
+    document.title = "标普500市值榜 | Stock Tag Explorer";
+    // 假设原来获取标普的API是 /api/market-summary
+    loadAndRenderData('/api/market-summary', 'sp500');
+  }
   
   // 更新市场导航状态
   updateMarketNavigation();
-  
-  // 并发地加载所有榜单和汇总数据
-  loadAndRenderSummaryData(); // <-- 新增的调用
-  TRENDING_LISTS_CONFIG.forEach(loadAndRenderList);
   
   // 为所有"更多"按钮添加事件监听
   document.addEventListener('click', (e) => {
