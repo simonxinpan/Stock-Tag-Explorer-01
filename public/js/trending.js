@@ -185,15 +185,18 @@ function formatChineseStockMarketCap(marketCapInUSD) {
     return 'N/A';
   }
 
-  const YI = 100_000_000; // 1亿
+  const BILLION = 1_000_000_000; // 10亿美元
 
-  // 将美元市值转换为"亿美元"为单位
-  const marketCapInYiUSD = marketCapInUSD / YI;
+  // 将美元市值转换为"亿美元"为单位（注意：1亿美元 = 1_000_000_000 / 10 = 100_000_000）
+  const marketCapInYiUSD = marketCapInUSD / BILLION * 10;
 
-  // 格式化数字，保留一位小数
-  const formattedValue = marketCapInYiUSD.toFixed(1);
+  // 格式化数字，保留一位小数，并添加千位分隔符
+  const formattedValue = marketCapInYiUSD.toLocaleString('en-US', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1
+  });
 
-  return `$${formattedValue}亿美元`;
+  return `$${formattedValue}亿`;
 }
 
 /**
