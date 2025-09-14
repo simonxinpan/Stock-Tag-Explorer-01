@@ -183,6 +183,19 @@ function formatMarketCap(marketCapInUSD) {
   return `$${formattedValue}亿美元`;
 }
 
+// 中概股专属格式化函数
+function formatChineseStockMarketCap(marketCapInUSD) {
+  const numericMarketCap = parseFloat(marketCapInUSD);
+  if (isNaN(numericMarketCap) || numericMarketCap === 0) return 'N/A';
+  const BILLION = 1_000_000_000;
+  const marketCapInBillionUSD = numericMarketCap / BILLION;
+  const formattedValue = marketCapInBillionUSD.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return `$${formattedValue}亿`;
+}
+
 /**
  * 格式化大数字（用于成交量、成交额等）
  * @param {string|number} value - 需要格式化的数值
@@ -408,16 +421,150 @@ async function loadAndRenderSummaryData() {
   }
 }
 
+// 【中概股专用函数】获取并渲染中概股数据
+async function loadAndRenderChineseStocks() {
+  try {
+    console.log('页面加载完成，开始加载中概股数据...');
+    
+    // 加载汇总数据
+    const response = await fetch('/api/chinese-stocks-summary');
+    if (!response.ok) throw new Error('API request failed');
+    const data = await response.json();
+
+    // 更新汇总数据 DOM 元素
+    document.getElementById('summary-total-stocks').textContent = data.totalStocks;
+    document.getElementById('summary-rising-stocks').textContent = data.risingStocks;
+    document.getElementById('summary-falling-stocks').textContent = data.fallingStocks;
+     
+    // 使用中概股专属格式化函数
+    document.getElementById('summary-total-market-cap').textContent = formatChineseStockMarketCap(data.totalMarketCap * 1000000);
+
+    // 加载各个榜单数据
+    for (const listConfig of TRENDING_LISTS_CONFIG) {
+      await loadAndRenderChineseStocksList(listConfig);
+    }
+
+  } catch (error) {
+    console.error('加载中概股数据失败:', error);
+  }
+}
+
+// 【中概股专用函数】获取单个榜单的数据并渲染
+async function loadAndRenderChineseStocksList(listConfig) {
+  const listElement = document.getElementById(listConfig.id);
+  if (!listElement) {
+    console.error(`错误：在HTML中找不到ID为 "${listConfig.id}" 的元素`);
+    return;
+  }
+   
+  listElement.innerHTML = '<li class="loading">正在加载数据...</li>';
+
+  try {
+    const response = await fetch(`/api/trending?type=${listConfig.type}&market=chinese_stocks`);
+    if (!response.ok) throw new Error(`API 请求失败，状态码: ${response.status}`);
+    let data = await response.json();
+
+    // 检查是否是错误响应
+    if (data.error) {
+      throw new Error(data.message || data.error);
+    }
+
+    // 处理包装格式的响应 {success: true, data: []}
+    let stocksArray = data;
+    if (data.success && Array.isArray(data.data)) {
+      stocksArray = data.data;
+    } else if (!Array.isArray(data)) {
+      throw new Error('API返回的数据格式不正确');
+    }
+
+    // 确保数据类型正确，进行类型转换
+    let stocks = stocksArray.map(stock => ({
+      ...stock,
+      ticker: stock.ticker || stock.symbol || 'N/A',
+      last_price: Number(stock.last_price) || 0,
+      change_percent: Number(stock.change_percent) || 0,
+      market_cap: stock.market_cap // 保持原始值，不进行Number转换
+    }));
+
+    if (stocks.length === 0) {
+      listElement.innerHTML = '<li class="no-data">暂无符合条件的股票</li>';
+    } else {
+      // 只显示前5条数据
+      const top5Stocks = stocks.slice(0, 5);
+      const top5HTML = top5Stocks.map((stock, index) => createChineseStockListItemHTML(stock, listConfig.type, index + 1)).join('');
+      listElement.innerHTML = top5HTML;
+    }
+  } catch (error) {
+    console.error(`加载中概股榜单 "${listConfig.title}" 失败:`, error);
+    listElement.innerHTML = `<li class="error">数据库连接失败<br><small>${error.message}</small></li>`;
+  }
+}
+
+// 【中概股专用函数】生成单支股票的 HTML 字符串
+function createChineseStockListItemHTML(stock, type, rank) {
+  const symbol = stock.ticker || stock.symbol || 'N/A';
+  const name = stock.name_zh || stock.name || 'N/A';
+  const price = stock.last_price || stock.price || 0;
+  const changePercent = stock.change_percent || 0;
+  const marketCap = stock.market_cap || 0;
+  
+  // 使用中概股专属格式化函数
+  const formattedMarketCap = formatChineseStockMarketCap(marketCap);
+  
+  const changeClass = changePercent >= 0 ? 'positive' : 'negative';
+  const changeSign = changePercent >= 0 ? '+' : '';
+  
+  return `
+    <li class="stock-item">
+      <div class="stock-rank">${rank}</div>
+      <div class="stock-info">
+        <div class="stock-symbol">${symbol}</div>
+        <div class="stock-name">${name}</div>
+      </div>
+      <div class="stock-metrics">
+        <div class="stock-price">$${price.toFixed(2)}</div>
+        <div class="stock-change ${changeClass}">${changeSign}${changePercent.toFixed(2)}%</div>
+        <div class="stock-market-cap">${formattedMarketCap}</div>
+      </div>
+    </li>
+  `;
+}
+
+// 【标普500专用函数】保持原有逻辑不变
+async function loadAndRenderSP500() {
+  try {
+    console.log('页面加载完成，开始加载标普500数据...');
+    
+    // 加载汇总数据
+    await loadAndRenderSummaryData();
+    
+    // 加载各个榜单数据
+    for (const listConfig of TRENDING_LISTS_CONFIG) {
+      await loadAndRenderList(listConfig);
+    }
+
+  } catch (error) {
+    console.error('加载标普500数据失败:', error);
+  }
+}
+
 // 当整个页面加载完成后，开始执行我们的脚本
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('📈 页面加载完成，开始获取所有趋势榜单数据...');
+  const urlParams = new URLSearchParams(window.location.search);
+  const market = urlParams.get('market');
+
+  if (market === 'chinese_stocks') {
+    document.title = "中概股市值榜 | Stock Tag Explorer";
+    // 调用我们刚刚创建的、独立的中概股函数
+    loadAndRenderChineseStocks();
+  } else {
+    document.title = "标普500市值榜 | Stock Tag Explorer";
+    // 调用原来已有的、保持不变的标普500函数
+    loadAndRenderSP500();
+  }
   
   // 更新市场导航状态
   updateMarketNavigation();
-  
-  // 并发地加载所有榜单和汇总数据
-  loadAndRenderSummaryData(); // <-- 新增的调用
-  TRENDING_LISTS_CONFIG.forEach(loadAndRenderList);
   
   // 为所有"更多"按钮添加事件监听
   document.addEventListener('click', (e) => {
