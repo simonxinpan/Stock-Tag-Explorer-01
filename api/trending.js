@@ -277,9 +277,12 @@ module.exports = async function handler(req, res) {
     const result = await client.query(query, queryParams);
     
     // 格式化市值数据
+    // 根据市场类型使用不同的格式化函数
     const formattedStocks = result.rows.map(stock => ({
       ...stock,
-      market_cap_formatted: formatMarketCap(stock.market_cap)
+      market_cap_formatted: market === 'chinese_stocks' 
+        ? formatChineseStockMarketCap(stock.market_cap)
+        : formatMarketCap(stock.market_cap)
     }));
 
     res.status(200).json(formattedStocks);
@@ -312,22 +315,47 @@ module.exports = async function handler(req, res) {
   }
 };
 
-// 格式化市值显示
+// 格式化市值显示（标普500专用 - 输入单位为百万美元）
 function formatMarketCap(marketCap) {
   if (!marketCap || marketCap === 0) return '未知';
   
-  // 输入的marketCap是美元单位，需要转换为亿美元
-  const capInYi = parseFloat(marketCap) / 100000000; // 除以1亿转换为亿美元单位
+  // 输入的marketCap是百万美元单位，需要转换为美元
+  const capInUSD = parseFloat(marketCap) * 1000000; // 百万美元转美元
   
-  if (capInYi >= 10000) {
-    return `$${(capInYi / 10000).toFixed(1)}万亿美元`;
-  } else if (capInYi >= 100) {
-    return `$${capInYi.toFixed(0)}亿美元`;
-  } else if (capInYi >= 10) {
-    return `$${capInYi.toFixed(1)}亿美元`;
+  if (capInUSD >= 1000000000000) { // 1万亿美元以上
+    return `$${(capInUSD / 1000000000000).toFixed(1)}万亿美元`;
+  } else if (capInUSD >= 10000000000) { // 100亿美元以上
+    return `$${(capInUSD / 100000000).toFixed(0)}亿美元`;
+  } else if (capInUSD >= 1000000000) { // 10亿美元以上
+    return `$${(capInUSD / 100000000).toFixed(1)}亿美元`;
   } else {
-    return `$${capInYi.toFixed(2)}亿美元`;
+    return `$${(capInUSD / 100000000).toFixed(2)}亿美元`;
   }
+}
+
+/**
+ * 【中概股专用】
+ * 将一个以【美元】为单位的巨大数字，格式化为符合中文习惯的、带单位的字符串。
+ * @param {number | null | undefined} marketCapInUSD - 从API获取的、以【美元】为单位的原始市值。
+ * @returns {string} - 格式化后的字符串，例如 "$3,507.95亿美元"。
+ */
+function formatChineseStockMarketCap(marketCapInUSD) {
+  if (typeof marketCapInUSD !== 'number' || isNaN(marketCapInUSD) || marketCapInUSD === 0) {
+    return 'N/A';
+  }
+
+  const BILLION = 1_000_000_000; // 十亿
+
+  // 将美元市值转换为"亿美元"为单位
+  const marketCapInBillionUSD = marketCapInUSD / BILLION;
+
+  // 格式化数字，保留两位小数，并添加千位分隔符
+  const formattedValue = marketCapInBillionUSD.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  return `$${formattedValue}亿美元`;
 }
 
 // 中概股模拟数据函数
