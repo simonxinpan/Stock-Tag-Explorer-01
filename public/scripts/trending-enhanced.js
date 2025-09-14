@@ -793,10 +793,22 @@ class TrendingEnhanced {
     }
     
     formatMarketCap(value) {
-        if (value >= 1e12) return `$${(value / 1e12).toFixed(1)}T`;
-        if (value >= 1e9) return `$${(value / 1e9).toFixed(1)}B`;
-        if (value >= 1e6) return `$${(value / 1e6).toFixed(1)}M`;
-        return `$${value.toFixed(0)}`;
+        if (!value || value === 0) return '未知';
+        
+        // 输入的value是百万美元，需要转换为亿美元
+        // 1亿美元 = 100百万美元
+        const cap = parseFloat(value);
+        const capInYi = cap / 100; // 转换为亿美元
+        
+        if (capInYi >= 10000) {
+            return `$${(capInYi / 10000).toFixed(1)}万亿`;
+        } else if (capInYi >= 100) {
+            return `$${capInYi.toFixed(0)}亿`;
+        } else if (capInYi >= 10) {
+            return `$${capInYi.toFixed(1)}亿`;
+        } else {
+            return `$${capInYi.toFixed(2)}亿`;
+        }
     }
     
     generateMockTrendingData() {
