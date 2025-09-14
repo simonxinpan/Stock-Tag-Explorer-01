@@ -369,13 +369,13 @@ function formatMarketCap(marketCap) {
     const capInYi = cap / 100; // 转换为亿美元
     
     if (capInYi >= 10000) {
-        return `$${(capInYi / 10000).toFixed(1)}万亿`;
+        return `$${(capInYi / 10000).toFixed(1)}万亿美元`;
     } else if (capInYi >= 100) {
-        return `$${capInYi.toFixed(0)}亿`;
+        return `$${capInYi.toFixed(0)}亿美元`;
     } else if (capInYi >= 10) {
-        return `$${capInYi.toFixed(1)}亿`;
+        return `$${capInYi.toFixed(1)}亿美元`;
     } else {
-        return `$${capInYi.toFixed(2)}亿`;
+        return `$${capInYi.toFixed(2)}亿美元`;
     }
 }
 

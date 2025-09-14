@@ -314,13 +314,13 @@ function formatMarketCap(marketCap) {
   const capInYi = parseFloat(marketCap);
   
   if (capInYi >= 10000) {
-    return `$${(capInYi / 10000).toFixed(1)}万亿`;
+    return `$${(capInYi / 10000).toFixed(1)}万亿美元`;
   } else if (capInYi >= 100) {
-    return `$${capInYi.toFixed(0)}亿`;
+    return `$${capInYi.toFixed(0)}亿美元`;
   } else if (capInYi >= 10) {
-    return `$${capInYi.toFixed(1)}亿`;
+    return `$${capInYi.toFixed(1)}亿美元`;
   } else {
-    return `$${capInYi.toFixed(2)}亿`;
+    return `$${capInYi.toFixed(2)}亿美元`;
   }
 }
 
@@ -335,7 +335,7 @@ function getMockChineseStocksData(req, res, type) {
       change_percent: -0.24,
       market_cap: 3507.945, // 亿美元单位
       volume: 12500000,
-      market_cap_formatted: '$3507.9亿'
+      market_cap_formatted: '$3507.9亿美元'
     },
     {
       symbol: 'PDD',
@@ -345,7 +345,7 @@ function getMockChineseStocksData(req, res, type) {
       change_percent: -0.22,
       market_cap: 1745.962, // 亿美元单位
       volume: 5400000,
-      market_cap_formatted: '$1746.0亿'
+      market_cap_formatted: '$1746.0亿美元'
     },
     {
       symbol: 'NTES',
@@ -355,7 +355,7 @@ function getMockChineseStocksData(req, res, type) {
       change_percent: 1.80,
       market_cap: 906.37, // 亿美元单位
       volume: 6700000,
-      market_cap_formatted: '$906.4亿'
+      market_cap_formatted: '$906.4亿美元'
     },
     {
       symbol: 'TCOM',
@@ -365,7 +365,7 @@ function getMockChineseStocksData(req, res, type) {
       change_percent: -1.28,
       market_cap: 484.365, // 亿美元单位
       volume: 4200000,
-      market_cap_formatted: '$484.4亿'
+      market_cap_formatted: '$484.4亿美元'
     },
     {
       symbol: 'NIO',
@@ -375,7 +375,7 @@ function getMockChineseStocksData(req, res, type) {
       change_percent: 3.96,
       market_cap: 158.0, // 亿美元单位
       volume: 15600000,
-      market_cap_formatted: '$158.0亿'
+      market_cap_formatted: '$158.0亿美元'
     },
     {
       symbol: 'JD',
@@ -385,7 +385,7 @@ function getMockChineseStocksData(req, res, type) {
       change_percent: -2.63,
       market_cap: 482.0, // 亿美元单位
       volume: 8900000,
-      market_cap_formatted: '$482.0亿'
+      market_cap_formatted: '$482.0亿美元'
     },
     {
       symbol: 'BILI',
@@ -395,7 +395,7 @@ function getMockChineseStocksData(req, res, type) {
       change_percent: 5.01,
       market_cap: 89.0, // 亿美元单位
       volume: 8700000,
-      market_cap_formatted: '$89.0亿'
+      market_cap_formatted: '$89.0亿美元'
     }
   ];
 

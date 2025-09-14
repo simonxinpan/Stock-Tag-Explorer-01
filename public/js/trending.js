@@ -127,7 +127,8 @@ function createStockListItemHTML(stock, type, rank) {
       break;
     case 'top_market_cap':
       // 市值榜显示市值和价格
-      const marketCapFormatted = stock.market_cap ? formatMarketCap(stock.market_cap) : 'N/A';
+      // 优先使用后端返回的格式化字符串，避免重复格式化
+      const marketCapFormatted = stock.market_cap_formatted || (stock.market_cap ? formatMarketCap(stock.market_cap) : 'N/A');
       mainMetricHTML = `<div class="price">${marketCapFormatted}</div><div class="metric-small">$${price.toFixed(2)}</div>`;
       break;
     default: // 涨幅榜等默认显示价格和涨跌幅
@@ -399,8 +400,8 @@ async function loadAndRenderSummaryData() {
     document.getElementById('summary-rising-stocks').textContent = data.risingStocks;
     document.getElementById('summary-falling-stocks').textContent = data.fallingStocks;
      
-    // 注意：总市值需要进行单位换算，因为数据库存的是百万美元
-    document.getElementById('summary-total-market-cap').textContent = formatLargeNumber(data.totalMarketCap * 1000000, true);
+    // 使用正确的市值格式化函数
+    document.getElementById('summary-total-market-cap').textContent = formatMarketCap(data.totalMarketCap);
 
   } catch (error) {
     console.error('加载市场汇总数据失败:', error);
