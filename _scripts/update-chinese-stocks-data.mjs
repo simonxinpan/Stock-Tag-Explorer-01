@@ -1,22 +1,19 @@
 // 文件: /_scripts/update-chinese-stocks-data.mjs
-// 版本: 3.2 - Market Cap Unit Standardization
+// 版本: 6.0 - Database Driven & Fully-Featured
 import pg from 'pg';
 const { Pool } = pg;
-import fs from 'fs/promises';
 import 'dotenv/config';
 
 // --- 配置区 ---
 const DATABASE_URL = process.env.DATABASE_URL;
 const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
-const STOCK_LIST_FILE = './china_stocks.json';
-const SCRIPT_NAME = "Chinese Stocks Rate-Limited Update";
+const SCRIPT_NAME = "Chinese Stocks DB-Driven Ultimate Update";
 const DEBUG = process.env.DEBUG === 'true';
-const DELAY_SECONDS = 4;
+const DELAY_SECONDS = 4; // 保持降速，避免API超限
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 async function fetchApiData(url, ticker, apiName) {
-  // ... (此函数无需修改，与之前版本相同)
   try {
     const response = await fetch(url);
     if (!response.ok) {
@@ -30,8 +27,8 @@ async function fetchApiData(url, ticker, apiName) {
     }
     const data = JSON.parse(text);
     if (Object.keys(data).length === 0 || (data.c === 0 && data.pc === 0)) {
-        console.warn(`⚠️ [${ticker}] ${apiName} returned empty or zero data.`);
-        return null;
+      console.warn(`⚠️ [${ticker}] ${apiName} returned empty or zero data.`);
+      return null;
     }
     return data;
   } catch (error) {
@@ -52,8 +49,12 @@ async function main() {
   try {
     client = await pool.connect();
     console.log(`✅ [DB] Connected to Chinese Stocks database.`);
-    const tickers = JSON.parse(await fs.readFile(STOCK_LIST_FILE, 'utf-8'));
-    console.log(`📋 Found ${tickers.length} stocks to update.`);
+    
+    // 关键变更: 股票列表的唯一来源是数据库本身！
+    console.log("📰 Reading ticker list directly from the database...");
+    const tickerRes = await client.query('SELECT ticker FROM stocks ORDER BY ticker;');
+    const tickers = tickerRes.rows.map(r => r.ticker);
+    console.log(`📋 Found ${tickers.length} stocks to update from the database.`);
     
     let updatedCount = 0;
     let failedCount = 0;
@@ -73,9 +74,7 @@ async function main() {
         const volume = quote.v;
         const turnover = volume ? volume * quote.c : null;
         
-        // 关键修正：将市值从“百万美元”转换为“美元”
-        const market_cap_in_usd = profile ? profile.marketCapitalization * 1000000 : null;
-        
+        const market_cap = profile ? profile.marketCapitalization * 1000000 : null; // 标准化单位
         const logo = profile ? profile.logo : null;
         const week_52_high = metrics && metrics.metric ? metrics.metric['52WeekHigh'] : null;
         const week_52_low = metrics && metrics.metric ? metrics.metric['52WeekLow'] : null;
@@ -95,9 +94,7 @@ async function main() {
         `;
         const params = [
             quote.c, change_amount, change_percent, quote.h, quote.l, quote.o, quote.pc,
-            volume, turnover, 
-            market_cap_in_usd, // 使用转换后的值
-            logo, week_52_high, week_52_low, 
+            volume, turnover, market_cap, logo, week_52_high, week_52_low, 
             pe_ttm, dividend_yield, ticker
         ];
         
@@ -105,9 +102,9 @@ async function main() {
           const result = await client.query(sql, params);
           if (result.rowCount > 0) {
             updatedCount++;
-            if (DEBUG) console.log(`   -> ✅ Updated ${ticker} with market cap (USD): ${market_cap_in_usd}`);
+            if (DEBUG) console.log(`   -> ✅ Updated ${ticker} with full data.`);
           } else {
-            console.warn(`   -> ⚠️ No rows updated for ${ticker}. Ticker may not be in the database.`);
+            console.warn(`   -> ⚠️ No rows updated for ${ticker}.`);
           }
         } catch (dbError) {
           console.error(`   -> ❌ DB Error for ${ticker}: ${dbError.message}`);
@@ -117,7 +114,6 @@ async function main() {
         console.warn(`⏭️ Skipping ${ticker} due to invalid or missing quote data.`);
         failedCount++;
       }
-
       await delay(DELAY_SECONDS * 1000);
     }
     
