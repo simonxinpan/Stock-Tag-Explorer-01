@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>榜单详情 - 股票标签探索器</title>
+    <link rel="stylesheet" href="styles/mobile-ranking-detail.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- 状态栏占位 -->
+    <div class="status-bar"></div>
+    
+    <!-- 主容器 -->
+    <div class="main-container">
+        <!-- 固定页首导航条 -->
+        <div class="fixed-header">
+            <div class="header-card">
+                <div class="header-line"></div>
+                <div class="header-content">
+                    <button class="back-btn" onclick="history.back()">
+                        <span class="back-icon">←</span>
+                    </button>
+                    <h1 class="header-title" id="page-title">榜单详情</h1>
+                    <div class="header-actions">
+                        <button class="refresh-btn" onclick="loadRankingData()">
+                            <span class="refresh-icon">↻</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 页面内容 -->
+        <div class="page-content">
+            <!-- 榜单统计卡片 -->
+            <div class="stats-card">
+                <div class="stats-line"></div>
+                <div class="stats-content">
+                    <div class="stat-item">
+                        <span class="stat-icon" id="stat-icon">📈</span>
+                        <div class="stat-info">
+                            <span class="stat-number" id="stat-number">--</span>
+                            <span class="stat-label" id="stat-label">股票数量</span>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-icon">📊</span>
+                        <div class="stat-info">
+                            <span class="stat-number" id="avg-change">--</span>
+                            <span class="stat-label">平均涨跌幅</span>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-icon">💰</span>
+                        <div class="stat-info">
+                            <span class="stat-number" id="total-value">--</span>
+                            <span class="stat-label">总市值</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 排序筛选卡片 -->
+            <div class="filter-card">
+                <div class="filter-line"></div>
+                <div class="filter-content">
+                    <div class="filter-group">
+                        <label class="filter-label">排序方式</label>
+                        <select class="filter-select" id="sort-select">
+                            <option value="change_desc">涨跌幅 ↓</option>
+                            <option value="change_asc">涨跌幅 ↑</option>
+                            <option value="market_cap_desc">市值 ↓</option>
+                            <option value="market_cap_asc">市值 ↑</option>
+                            <option value="volume_desc">成交量 ↓</option>
+                            <option value="volume_asc">成交量 ↑</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">市场</label>
+                        <select class="filter-select" id="market-select">
+                            <option value="all">全部市场</option>
+                            <option value="sp500">标普500</option>
+                            <option value="chinese">中概股</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 股票列表卡片 -->
+            <div class="stock-list-card">
+                <div class="stock-list-line"></div>
+                <div class="stock-list-content">
+                    <!-- 加载状态 -->
+                    <div id="loading-state" class="loading-container">
+                        <div class="loading-spinner"></div>
+                        <p>加载中...</p>
+                    </div>
+
+                    <!-- 错误状态 -->
+                    <div id="error-state" class="error-container hidden">
+                        <div class="error-icon">⚠️</div>
+                        <p class="error-message">加载失败，请重试</p>
+                        <button class="retry-btn" onclick="loadRankingData()">重新加载</button>
+                    </div>
+
+                    <!-- 股票列表 -->
+                    <div id="stock-list" class="stock-list hidden"></div>
+
+                    <!-- 空状态 -->
+                    <div id="empty-state" class="empty-container hidden">
+                        <div class="empty-icon">📊</div>
+                        <p class="empty-message">暂无数据</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 通知 -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // 获取URL参数
+        function getUrlParameter(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // 显示Toast消息
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+            setTimeout(() => {
+                toast.className = 'toast';
+            }, 3000);
+        }
+
+        // 格式化数字
+        function formatNumber(num) {
+            if (num >= 1e12) return (num / 1e12).toFixed(2) + 'T';
+            if (num >= 1e9) return (num / 1e9).toFixed(2) + 'B';
+            if (num >= 1e6) return (num / 1e6).toFixed(2) + 'M';
+            if (num >= 1e3) return (num / 1e3).toFixed(2) + 'K';
+            return num.toString();
+        }
+
+        // 格式化百分比
+        function formatPercentage(num) {
+            return (num >= 0 ? '+' : '') + num.toFixed(2) + '%';
+        }
+
+        // 创建股票项HTML
+        function createStockItem(stock, index) {
+            const changeClass = stock.change >= 0 ? 'positive' : 'negative';
+            return `
+                <div class="stock-item" onclick="viewStockDetail('${stock.symbol}')">
+                    <div class="stock-rank">${index + 1}</div>
+                    <div class="stock-info">
+                        <div class="stock-symbol">${stock.symbol}</div>
+                        <div class="stock-name">${stock.name}</div>
+                    </div>
+                    <div class="stock-price">
+                        <div class="current-price">$${stock.price.toFixed(2)}</div>
+                        <div class="price-change ${changeClass}">
+                            ${formatPercentage(stock.change)}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 加载榜单数据
+        async function loadRankingData() {
+            const rankingType = getUrlParameter('type');
+            const market = getUrlParameter('market') || 'sp500';
+            
+            if (!rankingType) {
+                showToast('缺少榜单类型参数', 'error');
+                return;
+            }
+
+            // 显示加载状态
+            document.getElementById('loading-state').classList.remove('hidden');
+            document.getElementById('error-state').classList.add('hidden');
+            document.getElementById('stock-list').classList.add('hidden');
+            document.getElementById('empty-state').classList.add('hidden');
+
+            try {
+                // 模拟API调用
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // 根据榜单类型和市场设置页面标题和图标
+                const rankingConfig = {
+                    'gainers': { title: '涨幅榜', icon: '📈', label: '上涨股票' },
+                    'losers': { title: '跌幅榜', icon: '📉', label: '下跌股票' },
+                    'marketcap': { title: '市值榜', icon: '💰', label: '大市值股票' },
+                    'volume': { title: '成交量榜', icon: '📊', label: '活跃股票' },
+                    'new-highs': { title: '创新高榜', icon: '⬆️', label: '创新高股票' },
+                    'momentum': { title: '动量榜', icon: '🚀', label: '强势股票' },
+                    'all': { title: '全部股票', icon: '📊', label: '所有股票' }
+                };
+                
+                const marketNames = {
+                    'sp500': '标普500',
+                    'chinese_stocks': '中概股'
+                };
+
+                const config = rankingConfig[rankingType] || { title: '榜单详情', icon: '📊', label: '股票' };
+                const marketName = marketNames[market] || '全市场';
+                
+                document.getElementById('page-title').textContent = `${marketName} ${config.title}`;
+                document.getElementById('stat-icon').textContent = config.icon;
+                document.getElementById('stat-label').textContent = config.label;
+
+                // 模拟股票数据
+                const mockStocks = generateMockStocks(rankingType, market, 50);
+                
+                // 更新统计信息
+                document.getElementById('stat-number').textContent = mockStocks.length;
+                const avgChange = mockStocks.reduce((sum, stock) => sum + stock.change, 0) / mockStocks.length;
+                document.getElementById('avg-change').textContent = formatPercentage(avgChange);
+                const totalValue = mockStocks.reduce((sum, stock) => sum + stock.marketCap, 0);
+                document.getElementById('total-value').textContent = '$' + formatNumber(totalValue);
+
+                // 渲染股票列表
+                const stockListHtml = mockStocks.map((stock, index) => createStockItem(stock, index)).join('');
+                document.getElementById('stock-list').innerHTML = stockListHtml;
+
+                // 隐藏加载状态，显示列表
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('stock-list').classList.remove('hidden');
+
+            } catch (error) {
+                console.error('加载榜单数据失败:', error);
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('error-state').classList.remove('hidden');
+                showToast('加载失败，请重试', 'error');
+            }
+        }
+
+        // 生成模拟股票数据
+        function generateMockStocks(type, market, count) {
+            const sp500Stocks = {
+                symbols: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA', 'NFLX', 'AMD', 'CRM', 'ORCL', 'ADBE'],
+                names: ['苹果', '微软', '谷歌', '亚马逊', '特斯拉', 'Meta', '英伟达', '奈飞', 'AMD', 'Salesforce', '甲骨文', 'Adobe']
+            };
+            
+            const chineseStocks = {
+                symbols: ['BABA', 'JD', 'PDD', 'BIDU', 'NIO', 'XPEV', 'LI', 'BILI', 'TME', 'NTES', 'WB', 'DIDI'],
+                names: ['阿里巴巴', '京东', '拼多多', '百度', '蔚来', '小鹏', '理想', '哔哩哔哩', '腾讯音乐', '网易', '微博', '滴滴']
+            };
+            
+            const stockData = market === 'chinese_stocks' ? chineseStocks : sp500Stocks;
+            const { symbols, names } = stockData;
+            
+            const stocks = [];
+            for (let i = 0; i < count; i++) {
+                const symbolIndex = i % symbols.length;
+                const baseChange = type === 'gainers' ? Math.random() * 15 : 
+                                 type === 'losers' ? -Math.random() * 15 : 
+                                 (Math.random() - 0.5) * 20;
+                
+                stocks.push({
+                    symbol: symbols[symbolIndex] + (i > symbols.length - 1 ? i : ''),
+                    name: names[symbolIndex] + (i > names.length - 1 ? i : ''),
+                    price: 100 + Math.random() * 400,
+                    change: baseChange,
+                    marketCap: (Math.random() * 2000 + 100) * 1e9
+                });
+            }
+            
+            // 根据类型排序
+            if (type === 'gainers') {
+                stocks.sort((a, b) => b.change - a.change);
+            } else if (type === 'losers') {
+                stocks.sort((a, b) => a.change - b.change);
+            } else if (type === 'marketcap') {
+                stocks.sort((a, b) => b.marketCap - a.marketCap);
+            }
+            
+            return stocks;
+        }
+
+        // 查看股票详情
+        function viewStockDetail(symbol) {
+            showToast(`查看 ${symbol} 详情`, 'info');
+            // 这里可以跳转到股票详情页面
+        }
+
+        // 排序和筛选事件监听
+        document.addEventListener('DOMContentLoaded', function() {
+            // 排序选择变化
+            document.getElementById('sort-select').addEventListener('change', function() {
+                showToast('重新排序中...', 'info');
+                setTimeout(() => loadRankingData(), 500);
+            });
+
+            // 市场筛选变化
+            document.getElementById('market-select').addEventListener('change', function() {
+                showToast('筛选中...', 'info');
+                setTimeout(() => loadRankingData(), 500);
+            });
+
+            // 页面初始化
+            loadRankingData();
+        });
+    </script>
+</body>
+</html>

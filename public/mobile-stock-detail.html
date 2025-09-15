@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个股详情 - 美股数据应用</title>
+    <link rel="stylesheet" href="styles/mobile.css">
+    <link rel="stylesheet" href="styles/mobile-stock-detail.css">
+</head>
+<body>
+    <div class="mobile-app">
+        <!-- 顶部状态栏 -->
+        <div class="status-bar">
+            <div class="status-left">
+                <span class="time" id="current-time">09:41</span>
+            </div>
+            <div class="status-right">
+                <span class="battery">100%</span>
+                <span class="signal">📶</span>
+            </div>
+        </div>
+
+        <!-- 主内容区域 -->
+        <div class="main-content">
+            <!-- 个股详情页面 -->
+            <div class="page-content active">
+                <!-- 页面头部 -->
+                <div class="page-header">
+                    <button class="back-btn" onclick="history.back()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <div class="header-content">
+                        <h1 id="stock-symbol" class="stock-symbol">AAPL</h1>
+                        <p id="stock-name" class="stock-name">苹果公司</p>
+                    </div>
+                    <button class="favorite-btn" id="favorite-btn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- 股价信息 -->
+                <div class="price-section">
+                    <div class="current-price">
+                        <span id="current-price" class="price-value">$175.43</span>
+                        <div class="price-change">
+                            <span id="price-change" class="change-value positive">+$3.75</span>
+                            <span id="price-change-percent" class="change-percent positive">(+2.15%)</span>
+                        </div>
+                    </div>
+                    <div class="price-time">
+                        <span id="price-time">实时价格 • 15:30 EST</span>
+                    </div>
+                </div>
+
+                <!-- 快速统计 -->
+                <div class="quick-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">开盘价</span>
+                        <span id="open-price" class="stat-value">$172.50</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">最高价</span>
+                        <span id="high-price" class="stat-value">$176.80</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">最低价</span>
+                        <span id="low-price" class="stat-value">$171.90</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">成交量</span>
+                        <span id="volume" class="stat-value">45.67M</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">市值</span>
+                        <span id="market-cap" class="stat-value">$2.80万亿</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">市盈率</span>
+                        <span id="pe-ratio" class="stat-value">28.5</span>
+                    </div>
+                </div>
+
+                <!-- 图表区域 -->
+                <div class="chart-section">
+                    <div class="chart-header">
+                        <h3>价格走势</h3>
+                        <div class="time-range-buttons">
+                            <button class="time-btn active" data-range="1D">1日</button>
+                            <button class="time-btn" data-range="5D">5日</button>
+                            <button class="time-btn" data-range="1M">1月</button>
+                            <button class="time-btn" data-range="3M">3月</button>
+                            <button class="time-btn" data-range="1Y">1年</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <div id="price-chart" class="price-chart">
+                            <!-- 简化的价格图表 -->
+                            <svg width="100%" height="200" viewBox="0 0 300 200">
+                                <polyline points="10,150 50,120 90,140 130,100 170,110 210,80 250,90 290,70" 
+                                         fill="none" stroke="#00C851" stroke-width="2"/>
+                                <circle cx="290" cy="70" r="4" fill="#00C851"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 公司信息 -->
+                <div class="company-info">
+                    <h3>公司信息</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">行业</span>
+                            <span id="sector" class="info-value">科技</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">员工数</span>
+                            <span id="employees" class="info-value">164,000</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">总部</span>
+                            <span id="headquarters" class="info-value">库比蒂诺, 加州</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">成立时间</span>
+                            <span id="founded" class="info-value">1976年</span>
+                        </div>
+                    </div>
+                    <div class="company-description">
+                        <p id="description">苹果公司设计、制造和销售智能手机、个人电脑、平板电脑、可穿戴设备和配件，并提供各种相关服务。</p>
+                    </div>
+                </div>
+
+                <!-- 相关标签 -->
+                <div class="related-tags">
+                    <h3>相关标签</h3>
+                    <div class="tags-container" id="related-tags">
+                        <!-- 动态加载相关标签 -->
+                    </div>
+                </div>
+
+                <!-- 加载状态 -->
+                <div id="loading-stock" class="loading-state hidden">
+                    <div class="loading-spinner"></div>
+                    <p>正在加载股票数据...</p>
+                </div>
+
+                <!-- 错误状态 -->
+                <div id="error-stock" class="error-state hidden">
+                    <p>加载失败，请下拉刷新重试</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="scripts/mobile-stock-detail.js"></script>
+</body>
+</html>
