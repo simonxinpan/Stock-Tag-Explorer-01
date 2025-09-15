@@ -28,53 +28,266 @@
 
         <!-- 主内容区域 -->
         <main class="mobile-main">
-            <!-- 标签广场页面 -->
-            <div id="tag-plaza-mobile" class="page-content active">
+            <!-- 榜单页面 -->
+        <div id="trending-mobile" class="page-content active">
                 <div class="page-header">
-                    <h2>标签广场</h2>
-                    <p>探索股票分类标签</p>
+                    <h2>趋势风云榜</h2>
+                    <p>实时股票排行榜</p>
+                </div>
+                
+                <!-- 榜单导航条 -->
+                <div class="ranking-nav-container">
+                    <div class="ranking-nav">
+                        <button class="ranking-nav-btn active" data-ranking="sp500">
+                            标普500
+                        </button>
+                        <button class="ranking-nav-btn" data-ranking="chinese">
+                            中概股
+                        </button>
+                        <button class="ranking-nav-btn" data-ranking="gainers">
+                            涨跌幅
+                        </button>
+                        <button class="ranking-nav-btn" data-ranking="market-cap">
+                            市值榜
+                        </button>
+                        <button class="ranking-nav-btn" data-ranking="new-highs">
+                            创年内新高
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 市场切换标签 -->
+                <div class="market-tabs">
+                    <button class="market-tab-btn active" data-market="sp500">
+                        标普500 <span id="sp500-count-mobile" class="market-count">502</span>
+                    </button>
+                    <button class="market-tab-btn" data-market="chinese_stocks">
+                        中概股 <span id="chinese-count-mobile" class="market-count">55</span>
+                    </button>
+                </div>
+                
+                <!-- 市场概览 -->
+                <div class="market-overview">
+                    <div class="overview-item">
+                        <span class="overview-label">总股票数</span>
+                        <span id="total-stocks" class="overview-value">502</span>
+                    </div>
+                    <div class="overview-item">
+                        <span class="overview-label">上涨</span>
+                        <span id="rising-stocks" class="overview-value positive">326</span>
+                    </div>
+                    <div class="overview-item">
+                        <span class="overview-label">下跌</span>
+                        <span id="falling-stocks" class="overview-value negative">163</span>
+                    </div>
+                    <div class="overview-item">
+                        <span class="overview-label">总市值</span>
+                        <span id="total-market-cap" class="overview-value">$60.54万亿</span>
+                    </div>
                 </div>
                 
                 <!-- 加载状态 -->
-                <div id="loading-tags" class="loading-state">
+                <div id="loading-trending" class="loading-state hidden">
                     <div class="loading-spinner"></div>
-                    <p>正在加载标签数据...</p>
+                    <p>正在加载榜单数据...</p>
                 </div>
                 
                 <!-- 错误状态 -->
-                <div id="error-tags" class="error-state hidden">
+                <div id="error-trending" class="error-state hidden">
                     <p>加载失败，请下拉刷新重试</p>
                 </div>
                 
-                <!-- 标签组 -->
-                <div id="tag-groups-mobile" class="tag-groups hidden">
-                    <div class="tag-category">
-                        <h3>股市表现</h3>
-                        <div id="market-performance-tags" class="tag-grid"></div>
+                <!-- 榜单内容 -->
+                <div id="trending-lists" class="trending-lists">
+                    <div class="list-section">
+                        <div class="list-header">
+                            <h3>📈 今日涨幅榜</h3>
+                            <button class="more-btn" data-list="gainers">更多</button>
+                        </div>
+                        <div id="gainers-list" class="stock-list"></div>
                     </div>
                     
-                    <div class="tag-category">
-                        <h3>财务表现</h3>
-                        <div id="financial-performance-tags" class="tag-grid"></div>
+                    <div class="list-section">
+                        <div class="list-header">
+                            <h3>💰 市值排行榜</h3>
+                            <button class="more-btn" data-list="market-cap">更多</button>
+                        </div>
+                        <div id="market-cap-list" class="stock-list"></div>
                     </div>
                     
-                    <div class="tag-category">
-                        <h3>行业分类</h3>
-                        <div id="industry-tags" class="tag-grid"></div>
-                    </div>
-                    
-                    <div class="tag-category">
-                        <h3>特殊名单</h3>
-                        <div id="special-tags" class="tag-grid"></div>
+                    <div class="list-section">
+                        <div class="list-header">
+                            <h3>🚀 创新高榜</h3>
+                            <button class="more-btn" data-list="new-highs">更多</button>
+                        </div>
+                        <div id="new-highs-list" class="stock-list"></div>
                     </div>
                 </div>
             </div>
 
+
+            <!-- 热力图页面 -->
+            <div id="heatmap-mobile" class="page-content">
+                <div class="page-header">
+                    <h2>股票热力图</h2>
+                    <p>可视化市场表现</p>
+                    <div class="heatmap-controls">
+                        <select id="heatmap-market" class="market-selector">
+                            <option value="US">美股</option>
+                            <option value="CN">A股</option>
+                            <option value="HK">港股</option>
+                        </select>
+                        <select id="heatmap-metric" class="metric-selector">
+                            <option value="change">涨跌幅</option>
+                            <option value="volume">成交量</option>
+                            <option value="marketcap">市值</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- 热力图导航 -->
+                <div class="heatmap-nav">
+                    <button class="heatmap-nav-btn active" data-view="industry">
+                        行业仪表盘
+                    </button>
+                    <button class="heatmap-nav-btn" data-view="panoramic">
+                        全景热力图
+                    </button>
+                </div>
+                
+                <div class="heatmap-legend">
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: var(--danger-color);"></span>
+                        <span class="legend-text">跌幅较大</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: var(--neutral-color);"></span>
+                        <span class="legend-text">平盘</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: var(--success-color);"></span>
+                        <span class="legend-text">涨幅较大</span>
+                    </div>
+                </div>
+                
+                <!-- 热力图内容 -->
+                <div class="heatmap-content">
+                    <div id="heatmap-chart" class="heatmap-chart">
+                        <iframe id="heatmap-frame" src="heatmap-center.html" style="width: 100%; height: 60vh; border: none; border-radius: 12px;"></iframe>
+                    </div>
+                    <div id="heatmap-loading" class="loading-state hidden">
+                        <div class="loading-spinner"></div>
+                        <p>热力图加载中...</p>
+                    </div>
+                    <div id="heatmap-error" class="error-state hidden">
+                        <p>❌ 加载失败，请稍后重试</p>
+                        <button onclick="mobileApp.loadHeatmapData()" class="retry-btn">重新加载</button>
+                    </div>
+                </div>
+                
+                <div class="heatmap-info">
+                    <div class="info-card">
+                        <h4>热力图说明</h4>
+                        <p>• 方块大小代表市值规模</p>
+                        <p>• 颜色深浅代表涨跌幅度</p>
+                        <p>• 点击方块查看个股详情</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 标签页面 -->
+            <div id="tag-plaza-mobile" class="page-content">
+                <div class="page-header">
+                    <h2>标签广场</h2>
+                    <p>发现投资主题</p>
+                </div>
+                
+                <!-- 分类导航 -->
+                <div class="category-nav-container">
+                    <div class="category-nav" id="category-nav">
+                        <button class="category-btn active" data-category="all">全部</button>
+                        <button class="category-btn" data-category="sector">行业板块</button>
+                        <button class="category-btn" data-category="theme">主题概念</button>
+                        <button class="category-btn" data-category="marketcap">市值规模</button>
+                        <button class="category-btn" data-category="style">投资风格</button>
+                        <button class="category-btn" data-category="region">地区分布</button>
+                    </div>
+                </div>
+                
+                <!-- 搜索框 -->
+                <div class="search-container">
+                    <div class="search-box">
+                        <input type="text" id="tag-search" placeholder="搜索标签..." class="search-input">
+                        <button class="search-btn">🔍</button>
+                    </div>
+                </div>
+                
+                <!-- 标签内容 -->
+                <div id="tag-content-mobile" class="tag-content">
+                    <!-- 标签按钮组 -->
+                    <div id="tag-buttons-container" class="tag-buttons-container">
+                        <!-- 动态加载标签按钮 -->
+                    </div>
+                    
+                    <!-- 标签组 -->
+                    <div id="tag-groups-mobile" class="tag-groups hidden">
+                        <div class="tag-category">
+                            <div id="market-performance-tags" class="tag-grid"></div>
+                        </div>
+                        
+                        <div class="tag-category">
+                            <div id="financial-performance-tags" class="tag-grid"></div>
+                        </div>
+                        
+                        <div class="tag-category">
+                            <div id="industry-tags" class="tag-grid"></div>
+                        </div>
+                        
+                        <div class="tag-category">
+                            <div id="special-tags" class="tag-grid"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 加载状态 -->
+                <div id="tags-loading" class="loading-state hidden">
+                    <div class="loading-spinner"></div>
+                    <p>加载标签中...</p>
+                </div>
+                
+                <!-- 错误状态 -->
+                <div id="tags-error" class="error-state hidden">
+                    <p>❌ 加载失败，请稍后重试</p>
+                    <button onclick="mobileApp.loadTagsData()" class="retry-btn">重新加载</button>
+                </div>
+            </div>
+
             <!-- 趋势榜单页面 -->
-            <section id="trending-mobile" class="page-content">
+            <section id="trending-mobile-duplicate" class="page-content">
                 <div class="page-header">
                     <h2 class="page-title">趋势榜单</h2>
                     <p class="page-subtitle">实时追踪市场热点</p>
+                </div>
+                
+                <!-- 榜单导航条 -->
+                <div class="ranking-nav-container">
+                    <div class="ranking-nav">
+                        <button class="ranking-nav-btn active" data-ranking="sp500">
+                            标普500
+                        </button>
+                        <button class="ranking-nav-btn" data-ranking="chinese">
+                            中概股
+                        </button>
+                        <button class="ranking-nav-btn" data-ranking="gainers">
+                            涨跌幅
+                        </button>
+                        <button class="ranking-nav-btn" data-ranking="market-cap">
+                            市值榜
+                        </button>
+                        <button class="ranking-nav-btn" data-ranking="new-highs">
+                            创年内新高
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- 市场切换标签 -->
@@ -162,17 +375,17 @@
 
         <!-- 底部导航栏 -->
         <nav class="mobile-bottom-nav">
-            <button class="nav-item active" data-page="tag-plaza-mobile">
-                <span class="nav-icon">🏷️</span>
-                <span class="nav-label">标签广场</span>
-            </button>
-            <button class="nav-item" data-page="trending-mobile">
+            <button class="nav-item active" data-page="trending-mobile">
                 <span class="nav-icon">📈</span>
-                <span class="nav-label">趋势榜单</span>
+                <span class="nav-label">榜单</span>
             </button>
-            <button class="nav-item" onclick="window.open('https://heatmap-pro.vercel.app/', '_blank')">
+            <button class="nav-item" data-page="heatmap-mobile">
                 <span class="nav-icon">🔥</span>
                 <span class="nav-label">热力图</span>
+            </button>
+            <button class="nav-item" data-page="tag-plaza-mobile">
+                <span class="nav-icon">🏷️</span>
+                <span class="nav-label">标签</span>
             </button>
         </nav>
     </div>

@@ -8,16 +8,18 @@
 }
 
 :root {
-    --primary-color: #2563eb;
-    --secondary-color: #64748b;
-    --success-color: #10b981;
-    --danger-color: #ef4444;
-    --warning-color: #f59e0b;
-    --background-color: #f8fafc;
-    --surface-color: #ffffff;
-    --text-primary: #1e293b;
-    --text-secondary: #64748b;
-    --border-color: #e2e8f0;
+    --primary-color: #007AFF;
+    --secondary-color: #5856D6;
+    --success-color: #00C851; /* 涨幅绿色 */
+    --danger-color: #FF3B30; /* 跌幅红色 */
+    --neutral-color: #8E8E93; /* 无涨跌幅灰色 */
+    --warning-color: #FF9500;
+    --background-color: #F2F2F7;
+    --surface-color: #FFFFFF;
+    --text-primary: #000000;
+    --text-secondary: #8E8E93;
+    --border-color: #C6C6C8;
+    --shadow-color: rgba(0, 0, 0, 0.1);
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
     --border-radius: 12px;
@@ -163,78 +165,310 @@ body {
     display: none !important;
 }
 
+/* 标签导航条样式 */
+.tag-nav-container {
+    padding: 0 16px 16px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.tag-nav {
+    display: flex;
+    gap: 8px;
+    min-width: max-content;
+    padding-bottom: 4px;
+}
+
+.tag-nav-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    background: var(--surface-color);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.tag-nav-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.tag-nav-btn:hover {
+    background: var(--background-color);
+}
+
+.tag-nav-btn.active:hover {
+    background: var(--primary-color);
+}
+
+/* 标签按钮容器 */
+.tag-buttons-container {
+    padding: 0 16px 16px;
+}
+
+.tag-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.tag-category-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    background: var(--surface-color);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.tag-category-btn:hover {
+    background: var(--background-color);
+    border-color: var(--primary-color);
+}
+
+.tag-category-btn:active {
+    transform: scale(0.95);
+}
+
 /* 标签广场样式 */
+.category-nav-container {
+    padding: 0 16px;
+    margin-bottom: 16px;
+}
+
+.category-nav {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.category-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.category-btn {
+    flex-shrink: 0;
+    padding: 8px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    background: var(--surface-color);
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.category-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.category-btn:hover {
+    background: var(--background-color);
+}
+
+.category-btn.active:hover {
+    background: var(--primary-color);
+}
+
+.search-container {
+    padding: 0 16px;
+    margin-bottom: 16px;
+}
+
+.search-box {
+    display: flex;
+    align-items: center;
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.search-input {
+    flex: 1;
+    padding: 12px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+}
+
+.search-input::placeholder {
+    color: var(--text-secondary);
+}
+
+.search-btn {
+    padding: 12px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.search-btn:hover {
+    color: var(--primary-color);
+}
+
+.tags-content {
+    padding: 0 16px;
+}
+
 .tag-category {
-    margin-bottom: 32px;
+    margin-bottom: 24px;
 }
 
 .category-title {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 600;
-    margin-bottom: 12px;
     color: var(--text-primary);
+    margin: 0 0 12px 0;
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
+.tag-count {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-secondary);
+    background: var(--background-color);
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
 .tag-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 12px;
 }
 
-.tag-card {
-    background: var(--surface-color);
-    border-radius: var(--border-radius);
+.tag-item {
     padding: 16px;
-    box-shadow: var(--shadow-sm);
+    background: var(--surface-color);
     border: 1px solid var(--border-color);
-    transition: var(--transition);
+    border-radius: 12px;
+    text-align: center;
     cursor: pointer;
+    transition: all 0.2s ease;
     position: relative;
     overflow: hidden;
 }
 
-.tag-card:active {
-    transform: scale(0.98);
-    box-shadow: var(--shadow-md);
+.tag-item:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.tag-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, var(--primary-color), #3b82f6);
+.tag-item:active {
+    transform: translateY(0);
 }
 
 .tag-name {
     font-size: 14px;
     font-weight: 600;
-    margin-bottom: 4px;
     color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.tag-item:hover .tag-name {
+    color: white;
 }
 
 .tag-description {
     font-size: 12px;
     color: var(--text-secondary);
-    margin-bottom: 8px;
-    line-height: 1.4;
+    line-height: 1.3;
+}
+
+.tag-item:hover .tag-description {
+    color: rgba(255, 255, 255, 0.9);
 }
 
 .tag-stats {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--text-secondary);
 }
 
-.tag-count {
-    font-size: 12px;
+.tag-item:hover .tag-stats {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.stock-count {
     font-weight: 500;
-    color: var(--primary-color);
+}
+
+.trend-indicator {
+    font-weight: 600;
+}
+
+.trend-up {
+    color: var(--success-color);
+}
+
+.trend-down {
+    color: var(--danger-color);
+}
+
+.tag-item:hover .trend-up,
+.tag-item:hover .trend-down {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* 空状态 */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary);
+}
+
+.empty-state p {
+    margin: 8px 0;
+    font-size: 14px;
+}
+
+/* 响应式设计 */
+@media (max-width: 375px) {
+    .tag-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 8px;
+    }
+    
+    .tag-item {
+        padding: 12px;
+    }
+    
+    .category-nav {
+        gap: 6px;
+    }
+    
+    .category-btn {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
 }
 
 .tag-status {
@@ -243,6 +477,47 @@ body {
     display: flex;
     align-items: center;
     gap: 4px;
+}
+
+/* 榜单导航条样式 */
+.ranking-nav-container {
+    padding: 0 16px 16px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.ranking-nav {
+    display: flex;
+    gap: 8px;
+    min-width: max-content;
+    padding-bottom: 4px;
+}
+
+.ranking-nav-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    background: var(--surface-color);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.ranking-nav-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.ranking-nav-btn:hover {
+    background: var(--background-color);
+}
+
+.ranking-nav-btn.active:hover {
+    background: var(--primary-color);
 }
 
 /* 趋势榜单样式 */
@@ -460,6 +735,10 @@ body {
     color: var(--danger-color);
 }
 
+.stock-change.neutral {
+    color: var(--neutral-color);
+}
+
 .stock-market-cap {
     font-size: 12px;
     color: var(--text-secondary);
@@ -608,4 +887,113 @@ body {
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin-right: 8px;
+}
+
+/* 热力图页面样式 */
+.heatmap-controls {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.market-selector,
+.metric-selector {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--surface-color);
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+}
+
+.market-selector:focus,
+.metric-selector:focus {
+    border-color: var(--primary-color);
+}
+
+.heatmap-legend {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    padding: 16px;
+    background: var(--surface-color);
+    margin: 0 16px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+}
+
+.legend-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.heatmap-container {
+    padding: 0 16px;
+    position: relative;
+}
+
+.heatmap-chart {
+    background: var(--surface-color);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+
+.heatmap-info {
+    padding: 0 16px 16px;
+}
+
+.info-card {
+    background: var(--surface-color);
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.info-card h4 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.info-card p {
+    margin: 4px 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.retry-btn {
+    margin-top: 12px;
+    padding: 8px 16px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s ease;
+}
+
+.retry-btn:hover {
+    background: var(--primary-hover-color);
+}
+
+.retry-btn:active {
+    transform: scale(0.95);
 }

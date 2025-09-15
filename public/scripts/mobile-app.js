@@ -15,6 +15,9 @@ class MobileStockApp {
         this.setupEventListeners();
         this.loadInitialData();
         this.setupPullToRefresh();
+        this.setupRankingNavigation();
+        this.setupHeatmapControls();
+        this.setupTagsControls();
     }
 
     setupEventListeners() {
@@ -32,6 +35,24 @@ class MobileStockApp {
                 const market = e.currentTarget.dataset.market;
                 this.switchMarket(market);
             });
+        });
+
+        // 榜单导航切换
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.ranking-nav-btn')) {
+                const btn = e.target.closest('.ranking-nav-btn');
+                const ranking = btn.dataset.ranking;
+                this.switchRanking(ranking);
+            }
+        });
+
+        // 更多按钮点击
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.more-btn')) {
+                const btn = e.target.closest('.more-btn');
+                const listType = btn.dataset.list;
+                this.showMoreStocks(listType);
+            }
         });
 
         // 标签卡片点击
@@ -263,7 +284,7 @@ class MobileStockApp {
             return;
         }
 
-        container.innerHTML = stocks.slice(0, 5).map((stock, index) => {
+        container.innerHTML = stocks.slice(0, 4).map((stock, index) => {
             const changeClass = stock.change >= 0 ? 'positive' : 'negative';
             const changeSymbol = stock.change >= 0 ? '+' : '';
             
@@ -331,9 +352,9 @@ class MobileStockApp {
         // 这里可以跳转到标签详情页或显示相关股票
         console.log('Tag clicked:', tagName);
         
-        // 模拟跳转到标签详情页
-        const tagDetailUrl = `/tag-detail.html?tag=${encodeURIComponent(tagName)}`;
-        window.open(tagDetailUrl, '_blank');
+        // 跳转到移动版标签详情页
+        const tagDetailUrl = `mobile-tag-detail.html?tag=${encodeURIComponent(tagName)}`;
+        window.location.href = tagDetailUrl;
     }
 
     handleStockClick(symbol) {
@@ -343,9 +364,9 @@ class MobileStockApp {
         // 跳转到股票详情页
         console.log('Stock clicked:', symbol);
         
-        // 模拟跳转到股票详情页
-        const stockDetailUrl = `https://stock-details-final.vercel.app/?symbol=${symbol}`;
-        window.open(stockDetailUrl, '_blank');
+        // 跳转到移动版股票详情页
+        const stockDetailUrl = `mobile-stock-detail.html?symbol=${encodeURIComponent(symbol)}`;
+        window.location.href = stockDetailUrl;
     }
 
     addTouchFeedback(element) {
@@ -523,6 +544,344 @@ class MobileStockApp {
         };
 
         return this.currentMarket === 'sp500' ? sp500Data : chineseData;
+    }
+
+    // 设置榜单导航
+    setupRankingNavigation() {
+        const rankingNav = document.querySelector('.ranking-nav');
+        if (rankingNav) {
+            // 添加滑动效果
+            let isScrolling = false;
+            rankingNav.addEventListener('scroll', () => {
+                if (!isScrolling) {
+                    window.requestAnimationFrame(() => {
+                        // 可以在这里添加滑动时的视觉效果
+                        isScrolling = false;
+                    });
+                    isScrolling = true;
+                }
+            });
+        }
+    }
+
+    // 切换榜单类型
+    switchRanking(ranking) {
+        // 更新导航按钮状态
+        const rankingButtons = document.querySelectorAll('.ranking-nav-btn');
+        rankingButtons.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.ranking === ranking);
+        });
+
+        // 根据榜单类型加载对应数据
+        this.loadRankingData(ranking);
+    }
+
+    // 加载特定榜单数据
+    async loadRankingData(ranking) {
+        try {
+            const mockData = this.getMockRankingData(ranking);
+            this.renderRankingData(mockData, ranking);
+        } catch (error) {
+            console.error('加载榜单数据失败:', error);
+        }
+    }
+
+    // 显示更多股票
+    showMoreStocks(listType) {
+        // 跳转到完整的榜单页面
+        console.log(`显示更多 ${listType} 股票`);
+        const rankingDetailUrl = `mobile-ranking-detail.html?type=${encodeURIComponent(listType)}&market=${this.currentMarket}`;
+        window.location.href = rankingDetailUrl;
+    }
+
+    setupHeatmapControls() {
+        const marketSelector = document.getElementById('heatmap-market');
+        const metricSelector = document.getElementById('heatmap-metric');
+        
+        if (marketSelector) {
+            marketSelector.addEventListener('change', () => {
+                this.loadHeatmapData();
+            });
+        }
+        
+        if (metricSelector) {
+            metricSelector.addEventListener('change', () => {
+                this.loadHeatmapData();
+            });
+        }
+    }
+
+    async loadHeatmapData() {
+        try {
+            const loadingEl = document.getElementById('heatmap-loading');
+            const errorEl = document.getElementById('heatmap-error');
+            const chartEl = document.getElementById('heatmap-chart');
+            
+            if (loadingEl) loadingEl.classList.remove('hidden');
+            if (errorEl) errorEl.classList.add('hidden');
+            if (chartEl) chartEl.style.opacity = '0.5';
+            
+            // 模拟API调用延迟
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // 获取当前选择的市场和指标
+            const market = document.getElementById('heatmap-market')?.value || 'US';
+            const metric = document.getElementById('heatmap-metric')?.value || 'change';
+            
+            console.log(`加载热力图数据: 市场=${market}, 指标=${metric}`);
+            
+            // 更新iframe src以反映新的参数
+            const iframe = document.getElementById('heatmap-frame');
+            if (iframe) {
+                iframe.src = `heatmap-center.html?market=${market}&metric=${metric}`;
+            }
+            
+            if (loadingEl) loadingEl.classList.add('hidden');
+            if (chartEl) chartEl.style.opacity = '1';
+            
+        } catch (error) {
+            console.error('加载热力图数据失败:', error);
+            
+            const loadingEl = document.getElementById('heatmap-loading');
+            const errorEl = document.getElementById('heatmap-error');
+            
+            if (loadingEl) loadingEl.classList.add('hidden');
+            if (errorEl) errorEl.classList.remove('hidden');
+        }
+    }
+
+    setupTagsControls() {
+        // 分类导航按钮
+        const categoryButtons = document.querySelectorAll('.category-btn');
+        categoryButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const category = e.target.dataset.category;
+                this.switchTagCategory(category);
+            });
+        });
+        
+        // 搜索功能
+        const searchInput = document.getElementById('tag-search');
+        const searchBtn = document.querySelector('.search-btn');
+        
+        if (searchInput) {
+            let searchTimeout;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.searchTags(e.target.value);
+                }, 300);
+            });
+        }
+        
+        if (searchBtn) {
+            searchBtn.addEventListener('click', () => {
+                const searchTerm = searchInput?.value || '';
+                this.searchTags(searchTerm);
+            });
+        }
+    }
+    
+    switchTagCategory(category) {
+        // 更新按钮状态
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-category="${category}"]`).classList.add('active');
+        
+        // 清空搜索框
+        const searchInput = document.getElementById('tag-search');
+        if (searchInput) searchInput.value = '';
+        
+        // 重新加载数据
+        this.loadTagsData(category);
+    }
+    
+    searchTags(searchTerm) {
+        const activeCategory = document.querySelector('.category-btn.active')?.dataset.category || 'all';
+        this.loadTagsData(activeCategory, searchTerm);
+    }
+    
+    filterTags(tags, category, searchTerm) {
+        let filteredTags = tags;
+        
+        // 按分类过滤
+        if (category && category !== 'all') {
+            filteredTags = filteredTags.filter(tag => tag.category === category);
+        }
+        
+        // 按搜索词过滤
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            filteredTags = filteredTags.filter(tag => 
+                tag.name.toLowerCase().includes(term) || 
+                (tag.description && tag.description.toLowerCase().includes(term))
+            );
+        }
+        
+        return filteredTags;
+    }
+
+    async loadTagsData(category = 'all', searchTerm = '') {
+        try {
+            const loadingEl = document.getElementById('tags-loading');
+            const errorEl = document.getElementById('tags-error');
+            const contentEl = document.getElementById('tags-content');
+            
+            if (loadingEl) loadingEl.classList.remove('hidden');
+            if (errorEl) errorEl.classList.add('hidden');
+            if (contentEl) contentEl.style.opacity = '0.5';
+            
+            // 模拟API调用延迟
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // 模拟API调用
+            const response = await fetch('/api/tags');
+            let tags = response.ok ? await response.json() : this.getMockTagsData();
+            
+            // 根据分类和搜索词过滤标签
+            tags = this.filterTags(tags, category, searchTerm);
+            
+            this.renderTags(tags);
+            
+            if (loadingEl) loadingEl.classList.add('hidden');
+            if (contentEl) contentEl.style.opacity = '1';
+            
+        } catch (error) {
+            console.error('加载标签数据失败:', error);
+            
+            const loadingEl = document.getElementById('tags-loading');
+            const errorEl = document.getElementById('tags-error');
+            
+            if (loadingEl) loadingEl.classList.add('hidden');
+            if (errorEl) errorEl.classList.remove('hidden');
+        }
+    }
+
+    renderTags(tags) {
+        const container = document.getElementById('tags-content');
+        if (!container) return;
+
+        if (tags.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <p>🔍 未找到相关标签</p>
+                    <p>尝试调整搜索条件或选择其他分类</p>
+                </div>
+            `;
+            return;
+        }
+
+        const tagsByCategory = this.groupTagsByCategory(tags);
+        
+        container.innerHTML = Object.entries(tagsByCategory).map(([category, categoryTags]) => {
+            const categoryName = this.getCategoryName(category);
+            return `
+                <div class="tag-category">
+                    <h3 class="category-title">
+                        ${categoryName}
+                        <span class="tag-count">${categoryTags.length}</span>
+                    </h3>
+                    <div class="tag-grid">
+                        ${categoryTags.map(tag => `
+                            <div class="tag-item" data-tag-id="${tag.id}">
+                                <div class="tag-name">${tag.name}</div>
+                                <div class="tag-description">${tag.description || '投资主题标签'}</div>
+                                <div class="tag-stats">
+                                    <span class="stock-count">${tag.stockCount || 0}只股票</span>
+                                    <span class="trend-indicator ${tag.trend === 'up' ? 'trend-up' : tag.trend === 'down' ? 'trend-down' : ''}">
+                                        ${tag.trend === 'up' ? '📈' : tag.trend === 'down' ? '📉' : '➖'}
+                                    </span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    groupTagsByCategory(tags) {
+        return tags.reduce((acc, tag) => {
+            if (!acc[tag.category]) {
+                acc[tag.category] = [];
+            }
+            acc[tag.category].push(tag);
+            return acc;
+        }, {});
+    }
+
+    getCategoryName(category) {
+        const categoryNames = {
+            'sector': '行业板块',
+            'theme': '主题概念',
+            'marketcap': '市值规模',
+            'style': '投资风格',
+            'region': '地区市场'
+        };
+        return categoryNames[category] || category;
+    }
+
+    getMockTagsData() {
+        return [
+            { id: 'tech', name: '科技股', category: 'sector', description: '科技创新领域', stockCount: 156, trend: 'up' },
+            { id: 'finance', name: '金融股', category: 'sector', description: '银行保险证券', stockCount: 89, trend: 'down' },
+            { id: 'healthcare', name: '医疗股', category: 'sector', description: '医药生物医疗', stockCount: 124, trend: 'up' },
+            { id: 'energy', name: '能源股', category: 'sector', description: '石油天然气', stockCount: 67, trend: 'neutral' },
+            { id: 'consumer', name: '消费股', category: 'sector', description: '消费品零售', stockCount: 98, trend: 'up' },
+            { id: 'industrial', name: '工业股', category: 'sector', description: '制造业工业', stockCount: 145, trend: 'neutral' },
+            
+            { id: 'ai', name: '人工智能', category: 'theme', description: 'AI技术应用', stockCount: 78, trend: 'up' },
+            { id: 'ev', name: '新能源车', category: 'theme', description: '电动汽车产业', stockCount: 56, trend: 'up' },
+            { id: 'cloud', name: '云计算', category: 'theme', description: '云服务平台', stockCount: 43, trend: 'up' },
+            { id: 'blockchain', name: '区块链', category: 'theme', description: '区块链技术', stockCount: 32, trend: 'down' },
+            { id: '5g', name: '5G通信', category: 'theme', description: '5G网络建设', stockCount: 67, trend: 'neutral' },
+            { id: 'biotech', name: '生物科技', category: 'theme', description: '生物技术研发', stockCount: 89, trend: 'up' },
+            
+            { id: 'large_cap', name: '大盘股', category: 'marketcap', description: '市值超过100亿', stockCount: 234, trend: 'up' },
+            { id: 'mid_cap', name: '中盘股', category: 'marketcap', description: '市值20-100亿', stockCount: 456, trend: 'neutral' },
+            { id: 'small_cap', name: '小盘股', category: 'marketcap', description: '市值低于20亿', stockCount: 789, trend: 'down' },
+            
+            { id: 'growth', name: '成长股', category: 'style', description: '高增长潜力', stockCount: 345, trend: 'up' },
+            { id: 'value', name: '价值股', category: 'style', description: '低估值投资', stockCount: 267, trend: 'up' },
+            { id: 'dividend', name: '分红股', category: 'style', description: '稳定分红收益', stockCount: 123, trend: 'neutral' },
+            { id: 'momentum', name: '动量股', category: 'style', description: '价格趋势强劲', stockCount: 89, trend: 'up' },
+            
+            { id: 'us', name: '美国市场', category: 'region', description: '美股上市公司', stockCount: 1234, trend: 'up' },
+            { id: 'china', name: '中国市场', category: 'region', description: 'A股港股中概', stockCount: 2345, trend: 'neutral' },
+            { id: 'europe', name: '欧洲市场', category: 'region', description: '欧洲上市公司', stockCount: 567, trend: 'down' },
+            { id: 'emerging', name: '新兴市场', category: 'region', description: '新兴经济体', stockCount: 456, trend: 'up' }
+        ];
+    }
+
+    // 获取模拟榜单数据
+    getMockRankingData(ranking) {
+        const data = this.getMockTrendingData();
+        switch (ranking) {
+            case 'gainers':
+                return data.gainers;
+            case 'market-cap':
+                return data.marketCap;
+            case 'new-highs':
+                return data.newHighs;
+            default:
+                return data.gainers;
+        }
+    }
+
+    // 渲染榜单数据
+    renderRankingData(data, ranking) {
+        // 隐藏所有榜单
+        document.querySelectorAll('.ranking-list').forEach(list => {
+            list.classList.add('hidden');
+        });
+
+        // 显示对应榜单
+        const targetList = document.getElementById(`${ranking}-list`);
+        if (targetList) {
+            targetList.classList.remove('hidden');
+            this.renderStockList(`${ranking}-list`, data);
+        }
     }
 }
 

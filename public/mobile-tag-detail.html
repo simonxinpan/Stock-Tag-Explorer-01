@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>标签详情 - 美股数据应用</title>
+    <link rel="stylesheet" href="styles/mobile.css">
+    <link rel="stylesheet" href="styles/mobile-tag-detail.css">
+</head>
+<body>
+    <div class="mobile-app">
+        <!-- 顶部状态栏 -->
+        <div class="status-bar">
+            <div class="status-left">
+                <span class="time" id="current-time">09:41</span>
+            </div>
+            <div class="status-right">
+                <span class="battery">100%</span>
+                <span class="signal">📶</span>
+            </div>
+        </div>
+
+        <!-- 主内容区域 -->
+        <div class="main-content">
+            <!-- 标签详情页面 -->
+            <div class="page-content active">
+                <!-- 页面头部 -->
+                <div class="page-header">
+                    <button class="back-btn" onclick="history.back()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <div class="header-content">
+                        <h1 id="tag-title" class="tag-title">标签详情</h1>
+                        <p id="tag-description" class="tag-description">查看标签下的股票列表</p>
+                    </div>
+                </div>
+
+                <!-- 标签统计信息 -->
+                <div class="tag-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">股票数量</span>
+                        <span id="stock-count" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">总市值</span>
+                        <span id="total-market-cap" class="stat-value">$0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">平均涨跌幅</span>
+                        <span id="avg-change" class="stat-value">0%</span>
+                    </div>
+                </div>
+
+                <!-- 排序和筛选 -->
+                <div class="filter-section">
+                    <div class="sort-buttons">
+                        <button class="sort-btn active" data-sort="market-cap">市值</button>
+                        <button class="sort-btn" data-sort="change">涨跌幅</button>
+                        <button class="sort-btn" data-sort="volume">成交量</button>
+                        <button class="sort-btn" data-sort="price">股价</button>
+                    </div>
+                </div>
+
+                <!-- 加载状态 -->
+                <div id="loading-stocks" class="loading-state hidden">
+                    <div class="loading-spinner"></div>
+                    <p>正在加载股票数据...</p>
+                </div>
+
+                <!-- 错误状态 -->
+                <div id="error-stocks" class="error-state hidden">
+                    <p>加载失败，请下拉刷新重试</p>
+                </div>
+
+                <!-- 股票列表 -->
+                <div id="stocks-container" class="stocks-container">
+                    <!-- 动态加载股票列表 -->
+                </div>
+
+                <!-- 空状态 -->
+                <div id="empty-state" class="empty-state hidden">
+                    <div class="empty-icon">📊</div>
+                    <h3>暂无股票数据</h3>
+                    <p>该标签下暂时没有股票信息</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="scripts/mobile-tag-detail.js"></script>
+</body>
+</html>
