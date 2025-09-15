@@ -1,5 +1,5 @@
 // 文件: /_scripts/update-chinese-stocks-data.mjs
-// 版本: 14.0 - Simplified HKD-to-USD Conversion
+// 版本: 15.2 - Authoritative Hong Kong Stocks List
 import pg from 'pg';
 const { Pool } = pg;
 import 'dotenv/config';
@@ -7,13 +7,27 @@ import 'dotenv/config';
 // --- 配置区 ---
 const DATABASE_URL = process.env.DATABASE_URL;
 const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
-const SCRIPT_NAME = "Chinese Stocks Simplified Currency Update";
+const SCRIPT_NAME = "Chinese Stocks Authoritative HK-List Update";
 const DEBUG = process.env.DEBUG === 'true';
 const DELAY_SECONDS = 2.1;
+
+// 关键变更: 内置一个由您提供的、权威的在美股上市的核心港股列表
+const HONG_KONG_STOCKS = [
+    'TCOM', // 携程
+    'JD',   // 京东
+    'BEKE', // 贝壳找房
+    'LI',   // 理想汽车
+    'ZTO',  // 中通快递
+    'GDS',  // 万国数据
+    'MNSO', // 名创优品
+    'ZLAB', // 再鼎医药
+    'WB'    // 微博
+];
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 async function fetchApiData(url, ticker, apiName) {
+  // ... (此函数无需修改)
   try {
     const response = await fetch(url);
     if (!response.ok) {
@@ -29,7 +43,6 @@ async function fetchApiData(url, ticker, apiName) {
   }
 }
 
-// 精简版：只获取港元汇率
 async function getHkdToUsdRate() {
     try {
         const response = await fetch('https://api.exchangerate-api.com/v4/latest/HKD');
@@ -40,7 +53,7 @@ async function getHkdToUsdRate() {
         throw new Error('Invalid rate API response');
     } catch (error) {
         console.error("❌ Failed to fetch HKD to USD exchange rate, using fallback.", error);
-        return 0.128; // 提供稳定的备用汇率
+        return 0.128;
     }
 }
 
@@ -86,12 +99,13 @@ async function main() {
             currency = profile.currency;
             exchange = profile.exchange;
             
-            // 关键的、简化的转换逻辑
-            if (currency === 'HKD') {
+            // 关键的、基于您提供的权威列表的自动化修正逻辑
+            if (HONG_KONG_STOCKS.includes(ticker.toUpperCase())) {
+                currency = 'HKD';
                 market_cap_usd = market_cap_original * hkdToUsdRate;
-                if (DEBUG) console.log(`   -> 🇭🇰 HKD detected for ${ticker}. Converted to ${market_cap_usd} USD.`);
+                if (DEBUG) console.log(`   -> 🇭🇰 Ticker ${ticker} is in HK list. Converted ${market_cap_original} HKD to ${market_cap_usd} USD.`);
             } else {
-                // 如果不是HKD (无论是USD, CNY, 还是其他), 都直接视为美元
+                // 如果不在我们的港股名单中，则直接视为美元
                 market_cap_usd = market_cap_original;
             }
         }
