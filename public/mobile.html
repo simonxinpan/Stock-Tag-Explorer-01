@@ -93,14 +93,19 @@
                     <div class="ranking-nav-card">
                         <div class="nav-accent-line"></div>
                         <div class="ranking-nav-container">
+                            <!-- 市场切换标签（移到导航条左侧） -->
+                            <div class="market-tabs-nav">
+                                <button class="market-tab-btn active" data-market="sp500">
+                                    标普500 <span id="sp500-count-mobile" class="market-count">502</span>
+                                </button>
+                                <button class="market-tab-btn" data-market="chinese_stocks">
+                                    中概股 <span id="chinese-count-mobile" class="market-count">55</span>
+                                </button>
+                            </div>
+                            
+                            <!-- 榜单导航 -->
                             <div class="ranking-nav">
-                                <button class="ranking-nav-btn active" data-ranking="sp500">
-                                    标普500
-                                </button>
-                                <button class="ranking-nav-btn" data-ranking="chinese">
-                                    中概股
-                                </button>
-                                <button class="ranking-nav-btn" data-ranking="gainers">
+                                <button class="ranking-nav-btn active" data-ranking="gainers">
                                     涨跌幅
                                 </button>
                                 <button class="ranking-nav-btn" data-ranking="market-cap">
@@ -114,33 +119,35 @@
                     </div>
                 </div>
                 
-                <!-- 市场切换标签 -->
-                <div class="market-tabs">
-                    <button class="market-tab-btn active" data-market="sp500">
-                        标普500 <span id="sp500-count-mobile" class="market-count">502</span>
-                    </button>
-                    <button class="market-tab-btn" data-market="chinese_stocks">
-                        中概股 <span id="chinese-count-mobile" class="market-count">55</span>
-                    </button>
-                </div>
-                
-                <!-- 市场概览 -->
-                <div class="market-overview">
-                    <div class="overview-item">
-                        <span class="overview-label">总股票数</span>
-                        <span id="total-stocks" class="overview-value">502</span>
+                <!-- 市场概览（田字格布局） -->
+                <div class="market-overview-grid">
+                    <div class="overview-grid-item">
+                        <div class="overview-icon">📊</div>
+                        <div class="overview-content">
+                            <span class="overview-label">总股票数</span>
+                            <span id="total-stocks" class="overview-value">502</span>
+                        </div>
                     </div>
-                    <div class="overview-item">
-                        <span class="overview-label">上涨</span>
-                        <span id="rising-stocks" class="overview-value positive">326</span>
+                    <div class="overview-grid-item">
+                        <div class="overview-icon positive">📈</div>
+                        <div class="overview-content">
+                            <span class="overview-label">上涨</span>
+                            <span id="rising-stocks" class="overview-value positive">326</span>
+                        </div>
                     </div>
-                    <div class="overview-item">
-                        <span class="overview-label">下跌</span>
-                        <span id="falling-stocks" class="overview-value negative">163</span>
+                    <div class="overview-grid-item">
+                        <div class="overview-icon negative">📉</div>
+                        <div class="overview-content">
+                            <span class="overview-label">下跌</span>
+                            <span id="falling-stocks" class="overview-value negative">163</span>
+                        </div>
                     </div>
-                    <div class="overview-item">
-                        <span class="overview-label">总市值</span>
-                        <span id="total-market-cap" class="overview-value">$60.54万亿</span>
+                    <div class="overview-grid-item">
+                        <div class="overview-icon">💰</div>
+                        <div class="overview-content">
+                            <span class="overview-label">总市值</span>
+                            <span id="total-market-cap" class="overview-value">$60.54万亿</span>
+                        </div>
                     </div>
                 </div>
                 
@@ -160,7 +167,6 @@
                     <div class="list-section">
                         <div class="list-header">
                             <h3>📈 今日涨幅榜</h3>
-                            <button class="more-btn" data-list="gainers">更多</button>
                         </div>
                         <div id="gainers-list" class="stock-list"></div>
                     </div>
@@ -168,7 +174,6 @@
                     <div class="list-section">
                         <div class="list-header">
                             <h3>💰 市值排行榜</h3>
-                            <button class="more-btn" data-list="market-cap">更多</button>
                         </div>
                         <div id="market-cap-list" class="stock-list"></div>
                     </div>
@@ -176,7 +181,6 @@
                     <div class="list-section">
                         <div class="list-header">
                             <h3>🚀 创新高榜</h3>
-                            <button class="more-btn" data-list="new-highs">更多</button>
                         </div>
                         <div id="new-highs-list" class="stock-list"></div>
                     </div>
@@ -275,8 +279,8 @@
             
             <!-- 标签页面 -->
             <div id="tag-plaza-mobile" class="page-content">
-                <!-- 固定页首导航条 -->
-                <div class="fixed-top-nav">
+                <!-- 固定顶部导航条 -->
+                <div class="fixed-top-nav tag-fixed-nav">
                     <div class="page-header-card">
                         <div class="header-accent-line"></div>
                         <h2>标签广场</h2>

@@ -68,11 +68,9 @@ body {
     padding-bottom: 20px;
 }
 
-/* 固定页首导航条 */
+/* 页首导航条 - 解除固定 */
 .fixed-top-nav {
-    position: sticky;
-    top: 44px;
-    z-index: 100;
+    position: relative;
     background: var(--light-gray);
     padding-bottom: 8px;
 }
@@ -170,11 +168,11 @@ body {
 }
 
 .stats-header {
-    padding: 16px 20px 8px 20px;
+    padding: 12px 20px 6px 20px;
 }
 
 .stats-header h4 {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
     color: var(--text-primary);
     margin: 0;
@@ -185,28 +183,28 @@ body {
     grid-template-columns: repeat(4, 1fr);
     gap: 1px;
     background: var(--border-color);
-    margin: 0 20px 20px 20px;
+    margin: 0 20px 16px 20px;
     border-radius: var(--border-radius-small);
     overflow: hidden;
 }
 
 .stats-item {
     background: var(--background);
-    padding: 16px 8px;
+    padding: 12px 6px;
     text-align: center;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
 }
 
 .stats-number {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 700;
     color: var(--text-primary);
 }
 
 .stats-label {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text-secondary);
     font-weight: 500;
 }

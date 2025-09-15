@@ -284,7 +284,7 @@ class MobileStockApp {
             return;
         }
 
-        container.innerHTML = stocks.slice(0, 4).map((stock, index) => {
+        const stockItems = stocks.slice(0, 4).map((stock, index) => {
             const changeClass = stock.change >= 0 ? 'positive' : 'negative';
             const changeSymbol = stock.change >= 0 ? '+' : '';
             
@@ -304,7 +304,28 @@ class MobileStockApp {
                     </div>
                 </div>
             `;
-        }).join('');
+        });
+
+        // 在第四名后添加更多按钮
+        if (stocks.length > 4) {
+            const listType = this.getListTypeFromContainerId(containerId);
+            stockItems.push(`
+                <div class="more-btn-container">
+                    <button class="more-btn" data-list="${listType}">更多</button>
+                </div>
+            `);
+        }
+
+        container.innerHTML = stockItems.join('');
+    }
+
+    getListTypeFromContainerId(containerId) {
+        const typeMap = {
+            'gainers-list': 'gainers',
+            'market-cap-list': 'market-cap',
+            'new-highs-list': 'new-highs'
+        };
+        return typeMap[containerId] || 'gainers';
     }
 
     formatMarketCap(marketCap) {
