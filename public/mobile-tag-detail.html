@@ -3,92 +3,306 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>标签详情 - 美股数据应用</title>
-    <link rel="stylesheet" href="styles/mobile.css">
-    <link rel="stylesheet" href="styles/mobile-tag-detail.css">
+    <title>标签详情 - Stock Tag Explorer</title>
+    <link rel="stylesheet" href="./styles/mobile-tag-detail.css">
 </head>
 <body>
-    <div class="mobile-app">
-        <!-- 顶部状态栏 -->
-        <div class="status-bar">
-            <div class="status-left">
-                <span class="time" id="current-time">09:41</span>
-            </div>
-            <div class="status-right">
-                <span class="battery">100%</span>
-                <span class="signal">📶</span>
-            </div>
+    <!-- 顶部状态栏 -->
+    <div class="status-bar">
+        <div class="status-left">
+            <span class="time">9:41</span>
         </div>
-
-        <!-- 主内容区域 -->
-        <div class="main-content">
-            <!-- 标签详情页面 -->
-            <div class="page-content active">
-                <!-- 页面头部 -->
-                <div class="page-header">
-                    <button class="back-btn" onclick="history.back()">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                            <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </button>
-                    <div class="header-content">
-                        <h1 id="tag-title" class="tag-title">标签详情</h1>
-                        <p id="tag-description" class="tag-description">查看标签下的股票列表</p>
-                    </div>
-                </div>
-
-                <!-- 标签统计信息 -->
-                <div class="tag-stats">
-                    <div class="stat-item">
-                        <span class="stat-label">股票数量</span>
-                        <span id="stock-count" class="stat-value">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">总市值</span>
-                        <span id="total-market-cap" class="stat-value">$0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">平均涨跌幅</span>
-                        <span id="avg-change" class="stat-value">0%</span>
-                    </div>
-                </div>
-
-                <!-- 排序和筛选 -->
-                <div class="filter-section">
-                    <div class="sort-buttons">
-                        <button class="sort-btn active" data-sort="market-cap">市值</button>
-                        <button class="sort-btn" data-sort="change">涨跌幅</button>
-                        <button class="sort-btn" data-sort="volume">成交量</button>
-                        <button class="sort-btn" data-sort="price">股价</button>
-                    </div>
-                </div>
-
-                <!-- 加载状态 -->
-                <div id="loading-stocks" class="loading-state hidden">
-                    <div class="loading-spinner"></div>
-                    <p>正在加载股票数据...</p>
-                </div>
-
-                <!-- 错误状态 -->
-                <div id="error-stocks" class="error-state hidden">
-                    <p>加载失败，请下拉刷新重试</p>
-                </div>
-
-                <!-- 股票列表 -->
-                <div id="stocks-container" class="stocks-container">
-                    <!-- 动态加载股票列表 -->
-                </div>
-
-                <!-- 空状态 -->
-                <div id="empty-state" class="empty-state hidden">
-                    <div class="empty-icon">📊</div>
-                    <h3>暂无股票数据</h3>
-                    <p>该标签下暂时没有股票信息</p>
-                </div>
-            </div>
+        <div class="status-right">
+            <span class="battery">100%</span>
+            <span class="signal">📶</span>
         </div>
     </div>
 
-    <script src="scripts/mobile-tag-detail.js"></script>
+    <!-- 主内容区域 -->
+    <div class="main-container">
+        <!-- 固定页首导航条 -->
+        <div class="fixed-top-nav">
+            <!-- 页面头部卡片 -->
+            <div class="page-header-card">
+                <div class="header-accent-line"></div>
+                <button class="back-btn" onclick="history.back()">
+                    <span class="back-icon">←</span>
+                    <span>返回</span>
+                </button>
+                <div class="header-content">
+                    <div class="breadcrumb">
+                        <span class="breadcrumb-item">标签广场</span>
+                        <span class="breadcrumb-separator">></span>
+                        <span id="tag-name" class="breadcrumb-current">加载中...</span>
+                    </div>
+                    <h1 id="page-title" class="page-title">标签详情</h1>
+                    <p id="tag-description" class="tag-description">查看该标签下的所有股票</p>
+                </div>
+            </div>
+
+            <!-- 标签统计卡片 -->
+            <div class="stats-card">
+                <div class="stats-accent-line"></div>
+                <div class="stats-header">
+                    <h4>📊 标签统计</h4>
+                </div>
+                <div class="stats-grid">
+                    <div class="stats-item">
+                        <span class="stats-number" id="total-stocks">-</span>
+                        <span class="stats-label">总股票数</span>
+                    </div>
+                    <div class="stats-item stats-up">
+                        <span class="stats-number" id="rising-stocks">-</span>
+                        <span class="stats-label">上涨</span>
+                    </div>
+                    <div class="stats-item stats-down">
+                        <span class="stats-number" id="falling-stocks">-</span>
+                        <span class="stats-label">下跌</span>
+                    </div>
+                    <div class="stats-item stats-flat">
+                        <span class="stats-number" id="flat-stocks">-</span>
+                        <span class="stats-label">平盘</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 排序和筛选卡片 -->
+            <div class="filter-card">
+                <div class="filter-accent-line"></div>
+                <div class="filter-controls">
+                    <div class="filter-group">
+                        <label for="sort-select">排序</label>
+                        <select id="sort-select" class="sort-select">
+                            <option value="change-desc">涨跌幅 ↓</option>
+                            <option value="change-asc">涨跌幅 ↑</option>
+                            <option value="volume-desc">成交量 ↓</option>
+                            <option value="volume-asc">成交量 ↑</option>
+                            <option value="marketcap-desc">市值 ↓</option>
+                            <option value="marketcap-asc">市值 ↑</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="change-filter">筛选</label>
+                        <select id="change-filter" class="change-filter">
+                            <option value="all">全部</option>
+                            <option value="up">上涨</option>
+                            <option value="down">下跌</option>
+                            <option value="flat">平盘</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 股票列表卡片 -->
+        <div class="stock-list-card">
+            <div class="stock-list-accent-line"></div>
+            
+            <!-- 加载状态 -->
+            <div id="loading-state" class="loading-state">
+                <div class="loading-spinner"></div>
+                <p>正在加载股票数据...</p>
+            </div>
+
+            <!-- 错误状态 -->
+            <div id="error-state" class="error-state" style="display: none;">
+                <div class="error-icon">⚠️</div>
+                <p class="error-message">加载失败，请重试</p>
+                <button class="retry-btn" onclick="loadTagDetail()">重新加载</button>
+            </div>
+
+            <!-- 股票列表 -->
+            <div id="stock-list" class="stock-list" style="display: none;">
+                <!-- 股票项目将通过JavaScript动态生成 -->
+            </div>
+
+            <!-- 空状态 -->
+            <div id="empty-state" class="empty-state" style="display: none;">
+                <div class="empty-icon">📊</div>
+                <p class="empty-message">该标签下暂无股票数据</p>
+            </div>
+        </div>
+
+        <!-- 相关标签卡片 -->
+        <div class="related-tags-card">
+            <div class="related-tags-accent-line"></div>
+            <div class="related-tags-header">
+                <h4>🏷️ 相关标签</h4>
+            </div>
+            <div id="related-tags" class="related-tags-list">
+                <!-- 相关标签将通过JavaScript动态生成 -->
+            </div>
+        </div>
+     </div>
+
+     <!-- Toast 通知 -->
+     <div id="toast" class="toast"></div>
+
+     <script>
+         // 获取URL参数
+         function getUrlParameter(name) {
+             name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+             const regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+             const results = regex.exec(location.search);
+             return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+         }
+
+         // 显示Toast消息
+         function showToast(message, type = 'info') {
+             const toast = document.getElementById('toast');
+             toast.textContent = message;
+             toast.className = `toast show ${type}`;
+             setTimeout(() => {
+                 toast.className = 'toast';
+             }, 3000);
+         }
+
+         // 格式化数字
+         function formatNumber(num) {
+             if (num >= 1e12) return (num / 1e12).toFixed(1) + 'T';
+             if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
+             if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
+             if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
+             return num.toString();
+         }
+
+         // 格式化百分比
+         function formatPercentage(num) {
+             return (num >= 0 ? '+' : '') + num.toFixed(2) + '%';
+         }
+
+         // 创建股票项目HTML
+         function createStockItem(stock) {
+             const changeClass = stock.change > 0 ? 'positive' : stock.change < 0 ? 'negative' : 'neutral';
+             return `
+                 <div class="stock-item" onclick="viewStockDetail('${stock.symbol}')">
+                     <div class="stock-info">
+                         <div class="stock-symbol">${stock.symbol}</div>
+                         <div class="stock-name">${stock.name}</div>
+                         <div class="stock-meta">
+                             <span class="market-cap">市值: ${formatNumber(stock.marketCap)}</span>
+                             <span class="volume">成交量: ${formatNumber(stock.volume)}</span>
+                         </div>
+                     </div>
+                     <div class="stock-price">
+                         <div class="price">$${stock.price.toFixed(2)}</div>
+                         <div class="change ${changeClass}">${formatPercentage(stock.change)}</div>
+                     </div>
+                 </div>
+             `;
+         }
+
+         // 创建相关标签HTML
+         function createRelatedTag(tag) {
+             return `
+                 <div class="related-tag" onclick="navigateToTag('${tag.id}')">
+                     <span class="tag-name">${tag.name}</span>
+                     <span class="tag-count">${tag.count}</span>
+                 </div>
+             `;
+         }
+
+         // 加载标签详情
+         async function loadTagDetail() {
+             const tagId = getUrlParameter('tagId');
+             if (!tagId) {
+                 showToast('缺少标签ID参数', 'error');
+                 return;
+             }
+
+             try {
+                 // 显示加载状态
+                 document.getElementById('loading-state').style.display = 'block';
+                 document.getElementById('error-state').style.display = 'none';
+                 document.getElementById('stock-list').style.display = 'none';
+                 document.getElementById('empty-state').style.display = 'none';
+
+                 // 模拟API调用
+                 await new Promise(resolve => setTimeout(resolve, 1000));
+
+                 // 模拟数据
+                 const tagData = {
+                     id: tagId,
+                     name: tagId.includes('小盘股') ? '小盘股' : '科技股',
+                     description: '市值较小但具有成长潜力的股票',
+                     stocks: [
+                         { symbol: 'AAPL', name: '苹果公司', price: 150.25, change: 2.5, marketCap: 2500000000000, volume: 50000000 },
+                         { symbol: 'GOOGL', name: '谷歌', price: 2800.50, change: -1.2, marketCap: 1800000000000, volume: 30000000 },
+                         { symbol: 'MSFT', name: '微软', price: 300.75, change: 1.8, marketCap: 2200000000000, volume: 40000000 },
+                         { symbol: 'TSLA', name: '特斯拉', price: 800.25, change: 3.2, marketCap: 800000000000, volume: 60000000 },
+                         { symbol: 'AMZN', name: '亚马逊', price: 3200.00, change: -0.5, marketCap: 1600000000000, volume: 25000000 }
+                     ],
+                     relatedTags: [
+                         { id: 'tech', name: '科技股', count: 150 },
+                         { id: 'growth', name: '成长股', count: 120 },
+                         { id: 'nasdaq', name: '纳斯达克', count: 200 }
+                     ]
+                 };
+
+                 // 更新页面内容
+                 document.getElementById('tag-name').textContent = tagData.name;
+                 document.getElementById('page-title').textContent = tagData.name;
+                 document.getElementById('tag-description').textContent = tagData.description;
+
+                 // 更新统计信息
+                 const totalStocks = tagData.stocks.length;
+                 const risingStocks = tagData.stocks.filter(s => s.change > 0).length;
+                 const fallingStocks = tagData.stocks.filter(s => s.change < 0).length;
+                 const flatStocks = tagData.stocks.filter(s => s.change === 0).length;
+
+                 document.getElementById('total-stocks').textContent = totalStocks;
+                 document.getElementById('rising-stocks').textContent = risingStocks;
+                 document.getElementById('falling-stocks').textContent = fallingStocks;
+                 document.getElementById('flat-stocks').textContent = flatStocks;
+
+                 // 渲染股票列表
+                 const stockList = document.getElementById('stock-list');
+                 if (tagData.stocks.length > 0) {
+                     stockList.innerHTML = tagData.stocks.map(createStockItem).join('');
+                     stockList.style.display = 'block';
+                 } else {
+                     document.getElementById('empty-state').style.display = 'block';
+                 }
+
+                 // 渲染相关标签
+                 const relatedTags = document.getElementById('related-tags');
+                 relatedTags.innerHTML = tagData.relatedTags.map(createRelatedTag).join('');
+
+                 // 隐藏加载状态
+                 document.getElementById('loading-state').style.display = 'none';
+
+             } catch (error) {
+                 console.error('加载标签详情失败:', error);
+                 document.getElementById('loading-state').style.display = 'none';
+                 document.getElementById('error-state').style.display = 'block';
+                 showToast('加载失败，请重试', 'error');
+             }
+         }
+
+         // 查看股票详情
+         function viewStockDetail(symbol) {
+             showToast(`查看 ${symbol} 详情`, 'info');
+             // 这里可以跳转到股票详情页面
+         }
+
+         // 导航到标签
+         function navigateToTag(tagId) {
+             window.location.href = `mobile-tag-detail.html?tagId=${tagId}`;
+         }
+
+         // 排序和筛选功能
+         document.getElementById('sort-select').addEventListener('change', function() {
+             showToast('排序功能开发中', 'info');
+         });
+
+         document.getElementById('change-filter').addEventListener('change', function() {
+             showToast('筛选功能开发中', 'info');
+         });
+
+         // 页面加载完成后初始化
+         document.addEventListener('DOMContentLoaded', function() {
+             loadTagDetail();
+         });
+     </script>
 </body>
 </html>

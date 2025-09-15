@@ -11,6 +11,57 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="scripts/mobile-app.js" defer></script>
+    <script>
+        // 导航到标签详情页面
+        function navigateToTagDetail(tagId) {
+            window.location.href = `mobile-tag-detail.html?tagId=${tagId}`;
+        }
+
+        // 导航到标签（保留原有功能）
+        function navigateToTag(tagId) {
+            console.log(`查看 ${tagId} 标签`);
+            // 这里可以跳转到标签详情页面
+        }
+
+        // 榜单"更多"按钮功能
+         document.addEventListener('DOMContentLoaded', function() {
+             const moreButtons = document.querySelectorAll('.more-btn');
+             moreButtons.forEach(btn => {
+                 btn.addEventListener('click', function() {
+                     const listType = this.getAttribute('data-list');
+                     window.location.href = `mobile-ranking-detail.html?type=${listType}`;
+                 });
+             });
+
+             // 市场切换标签功能（二级页面导航）
+             const marketTabs = document.querySelectorAll('.market-tab-btn');
+             marketTabs.forEach(tab => {
+                 tab.addEventListener('click', function() {
+                     const market = this.getAttribute('data-market');
+                     
+                     // 移除所有活跃状态
+                     marketTabs.forEach(t => t.classList.remove('active'));
+                     // 添加当前活跃状态
+                     this.classList.add('active');
+                     
+                     // 跳转到对应市场的二级页面
+                     window.location.href = `mobile-market-detail.html?market=${market}`;
+                 });
+             });
+
+             // 榜单导航按钮功能
+             const rankingNavBtns = document.querySelectorAll('.ranking-nav-btn');
+             rankingNavBtns.forEach(btn => {
+                 btn.addEventListener('click', function() {
+                     const ranking = this.getAttribute('data-ranking');
+                     const currentMarket = document.querySelector('.market-tab-btn.active')?.getAttribute('data-market') || 'sp500';
+                     
+                     // 跳转到具体榜单的三级页面
+                     window.location.href = `mobile-ranking-detail.html?type=${ranking}&market=${currentMarket}`;
+                 });
+             });
+         });
+    </script>
 </head>
 <body>
     <!-- 移动端应用容器 -->
@@ -30,29 +81,36 @@
         <main class="mobile-main">
             <!-- 榜单页面 -->
         <div id="trending-mobile" class="page-content active">
-                <div class="page-header">
-                    <h2>趋势风云榜</h2>
-                    <p>实时股票排行榜</p>
-                </div>
-                
-                <!-- 榜单导航条 -->
-                <div class="ranking-nav-container">
-                    <div class="ranking-nav">
-                        <button class="ranking-nav-btn active" data-ranking="sp500">
-                            标普500
-                        </button>
-                        <button class="ranking-nav-btn" data-ranking="chinese">
-                            中概股
-                        </button>
-                        <button class="ranking-nav-btn" data-ranking="gainers">
-                            涨跌幅
-                        </button>
-                        <button class="ranking-nav-btn" data-ranking="market-cap">
-                            市值榜
-                        </button>
-                        <button class="ranking-nav-btn" data-ranking="new-highs">
-                            创年内新高
-                        </button>
+                <!-- 固定页首导航条 -->
+                <div class="fixed-top-nav">
+                    <div class="page-header-card">
+                        <div class="header-accent-line"></div>
+                        <h2>趋势风云榜</h2>
+                        <p>实时股票排行榜</p>
+                    </div>
+                    
+                    <!-- 榜单导航条 -->
+                    <div class="ranking-nav-card">
+                        <div class="nav-accent-line"></div>
+                        <div class="ranking-nav-container">
+                            <div class="ranking-nav">
+                                <button class="ranking-nav-btn active" data-ranking="sp500">
+                                    标普500
+                                </button>
+                                <button class="ranking-nav-btn" data-ranking="chinese">
+                                    中概股
+                                </button>
+                                <button class="ranking-nav-btn" data-ranking="gainers">
+                                    涨跌幅
+                                </button>
+                                <button class="ranking-nav-btn" data-ranking="market-cap">
+                                    市值榜
+                                </button>
+                                <button class="ranking-nav-btn" data-ranking="new-highs">
+                                    创年内新高
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -128,45 +186,61 @@
 
             <!-- 热力图页面 -->
             <div id="heatmap-mobile" class="page-content">
-                <div class="page-header">
-                    <h2>股票热力图</h2>
-                    <p>可视化市场表现</p>
-                    <div class="heatmap-controls">
-                        <select id="heatmap-market" class="market-selector">
-                            <option value="US">美股</option>
-                            <option value="CN">A股</option>
-                            <option value="HK">港股</option>
-                        </select>
-                        <select id="heatmap-metric" class="metric-selector">
-                            <option value="change">涨跌幅</option>
-                            <option value="volume">成交量</option>
-                            <option value="marketcap">市值</option>
-                        </select>
+                <!-- 固定页首导航条 -->
+                <div class="fixed-top-nav">
+                    <div class="page-header-card">
+                        <div class="header-accent-line"></div>
+                        <h2>股票热力图</h2>
+                        <p>可视化市场表现</p>
                     </div>
-                </div>
-                
-                <!-- 热力图导航 -->
-                <div class="heatmap-nav">
-                    <button class="heatmap-nav-btn active" data-view="industry">
-                        行业仪表盘
-                    </button>
-                    <button class="heatmap-nav-btn" data-view="panoramic">
-                        全景热力图
-                    </button>
-                </div>
-                
-                <div class="heatmap-legend">
-                    <div class="legend-item">
-                        <span class="legend-color" style="background: var(--danger-color);"></span>
-                        <span class="legend-text">跌幅较大</span>
+                    
+                    <!-- 热力图控制栏卡片 -->
+                    <div class="heatmap-controls-card">
+                        <div class="nav-accent-line"></div>
+                        <div class="heatmap-controls">
+                            <select id="heatmap-market" class="market-selector">
+                                <option value="US">美股</option>
+                                <option value="CN">A股</option>
+                                <option value="HK">港股</option>
+                            </select>
+                            <select id="heatmap-metric" class="metric-selector">
+                                <option value="change">涨跌幅</option>
+                                <option value="volume">成交量</option>
+                                <option value="marketcap">市值</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="legend-item">
-                        <span class="legend-color" style="background: var(--neutral-color);"></span>
-                        <span class="legend-text">平盘</span>
+                    
+                    <!-- 热力图导航卡片 -->
+                    <div class="heatmap-nav-card">
+                        <div class="nav-accent-line"></div>
+                        <div class="heatmap-nav">
+                            <button class="heatmap-nav-btn active" data-view="industry">
+                                行业仪表盘
+                            </button>
+                            <button class="heatmap-nav-btn" data-view="panoramic">
+                                全景热力图
+                            </button>
+                        </div>
                     </div>
-                    <div class="legend-item">
-                        <span class="legend-color" style="background: var(--success-color);"></span>
-                        <span class="legend-text">涨幅较大</span>
+                    
+                    <!-- 图例卡片 -->
+                    <div class="legend-card">
+                        <div class="legend-accent-line"></div>
+                        <div class="heatmap-legend">
+                            <div class="legend-item">
+                                <span class="legend-color" style="background: var(--danger-color);"></span>
+                                <span class="legend-text">跌幅较大</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color" style="background: var(--neutral-color);"></span>
+                                <span class="legend-text">平盘</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color" style="background: var(--success-color);"></span>
+                                <span class="legend-text">涨幅较大</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -185,40 +259,54 @@
                     </div>
                 </div>
                 
-                <div class="heatmap-info">
-                    <div class="info-card">
-                        <h4>热力图说明</h4>
-                        <p>• 方块大小代表市值规模</p>
-                        <p>• 颜色深浅代表涨跌幅度</p>
-                        <p>• 点击方块查看个股详情</p>
+                <!-- 热力图说明卡片 -->
+                <div class="heatmap-info-card">
+                    <div class="info-accent-line"></div>
+                    <div class="heatmap-info">
+                        <div class="info-card">
+                            <h4>热力图说明</h4>
+                            <p>• 方块大小代表市值规模</p>
+                            <p>• 颜色深浅代表涨跌幅度</p>
+                            <p>• 点击方块查看个股详情</p>
+                        </div>
                     </div>
                 </div>
             </div>
             
             <!-- 标签页面 -->
             <div id="tag-plaza-mobile" class="page-content">
-                <div class="page-header">
-                    <h2>标签广场</h2>
-                    <p>发现投资主题</p>
-                </div>
-                
-                <!-- 分类导航 -->
-                <div class="category-nav-container">
-                    <div class="category-nav" id="category-nav">
-                        <button class="category-btn active" data-category="all">全部</button>
-                        <button class="category-btn" data-category="sector">行业板块</button>
-                        <button class="category-btn" data-category="theme">主题概念</button>
-                        <button class="category-btn" data-category="marketcap">市值规模</button>
-                        <button class="category-btn" data-category="style">投资风格</button>
-                        <button class="category-btn" data-category="region">地区分布</button>
+                <!-- 固定页首导航条 -->
+                <div class="fixed-top-nav">
+                    <div class="page-header-card">
+                        <div class="header-accent-line"></div>
+                        <h2>标签广场</h2>
+                        <p>发现投资主题</p>
                     </div>
-                </div>
-                
-                <!-- 搜索框 -->
-                <div class="search-container">
-                    <div class="search-box">
-                        <input type="text" id="tag-search" placeholder="搜索标签..." class="search-input">
-                        <button class="search-btn">🔍</button>
+                    
+                    <!-- 分类导航卡片 -->
+                    <div class="category-nav-card">
+                        <div class="nav-accent-line"></div>
+                        <div class="category-nav-container">
+                            <div class="category-nav" id="category-nav">
+                                <button class="category-btn active" data-category="all">全部</button>
+                                <button class="category-btn" data-category="sector">行业板块</button>
+                                <button class="category-btn" data-category="theme">主题概念</button>
+                                <button class="category-btn" data-category="marketcap">市值规模</button>
+                                <button class="category-btn" data-category="style">投资风格</button>
+                                <button class="category-btn" data-category="region">地区分布</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 搜索框卡片 -->
+                    <div class="search-card">
+                        <div class="search-accent-line"></div>
+                        <div class="search-container">
+                            <div class="search-box">
+                                <input type="text" id="tag-search" placeholder="搜索标签..." class="search-input">
+                                <button class="search-btn">🔍</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -226,7 +314,30 @@
                 <div id="tag-content-mobile" class="tag-content">
                     <!-- 标签按钮组 -->
                     <div id="tag-buttons-container" class="tag-buttons-container">
-                        <!-- 动态加载标签按钮 -->
+                        <div class="tag-item" onclick="navigateToTagDetail('tech')">
+                            <span class="tag-name">科技股</span>
+                            <span class="tag-count">150</span>
+                        </div>
+                        <div class="tag-item" onclick="navigateToTagDetail('finance')">
+                            <span class="tag-name">金融股</span>
+                            <span class="tag-count">89</span>
+                        </div>
+                        <div class="tag-item" onclick="navigateToTagDetail('healthcare')">
+                            <span class="tag-name">医疗股</span>
+                            <span class="tag-count">76</span>
+                        </div>
+                        <div class="tag-item" onclick="navigateToTagDetail('energy')">
+                            <span class="tag-name">能源股</span>
+                            <span class="tag-count">45</span>
+                        </div>
+                        <div class="tag-item" onclick="navigateToTagDetail('consumer')">
+                            <span class="tag-name">消费股</span>
+                            <span class="tag-count">123</span>
+                        </div>
+                        <div class="tag-item" onclick="navigateToTagDetail('marketcap_小盘股')">
+                            <span class="tag-name">小盘股</span>
+                            <span class="tag-count">67</span>
+                        </div>
                     </div>
                     
                     <!-- 标签组 -->
