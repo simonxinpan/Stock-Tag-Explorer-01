@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Stock Explorer Mobile - 移动版美股数据应用</title>
+    <link rel="stylesheet" href="./styles/mobile.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="scripts/mobile-app.js" defer></script>
+</head>
+<body>
+    <!-- 移动端应用容器 -->
+    <div id="mobile-app" class="mobile-app">
+        <!-- 顶部状态栏 -->
+        <header class="mobile-header">
+            <div class="header-content">
+                <h1 class="app-title">📊 Stock Explorer</h1>
+                <div class="market-status">
+                    <span class="status-dot"></span>
+                    <span class="status-text">实时更新</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主内容区域 -->
+        <main class="mobile-main">
+            <!-- 标签广场页面 -->
+            <div id="tag-plaza-mobile" class="page-content active">
+                <div class="page-header">
+                    <h2>标签广场</h2>
+                    <p>探索股票分类标签</p>
+                </div>
+                
+                <!-- 加载状态 -->
+                <div id="loading-tags" class="loading-state">
+                    <div class="loading-spinner"></div>
+                    <p>正在加载标签数据...</p>
+                </div>
+                
+                <!-- 错误状态 -->
+                <div id="error-tags" class="error-state hidden">
+                    <p>加载失败，请下拉刷新重试</p>
+                </div>
+                
+                <!-- 标签组 -->
+                <div id="tag-groups-mobile" class="tag-groups hidden">
+                    <div class="tag-category">
+                        <h3>股市表现</h3>
+                        <div id="market-performance-tags" class="tag-grid"></div>
+                    </div>
+                    
+                    <div class="tag-category">
+                        <h3>财务表现</h3>
+                        <div id="financial-performance-tags" class="tag-grid"></div>
+                    </div>
+                    
+                    <div class="tag-category">
+                        <h3>行业分类</h3>
+                        <div id="industry-tags" class="tag-grid"></div>
+                    </div>
+                    
+                    <div class="tag-category">
+                        <h3>特殊名单</h3>
+                        <div id="special-tags" class="tag-grid"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 趋势榜单页面 -->
+            <section id="trending-mobile" class="page-content">
+                <div class="page-header">
+                    <h2 class="page-title">趋势榜单</h2>
+                    <p class="page-subtitle">实时追踪市场热点</p>
+                </div>
+                
+                <!-- 市场切换标签 -->
+                <div class="market-tabs-mobile">
+                    <button class="market-tab-btn active" data-market="sp500">
+                        <span class="market-flag">🇺🇸</span>
+                        <span class="market-name">标普500</span>
+                        <span class="market-count" id="sp500-count-mobile">502</span>
+                    </button>
+                    <button class="market-tab-btn" data-market="chinese_stocks">
+                        <span class="market-flag">🇨🇳</span>
+                        <span class="market-name">中概股</span>
+                        <span class="market-count" id="chinese-count-mobile">55</span>
+                    </button>
+                </div>
+                
+                <!-- 市场概览 -->
+                <div class="market-overview">
+                    <div class="overview-stats">
+                        <div class="stat-item">
+                            <span class="stat-icon">📊</span>
+                            <div class="stat-content">
+                                <span class="stat-number" id="total-stocks">502</span>
+                                <span class="stat-label">总股票数</span>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">📈</span>
+                            <div class="stat-content">
+                                <span class="stat-number" id="rising-stocks">326</span>
+                                <span class="stat-label">上涨股票</span>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">📉</span>
+                            <div class="stat-content">
+                                <span class="stat-number" id="falling-stocks">163</span>
+                                <span class="stat-label">下跌股票</span>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">💎</span>
+                            <div class="stat-content">
+                                <span class="stat-number" id="total-market-cap">$60.54万亿</span>
+                                <span class="stat-label">总市值</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 榜单内容 -->
+                <div class="trending-content">
+                    <!-- 加载状态 -->
+                    <div id="loading-trending" class="loading-container">
+                        <div class="loading-spinner"></div>
+                        <p>加载中...</p>
+                    </div>
+                    
+                    <!-- 榜单列表 -->
+                    <div id="trending-lists" class="trending-lists hidden">
+                        <!-- 涨幅榜 -->
+                        <div class="trending-section">
+                            <h3 class="section-title">🚀 涨幅榜</h3>
+                            <p class="section-desc">按当日涨跌幅排序，反映市场热点和资金偏好</p>
+                            <div class="stock-list" id="gainers-list"></div>
+                        </div>
+                        
+                        <!-- 市值榜 -->
+                        <div class="trending-section">
+                            <h3 class="section-title">💰 市值榜</h3>
+                            <p class="section-desc">按市值排序，展示市场巨头和蓝筹股</p>
+                            <div class="stock-list" id="market-cap-list"></div>
+                        </div>
+                        
+                        <!-- 创新高榜 -->
+                        <div class="trending-section">
+                            <h3 class="section-title">⬆️ 创年内新高</h3>
+                            <p class="section-desc">突破52周最高价的股票，显示强劲上升趋势</p>
+                            <div class="stock-list" id="new-highs-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 底部导航栏 -->
+        <nav class="mobile-bottom-nav">
+            <button class="nav-item active" data-page="tag-plaza-mobile">
+                <span class="nav-icon">🏷️</span>
+                <span class="nav-label">标签广场</span>
+            </button>
+            <button class="nav-item" data-page="trending-mobile">
+                <span class="nav-icon">📈</span>
+                <span class="nav-label">趋势榜单</span>
+            </button>
+            <button class="nav-item" onclick="window.open('https://heatmap-pro.vercel.app/', '_blank')">
+                <span class="nav-icon">🔥</span>
+                <span class="nav-label">热力图</span>
+            </button>
+        </nav>
+    </div>
+
+</body>
+</html>
