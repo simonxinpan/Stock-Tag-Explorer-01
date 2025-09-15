@@ -1,16 +1,18 @@
-name: Update Market Data (High Frequency)
+# 文件: .github/workflows/update-market-data.yml
+# 版本: Staggered Schedule
+name: Update S&P 500 Market Data (High Frequency)
 
 on:
   schedule:
-    # 标普500高频更新 - 交错调度第1、3、5轮（UTC 13:30-20:00，周一至周五）
-    # 每15分钟执行一次，与中概股错开，避免API限制冲突
-    - cron: '30,45 13-19 * * 1-5'  # 每小时的30分和45分执行
-    - cron: '0,15 14-19 * * 1-5'   # 每小时的0分和15分执行
-  workflow_dispatch:  # 允许手动触发
+    # 高频调度: 在每小时的 10, 25, 40, 55 分执行 (周一至周五, UTC 13-20点)
+    - cron: '10,25,40,55 13-20 * * 1-5'
+    # 闭市后最终运行
+    - cron: '10 21 * * 1-5'
+  workflow_dispatch:
     inputs:
-      debug:
-        description: 'Enable debug mode'
-        required: false
+      debug_mode:
+        description: 'Enable debug mode for detailed logs?'
+        required: true
         default: 'false'
         type: choice
         options:
@@ -23,15 +25,15 @@ concurrency:
   cancel-in-progress: false  # 不取消正在运行的任务，而是等待完成
 
 jobs:
-  update-market-data:
+  update_sp500:
+    name: "🚀 Update S&P 500 Data"
     runs-on: ubuntu-latest
-    timeout-minutes: 12  # 设置超时，防止任务卡死
+    timeout-minutes: 15 # 标普500数量多，超时时间长一些
     
-    # 添加交易时段检查
-    if: |
-      github.event_name == 'workflow_dispatch' || 
-      (github.event_name == 'schedule' && 
-       github.event.schedule == '30,0 13-19 * * 1-5')
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+      DEBUG: ${{ github.event.inputs.debug_mode || 'false' }}
     
     steps:
       - name: Checkout repository
@@ -47,21 +49,14 @@ jobs:
         run: npm ci
         
       - name: Health check - Verify API and DB connectivity
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
         run: |
           echo "🔍 Checking Finnhub API connectivity..."
           curl -f "https://finnhub.io/api/v1/quote?symbol=AAPL&token=$FINNHUB_API_KEY" || exit 1
           echo "✅ Finnhub API is accessible"
           
-      - name: Run market data update (Finnhub)
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
-          DEBUG: ${{ github.event.inputs.debug || 'false' }}
+      - name: Run S&P 500 Update Script
         run: |
-          echo "🚀 Starting Finnhub market data update..."
+          echo "🚀 Starting S&P 500 market data update..."
           echo "📊 Expected runtime: 8-10 minutes for ~500 stocks"
           echo "⚡ Rate limit: 1 request/second (60/minute)"
           node _scripts/update-market-data-finnhub.mjs
