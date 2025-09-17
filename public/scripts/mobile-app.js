@@ -7,20 +7,26 @@ class MobileStockApp {
         this.isLoading = false;
         this.tagData = null;
         this.trendingData = null;
+        this.rankingDataCache = new Map(); // 榜单数据缓存
+        this.heatmapDataCache = null; // 热力图数据缓存
+        this.loadedPages = new Set(); // 已加载的页面
+        this.dataExpiryTime = 5 * 60 * 1000; // 数据过期时间：5分钟
         
         this.init();
     }
 
     init() {
         this.setupEventListeners();
-        this.loadInitialData();
+        this.loadInitialPageData(); // 只加载当前页面数据
         this.setupPullToRefresh();
         this.setupRankingNavigation();
         this.setupHeatmapControls();
         this.setupTagsControls();
         
-        // 初始化榜单显示 - 默认显示涨幅榜
-        this.switchRanking('gainers');
+        // 延迟初始化榜单显示 - 默认显示涨幅榜
+        setTimeout(() => {
+            this.switchRanking('gainers');
+        }, 100);
     }
 
     setupEventListeners() {
@@ -118,28 +124,145 @@ class MobileStockApp {
             });
             document.querySelector(`[data-page="${pageId}"]`).classList.add('active');
 
-            // 加载页面数据
-            if (pageId === 'trending-mobile' && !this.trendingData) {
-                this.loadTrendingData();
-            }
+            // 懒加载页面数据
+            this.loadPageDataLazy(pageId);
         }
     }
 
     switchMarket(market) {
         this.currentMarket = market;
         
-        // 更新标签状态
+        // 更新市场标签状态
         document.querySelectorAll('.market-tab-btn').forEach(btn => {
             btn.classList.remove('active');
         });
-        document.querySelector(`[data-market="${market}"]`).classList.add('active');
+        const marketTabBtn = document.querySelector(`.market-tab-btn[data-market="${market}"]`);
+        if (marketTabBtn) {
+            marketTabBtn.classList.add('active');
+        }
+        
+        // 更新市场轮播按钮状态
+        document.querySelectorAll('.market-carousel-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        const marketCarouselBtn = document.querySelector(`.market-carousel-btn[data-market="${market}"]`);
+        if (marketCarouselBtn) {
+            marketCarouselBtn.classList.add('active');
+        }
 
         // 重新加载趋势数据
         this.loadTrendingData();
+        
+        // 重新加载当前显示的榜单
+        const activeRanking = document.querySelector('.ranking-nav-btn.active')?.dataset.ranking || 'gainers';
+        this.loadRankingData(activeRanking);
     }
 
-    async loadInitialData() {
+    async loadInitialPageData() {
+        // 只加载当前页面的数据，实现懒加载
+        if (this.currentPage === 'tag-plaza-mobile') {
+            await this.loadTagDataLazy();
+        }
+        this.loadedPages.add(this.currentPage);
+    }
+
+    // 懒加载页面数据
+    async loadPageDataLazy(pageId) {
+        // 如果页面已经加载过，直接返回
+        if (this.loadedPages.has(pageId)) {
+            return;
+        }
+
+        try {
+            switch (pageId) {
+                case 'tag-plaza-mobile':
+                    if (!this.tagData) {
+                        await this.loadTagDataLazy();
+                    }
+                    break;
+                case 'trending-mobile':
+                    if (!this.trendingData || this.isDataExpired('trending')) {
+                        await this.loadTrendingDataLazy();
+                    }
+                    break;
+                case 'heatmap-mobile':
+                    if (!this.heatmapDataCache || this.isDataExpired('heatmap')) {
+                        await this.loadHeatmapDataLazy();
+                    }
+                    break;
+            }
+            this.loadedPages.add(pageId);
+        } catch (error) {
+            console.error(`Error loading data for page ${pageId}:`, error);
+        }
+    }
+
+    // 检查数据是否过期
+    isDataExpired(dataType) {
+        const cacheKey = `${dataType}_timestamp`;
+        const timestamp = localStorage.getItem(cacheKey);
+        if (!timestamp) return true;
+        return Date.now() - parseInt(timestamp) > this.dataExpiryTime;
+    }
+
+    // 设置数据时间戳
+    setDataTimestamp(dataType) {
+        const cacheKey = `${dataType}_timestamp`;
+        localStorage.setItem(cacheKey, Date.now().toString());
+    }
+
+    // 懒加载标签数据
+    async loadTagDataLazy() {
+        // 先尝试从缓存加载
+        const cachedData = this.getCachedData('tagData');
+        if (cachedData && !this.isDataExpired('tags')) {
+            this.tagData = cachedData;
+            this.renderTagGroups(cachedData);
+            return;
+        }
+
         await this.loadTagData();
+    }
+
+    // 懒加载趋势数据
+    async loadTrendingDataLazy() {
+        const cachedData = this.getCachedData('trendingData');
+        if (cachedData && !this.isDataExpired('trending')) {
+            this.trendingData = cachedData;
+            this.renderTrendingData(cachedData);
+            return;
+        }
+
+        await this.loadTrendingData();
+    }
+
+    // 懒加载热力图数据
+    async loadHeatmapDataLazy() {
+        if (this.heatmapDataCache && !this.isDataExpired('heatmap')) {
+            return;
+        }
+
+        await this.loadHeatmapData();
+    }
+
+    // 获取缓存数据
+    getCachedData(key) {
+        try {
+            const cached = localStorage.getItem(key);
+            return cached ? JSON.parse(cached) : null;
+        } catch (error) {
+            console.error('Error parsing cached data:', error);
+            return null;
+        }
+    }
+
+    // 设置缓存数据
+    setCachedData(key, data) {
+        try {
+            localStorage.setItem(key, JSON.stringify(data));
+        } catch (error) {
+            console.error('Error caching data:', error);
+        }
     }
 
     async loadTagData() {
@@ -152,6 +275,11 @@ class MobileStockApp {
                 if (realData) {
                     this.tagData = realData;
                     this.renderTagGroups(realData);
+                    
+                    // 缓存数据
+                    this.setCachedData('tagData', realData);
+                    this.setDataTimestamp('tags');
+                    
                     this.hideLoading('tags');
                     return;
                 }
@@ -166,6 +294,11 @@ class MobileStockApp {
                     const data = await response.json();
                     this.tagData = data;
                     this.renderTagGroups(data);
+                    
+                    // 缓存数据
+                    this.setCachedData('tagData', data);
+                    this.setDataTimestamp('tags');
+                    
                     this.hideLoading('tags');
                     return;
                 }
@@ -177,6 +310,10 @@ class MobileStockApp {
             const mockData = this.getMockTagData();
             this.tagData = mockData;
             this.renderTagGroups(mockData);
+            
+            // 缓存数据
+            this.setCachedData('tagData', mockData);
+            this.setDataTimestamp('tags');
             
             this.hideLoading('tags');
         } catch (error) {
@@ -326,6 +463,11 @@ class MobileStockApp {
                 if (realData) {
                     this.trendingData = realData;
                     this.renderTrendingData(realData);
+                    
+                    // 缓存数据
+                    this.setCachedData('trendingData', realData);
+                    this.setDataTimestamp('trending');
+                    
                     this.hideLoading('trending');
                     return;
                 }
@@ -341,6 +483,11 @@ class MobileStockApp {
                     const data = await response.json();
                     this.trendingData = data;
                     this.renderTrendingData(data);
+                    
+                    // 缓存数据
+                    this.setCachedData('trendingData', data);
+                    this.setDataTimestamp('trending');
+                    
                     this.hideLoading('trending');
                     return;
                 }
@@ -352,6 +499,10 @@ class MobileStockApp {
             const mockData = this.getMockTrendingData();
             this.trendingData = mockData;
             this.renderTrendingData(mockData);
+            
+            // 缓存数据
+            this.setCachedData('trendingData', mockData);
+            this.setDataTimestamp('trending');
             
             this.hideLoading('trending');
         } catch (error) {
@@ -559,7 +710,11 @@ class MobileStockApp {
             return;
         }
 
-        const stockItems = stocks.slice(0, 4).map((stock, index) => {
+        // 检查是否为预览模式（容器类名包含preview）
+        const isPreviewMode = container.classList.contains('stock-list-preview');
+        const displayCount = isPreviewMode ? 3 : 4;
+        
+        const stockItems = stocks.slice(0, displayCount).map((stock, index) => {
             const changeClass = stock.change >= 0 ? 'positive' : 'negative';
             const changeSymbol = stock.change >= 0 ? '+' : '';
             
@@ -581,21 +736,26 @@ class MobileStockApp {
             `;
         });
 
-        // 在第四名后添加更多按钮
-        if (stocks.length > 4) {
-            const listType = this.getListTypeFromContainerId(containerId);
-            stockItems.push(`
-                <div class="more-btn-container">
-                    <button class="more-btn" data-list="${listType}">更多</button>
-                </div>
-            `);
-        }
-
         container.innerHTML = stockItems.join('');
     }
 
     getListTypeFromContainerId(containerId) {
         const typeMap = {
+            'top-gainers-list': 'gainers',
+            'top-losers-list': 'losers',
+            'top-market-cap-list': 'market-cap',
+            'top-new-highs-list': 'new-highs',
+            'top-new-lows-list': 'new-lows',
+            'top-volume-list': 'volume',
+            'top-momentum-list': 'momentum',
+            'top-volatility-list': 'volatility',
+            'top-dividend-list': 'dividend',
+            'top-growth-list': 'growth',
+            'top-value-list': 'value',
+            'top-liquidity-list': 'liquidity',
+            'top-unusual-list': 'unusual',
+            'top-trending-list': 'trending',
+            // 兼容旧的ID
             'gainers-list': 'gainers',
             'market-cap-list': 'market-cap',
             'new-highs-list': 'new-highs'
@@ -904,10 +1064,14 @@ class MobileStockApp {
     // 通用的榜单数据加载方法
     async loadListData(listType, market) {
         try {
+            // 显示加载状态
+            this.showLoading('ranking');
+            
             // 尝试从真实API加载数据
             const response = await fetch(`/api/ranking?type=${listType}&market=${market}`);
             if (response.ok) {
                 const data = await response.json();
+                this.hideLoading('ranking');
                 return data;
             }
         } catch (error) {
@@ -915,16 +1079,33 @@ class MobileStockApp {
         }
         
         // 返回模拟数据
-        return this.getMockListData(listType, market);
+        const mockData = this.getMockListData(listType, market);
+        this.hideLoading('ranking');
+        return mockData;
     }
 
-    // 加载特定榜单数据
+    // 加载特定榜单数据（带缓存）
     async loadRankingData(ranking) {
         try {
             const market = this.currentMarket || 'sp500';
+            const cacheKey = `${ranking}_${market}`;
             
-            // 使用通用方法加载数据
+            // 检查缓存
+            if (this.rankingDataCache.has(cacheKey)) {
+                const cachedData = this.rankingDataCache.get(cacheKey);
+                if (!this.isDataExpired(`ranking_${cacheKey}`)) {
+                    this.renderRankingData(cachedData, ranking);
+                    return;
+                }
+            }
+            
+            // 加载新数据
             const data = await this.loadListData(ranking, market);
+            
+            // 缓存数据
+            this.rankingDataCache.set(cacheKey, data);
+            this.setDataTimestamp(`ranking_${cacheKey}`);
+            
             this.renderRankingData(data, ranking);
         } catch (error) {
             console.error('加载榜单数据失败:', error);
@@ -1299,6 +1480,57 @@ class MobileStockApp {
         
         return rankingToContainerMap[ranking] || 'top-gainers-list';
     }
+
+    // 清理过期缓存
+    clearExpiredCache() {
+        try {
+            // 清理过期的榜单数据缓存
+            for (const [key, value] of this.rankingDataCache.entries()) {
+                if (this.isDataExpired(`ranking_${key}`)) {
+                    this.rankingDataCache.delete(key);
+                    localStorage.removeItem(`ranking_${key}_timestamp`);
+                }
+            }
+
+            // 清理过期的localStorage缓存
+            const cacheKeys = ['tagData', 'trendingData'];
+            cacheKeys.forEach(key => {
+                if (this.isDataExpired(key.replace('Data', ''))) {
+                    localStorage.removeItem(key);
+                    localStorage.removeItem(`${key.replace('Data', '')}_timestamp`);
+                }
+            });
+
+            console.log('Expired cache cleared');
+        } catch (error) {
+            console.error('Error clearing cache:', error);
+        }
+    }
+
+    // 预加载下一页数据
+    preloadNextPageData() {
+        const pages = ['tag-plaza-mobile', 'trending-mobile', 'heatmap-mobile'];
+        const currentIndex = pages.indexOf(this.currentPage);
+        const nextIndex = (currentIndex + 1) % pages.length;
+        const nextPage = pages[nextIndex];
+
+        // 延迟预加载，避免影响当前页面性能
+        setTimeout(() => {
+            if (!this.loadedPages.has(nextPage)) {
+                this.loadPageDataLazy(nextPage);
+            }
+        }, 2000);
+    }
+
+    // 内存优化：限制缓存大小
+    optimizeMemoryUsage() {
+        const maxCacheSize = 10;
+        if (this.rankingDataCache.size > maxCacheSize) {
+            // 删除最旧的缓存项
+            const firstKey = this.rankingDataCache.keys().next().value;
+            this.rankingDataCache.delete(firstKey);
+        }
+    }
 }
 
 // 初始化应用
@@ -1306,12 +1538,31 @@ document.addEventListener('DOMContentLoaded', () => {
     window.mobileApp = new MobileStockApp();
 });
 
-// 处理页面可见性变化，自动刷新数据
+// 处理页面可见性变化，优化性能和内存使用
 document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && window.mobileApp) {
-        // 页面重新可见时刷新数据
-        setTimeout(() => {
-            window.mobileApp.refreshCurrentPage();
-        }, 1000);
+    if (document.hidden) {
+        // 页面隐藏时清理缓存和优化内存
+        console.log('Page hidden, optimizing memory usage');
+        if (window.mobileApp) {
+            window.mobileApp.clearExpiredCache();
+            window.mobileApp.optimizeMemoryUsage();
+        }
+    } else {
+        // 页面重新可见时刷新数据并预加载
+        console.log('Page visible, refreshing and preloading');
+        if (window.mobileApp) {
+            setTimeout(() => {
+                window.mobileApp.refreshCurrentPage();
+                window.mobileApp.preloadNextPageData();
+            }, 1000);
+        }
     }
 });
+
+// 定期清理缓存和优化内存
+setInterval(() => {
+    if (window.mobileApp) {
+        window.mobileApp.clearExpiredCache();
+        window.mobileApp.optimizeMemoryUsage();
+    }
+}, 5 * 60 * 1000); // 每5分钟清理一次
