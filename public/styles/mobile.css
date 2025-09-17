@@ -10,8 +10,8 @@
 :root {
     --primary-color: #007AFF;
     --secondary-color: #5856D6;
-    --success-color: #10b981; /* 涨幅绿色 */
-    --danger-color: #ef4444; /* 跌幅红色 */
+    --success-color: #10b981; /* 涨幅绿色 - 美股习惯 */
+    --danger-color: #ef4444; /* 跌幅红色 - 美股习惯 */
     --neutral-color: #8E8E93; /* 无涨跌幅灰色 */
     --warning-color: #FF9500;
     --background-color: #F2F2F7;
@@ -705,14 +705,25 @@ body {
     border-radius: 10px;
 }
 
+/* 榜单导航滑动容器 */
+.ranking-nav-scroll {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+}
+
+.ranking-nav-scroll::-webkit-scrollbar {
+    display: none;
+}
+
 /* 榜单导航 */
 .ranking-nav {
     display: flex;
     gap: 8px;
-    overflow-x: auto;
-    padding-bottom: 4px;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    min-width: max-content;
+    padding-right: 16px;
 }
 
 .ranking-nav::-webkit-scrollbar {
@@ -749,6 +760,14 @@ body {
 .ranking-nav-btn.active:hover {
     background: var(--primary-color);
     transform: translateY(-1px);
+}
+
+/* 榜单列表描述样式 */
+.list-description {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    line-height: 1.4;
 }
 
 /* 趋势榜单样式 */

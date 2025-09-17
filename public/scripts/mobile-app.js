@@ -18,6 +18,9 @@ class MobileStockApp {
         this.setupRankingNavigation();
         this.setupHeatmapControls();
         this.setupTagsControls();
+        
+        // 初始化榜单显示 - 默认显示涨幅榜
+        this.switchRanking('gainers');
     }
 
     setupEventListeners() {
@@ -43,6 +46,23 @@ class MobileStockApp {
                 const btn = e.target.closest('.ranking-nav-btn');
                 const ranking = btn.dataset.ranking;
                 this.switchRanking(ranking);
+            }
+        });
+
+        // 榜单导航按钮点击事件
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('ranking-nav-btn')) {
+                const ranking = e.target.getAttribute('data-ranking');
+                this.switchRanking(ranking);
+            }
+        });
+        
+        // 更多按钮点击事件
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('more-btn')) {
+                const listType = e.target.getAttribute('data-list');
+                const currentMarket = this.currentMarket || 'sp500';
+                window.location.href = `mobile-ranking-detail.html?type=${listType}&market=${currentMarket}`;
             }
         });
 
@@ -343,66 +363,83 @@ class MobileStockApp {
     // 获取真实趋势数据
     async fetchRealTrendingData() {
         try {
-            // 使用Alpha Vantage API获取真实数据
-            const apiKey = 'demo'; // 在生产环境中应该使用真实的API密钥
-            const market = this.currentMarket === 'chinese_stocks' ? 'chinese' : 'us';
+            // 使用与电脑版相同的API端点，确保数据同步
+            const market = this.currentMarket;
             
-            // 获取市场概览数据
-            const overviewResponse = await fetch(`https://www.alphavantage.co/query?function=MARKET_STATUS&apikey=${apiKey}`);
-            
-            // 获取涨幅榜数据 - 使用Yahoo Finance API作为备选
-            const gainersResponse = await fetch('https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=true&lang=en-US&region=US&scrIds=day_gainers&count=10');
+            // 获取涨幅榜数据
+            const gainersResponse = await fetch(`/api/trending?type=top_gainers&market=${market}`);
             
             // 获取市值榜数据
-            const marketCapResponse = await fetch('https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=true&lang=en-US&region=US&scrIds=most_actives&count=10');
+            const marketCapResponse = await fetch(`/api/trending?type=top_market_cap&market=${market}`);
             
-            if (gainersResponse.ok && marketCapResponse.ok) {
+            // 获取创新高数据
+            const newHighsResponse = await fetch(`/api/trending?type=new_highs&market=${market}`);
+            
+            if (gainersResponse.ok && marketCapResponse.ok && newHighsResponse.ok) {
                 const gainersData = await gainersResponse.json();
                 const marketCapData = await marketCapResponse.json();
+                const newHighsData = await newHighsResponse.json();
                 
-                return this.formatRealDataToMockStructure(gainersData, marketCapData, market);
+                return this.formatRealDataToMockStructure(gainersData, marketCapData, newHighsData, market);
             }
             
             return null;
         } catch (error) {
-            console.error('Error fetching real data:', error);
+            console.error('Error fetching real trending data:', error);
             return null;
         }
     }
 
-    // 将真实数据格式化为应用所需的结构
-    formatRealDataToMockStructure(gainersData, marketCapData, market) {
+    // 将真实API数据格式化为应用所需的结构
+    formatRealDataToMockStructure(gainersData, marketCapData, newHighsData, market) {
         try {
-            const gainers = gainersData.finance?.result?.[0]?.quotes?.slice(0, 5).map(stock => ({
-                symbol: stock.symbol,
-                name: stock.shortName || stock.longName || stock.symbol,
-                price: stock.regularMarketPrice || 0,
-                changePercent: stock.regularMarketChangePercent || 0
-            })) || [];
+            // 处理API返回的数据格式
+            const processApiData = (data) => {
+                if (data.success && Array.isArray(data.data)) {
+                    return data.data;
+                } else if (Array.isArray(data)) {
+                    return data;
+                }
+                return [];
+            };
             
-            const marketCap = marketCapData.finance?.result?.[0]?.quotes?.slice(0, 5).map(stock => ({
-                symbol: stock.symbol,
-                name: stock.shortName || stock.longName || stock.symbol,
-                price: stock.regularMarketPrice || 0,
-                changePercent: stock.regularMarketChangePercent || 0,
-                marketCap: stock.marketCap || 0
-            })) || [];
+            const gainers = processApiData(gainersData).slice(0, 5).map(stock => ({
+                symbol: stock.ticker || stock.symbol,
+                name: stock.company_name || stock.name || stock.symbol,
+                price: Number(stock.last_price) || 0,
+                changePercent: Number(stock.change_percent) || 0
+            }));
+            
+            const marketCap = processApiData(marketCapData).slice(0, 5).map(stock => ({
+                symbol: stock.ticker || stock.symbol,
+                name: stock.company_name || stock.name || stock.symbol,
+                price: Number(stock.last_price) || 0,
+                changePercent: Number(stock.change_percent) || 0,
+                marketCap: Number(stock.market_cap) || 0
+            }));
+            
+            const newHighs = processApiData(newHighsData).slice(0, 3).map(stock => ({
+                symbol: stock.ticker || stock.symbol,
+                name: stock.company_name || stock.name || stock.symbol,
+                price: Number(stock.last_price) || 0,
+                changePercent: Number(stock.change_percent) || 0
+            }));
             
             // 生成市场概览统计
-            const totalStocks = gainers.length + marketCap.length;
-            const risingStocks = [...gainers, ...marketCap].filter(stock => stock.changePercent > 0).length;
-            const fallingStocks = totalStocks - risingStocks;
+            const allStocks = [...gainers, ...marketCap];
+            const risingStocks = allStocks.filter(stock => stock.changePercent > 0).length;
+            const fallingStocks = allStocks.length - risingStocks;
             
             return {
                 summary: {
-                    totalStocks: market === 'chinese' ? 55 : 502,
+                    totalStocks: market === 'chinese_stocks' ? 193 : 502,
                     risingStocks,
                     fallingStocks,
-                    totalMarketCap: market === 'chinese' ? '$9,992.47亿' : '$60.54万亿'
+                    totalMarketCap: market === 'chinese_stocks' ? '$9,992.47亿' : '$60.54万亿'
                 },
                 gainers,
                 marketCap,
-                newHighs: gainers.slice(0, 3) // 使用涨幅榜前3作为创新高
+                newHighs
             };
         } catch (error) {
             console.error('Error formatting real data:', error);
@@ -510,9 +547,14 @@ class MobileStockApp {
         }
     }
 
-    async renderStockList(containerId, stocks) {
+    async renderStockList(stocks, containerId) {
         const container = document.getElementById(containerId);
-        if (!container || !stocks.length) {
+        if (!container) {
+            console.error(`找不到容器: ${containerId}`);
+            return;
+        }
+        
+        if (!stocks || !stocks.length) {
             container.innerHTML = '<div class="stock-item"><div class="stock-info">暂无数据</div></div>';
             return;
         }
@@ -826,15 +868,64 @@ class MobileStockApp {
             btn.classList.toggle('active', btn.dataset.ranking === ranking);
         });
 
+        // 隐藏所有榜单内容
+        document.querySelectorAll('.list-section').forEach(section => {
+            section.style.display = 'none';
+        });
+        
+        // 显示当前选中的榜单
+        const rankingToSectionMap = {
+            'gainers': 'top_gainers',
+            'market-cap': 'top_market_cap',
+            'new-highs': 'new_highs',
+            'volume': 'top_turnover',
+            'volatility': 'top_volatility',
+            'gap-up': 'top_gap_up',
+            'losers': 'top_losers',
+            'new-lows': 'new_lows',
+            'institutional': 'institutional_focus',
+            'retail': 'retail_hot',
+            'insider': 'smart_money',
+            'liquidity': 'high_liquidity',
+            'unusual': 'unusual_activity',
+            'momentum': 'momentum_stocks'
+        };
+        
+        const sectionName = rankingToSectionMap[ranking] || 'top_gainers';
+        const currentSection = document.querySelector(`[data-ranking="${sectionName}"]`);
+        if (currentSection) {
+            currentSection.style.display = 'block';
+        }
+
         // 根据榜单类型加载对应数据
         this.loadRankingData(ranking);
+    }
+
+    // 通用的榜单数据加载方法
+    async loadListData(listType, market) {
+        try {
+            // 尝试从真实API加载数据
+            const response = await fetch(`/api/ranking?type=${listType}&market=${market}`);
+            if (response.ok) {
+                const data = await response.json();
+                return data;
+            }
+        } catch (error) {
+            console.log(`API not available for ${listType}, using mock data`);
+        }
+        
+        // 返回模拟数据
+        return this.getMockListData(listType, market);
     }
 
     // 加载特定榜单数据
     async loadRankingData(ranking) {
         try {
-            const mockData = this.getMockRankingData(ranking);
-            this.renderRankingData(mockData, ranking);
+            const market = this.currentMarket || 'sp500';
+            
+            // 使用通用方法加载数据
+            const data = await this.loadListData(ranking, market);
+            this.renderRankingData(data, ranking);
         } catch (error) {
             console.error('加载榜单数据失败:', error);
         }
@@ -1128,19 +1219,85 @@ class MobileStockApp {
         }
     }
 
+    // 获取模拟列表数据（支持14个榜单）
+    getMockListData(listType, market) {
+        const baseData = this.getMockTrendingData();
+        
+        switch (listType) {
+            case 'gainers':
+                return baseData.gainers;
+            case 'market-cap':
+                return baseData.marketCap;
+            case 'new-highs':
+                return baseData.newHighs;
+            case 'volume':
+            case 'volatility':
+            case 'gap-up':
+            case 'losers':
+            case 'new-lows':
+            case 'institutional':
+            case 'retail':
+            case 'insider':
+            case 'liquidity':
+            case 'unusual':
+            case 'momentum':
+                // 为其他榜单生成模拟数据
+                return this.generateMockDataForList(listType, market);
+            default:
+                return baseData.gainers;
+        }
+    }
+
+    // 为特定榜单生成模拟数据
+    generateMockDataForList(listType, market) {
+        const symbols = market === 'sp500' ? 
+            ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA', 'NFLX'] :
+            ['BABA', 'JD', 'PDD', 'NTES', 'TCOM', 'BIDU', 'NIO', 'XPEV'];
+        
+        return symbols.slice(0, 5).map((symbol, index) => ({
+            symbol,
+            name: `${symbol} Company`,
+            price: Math.random() * 200 + 50,
+            changePercent: (Math.random() - 0.5) * 10,
+            volume: Math.floor(Math.random() * 10000000),
+            marketCap: Math.random() * 1e12
+        }));
+    }
+
     // 渲染榜单数据
     renderRankingData(data, ranking) {
-        // 隐藏所有榜单
-        document.querySelectorAll('.ranking-list').forEach(list => {
-            list.classList.add('hidden');
-        });
-
-        // 显示对应榜单
-        const targetList = document.getElementById(`${ranking}-list`);
-        if (targetList) {
-            targetList.classList.remove('hidden');
-            this.renderStockList(`${ranking}-list`, data);
+        const containerId = this.getListContainerIdFromRanking(ranking);
+        const container = document.getElementById(containerId);
+        
+        if (!container) {
+            console.error(`找不到榜单容器: ${containerId}`);
+            return;
         }
+        
+        // 确保数据是数组格式
+         const listData = Array.isArray(data) ? data : (data.stocks || data.data || []);
+         this.renderStockList(listData, containerId);
+    }
+
+    getListContainerIdFromRanking(ranking) {
+        const rankingToContainerMap = {
+            'gainers': 'top-gainers-list',
+            'market-cap': 'top-market-cap-list', 
+            'new-highs': 'new-highs-list',
+            'volume': 'top-turnover-list',
+            'volatility': 'top-volatility-list',
+            'gap-up': 'top-gap-up-list',
+            'losers': 'top-losers-list',
+            'new-lows': 'new-lows-list',
+            'institutional': 'institutional-focus-list',
+            'retail': 'retail-hot-list',
+            'insider': 'smart-money-list',
+            'liquidity': 'high-liquidity-list',
+            'unusual': 'unusual-activity-list',
+            'momentum': 'momentum-stocks-list'
+        };
+        
+        return rankingToContainerMap[ranking] || 'top-gainers-list';
     }
 }
 

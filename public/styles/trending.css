@@ -1781,13 +1781,13 @@
 
 .stock-change.positive {
     background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(5,150,105,0.1));
-    color: #059669;
+    color: #059669; /* 涨幅绿色 */
     border: 1px solid rgba(16,185,129,0.2);
 }
 
 .stock-change.negative {
     background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(220,38,38,0.1));
-    color: #dc2626;
+    color: #dc2626; /* 跌幅红色 */
     border: 1px solid rgba(239,68,68,0.2);
 }
 

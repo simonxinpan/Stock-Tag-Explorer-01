@@ -20,7 +20,7 @@
     --secondary-light: #94a3b8;
     --secondary-dark: #475569;
     
-    /* 股票涨跌颜色 */
+    /* 股票涨跌颜色 - 美股习惯：涨绿跌红 */
     --success-color: #10b981; /* 绿色 - 上涨 */
     --danger-color: #ef4444;  /* 红色 - 下跌 */
     
