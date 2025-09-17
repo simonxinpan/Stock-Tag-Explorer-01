@@ -484,8 +484,30 @@ class HeatmapCenter {
      * 处理股票点击事件
      */
     handleStockClick(stock) {
-        // 跳转到股票详情页
-        window.open(`https://stock-details-final.vercel.app/?symbol=${stock.symbol}`, '_blank');
+        // 添加触摸反馈效果
+        if (event && event.currentTarget) {
+            this.addTouchFeedback(event.currentTarget);
+        }
+        
+        // 跳转到外部股票详情页
+        const stockDetailUrl = `https://stock-details-final.vercel.app/mobile.html?symbol=${encodeURIComponent(stock.symbol)}`;
+        window.open(stockDetailUrl, '_blank');
+        
+        console.log(`热力图股票点击: ${stock.symbol}，跳转到详情页`);
+    }
+    
+    /**
+     * 添加触摸反馈效果
+     */
+    addTouchFeedback(element) {
+        if (!element) return;
+        
+        element.style.transform = 'scale(0.95)';
+        element.style.transition = 'transform 0.15s ease';
+        
+        setTimeout(() => {
+            element.style.transform = '';
+        }, 150);
     }
 
     /**
