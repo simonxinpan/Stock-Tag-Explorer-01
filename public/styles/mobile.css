@@ -188,6 +188,7 @@ body {
 
 .page-header-card .market-carousel {
     display: flex;
+    flex-direction: column;
     gap: 0.5rem;
 }
 
@@ -1561,4 +1562,41 @@ body {
         padding: 10px;
         font-size: 13px;
     }
+}
+
+/* 性能优化 */
+.page-content {
+    will-change: transform;
+    transform: translateZ(0);
+}
+
+.stock-item, .tag-card, .market-carousel-btn {
+    will-change: transform;
+    transform: translateZ(0);
+}
+
+.ranking-nav-scroll {
+    -webkit-overflow-scrolling: touch;
+    will-change: scroll-position;
+}
+
+/* 动画优化 */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* 图片懒加载优化 */
+img {
+    loading: lazy;
+    content-visibility: auto;
+}
+
+/* 内容可见性优化 */
+.list-section-preview:not(.active) {
+    content-visibility: auto;
+    contain-intrinsic-size: 200px;
 }
