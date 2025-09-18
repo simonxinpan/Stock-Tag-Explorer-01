@@ -88,15 +88,15 @@ class StockHeatmap {
     }
 
     /**
-     * 根据变化百分比获取颜色
+     * 根据变化百分比获取颜色 - 美股习惯：涨绿跌红
      */
     getColor(value) {
-        if (value > 5) return '#00C851'; // 深绿
-        if (value > 2) return '#4CAF50'; // 绿
-        if (value > 0) return '#8BC34A'; // 浅绿
-        if (value > -2) return '#FFC107'; // 黄
-        if (value > -5) return '#FF9800'; // 橙
-        return '#F44336'; // 红
+        if (value > 5) return '#00C851'; // 深绿 - 大涨
+        if (value > 2) return '#4CAF50'; // 绿 - 涨
+        if (value > 0) return '#8BC34A'; // 浅绿 - 小涨
+        if (value > -2) return '#FFC107'; // 黄 - 微跌
+        if (value > -5) return '#FF9800'; // 橙 - 跌
+        return '#F44336'; // 红 - 大跌
     }
 
     /**

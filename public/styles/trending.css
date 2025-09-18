@@ -584,7 +584,7 @@
 
 /* TOP 20 徽章样式 */
 .top-badge {
-    background-color: #10B981;
+    background-color: var(--success-color);
     color: white;
     padding: 0.25rem 0.75rem;
     border-radius: 9999px;
@@ -1073,7 +1073,7 @@
 }
 
 .ranking-list-compact .rank-circle {
-    background-color: #10B981;
+    background-color: var(--success-color);
     color: white;
     width: 24px;
     height: 24px;
@@ -1781,13 +1781,13 @@
 
 .stock-change.positive {
     background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(5,150,105,0.1));
-    color: #059669;
+    color: var(--success-color); /* 涨幅绿色 */
     border: 1px solid rgba(16,185,129,0.2);
 }
 
 .stock-change.negative {
     background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(220,38,38,0.1));
-    color: #dc2626;
+    color: var(--danger-color); /* 跌幅红色 */
     border: 1px solid rgba(239,68,68,0.2);
 }
 
@@ -2082,11 +2082,11 @@
 }
 
 .featured-trending-stats .stat-number.positive {
-    color: #4ade80;
+    color: var(--success-color);
 }
 
 .featured-trending-stats .stat-number.negative {
-    color: #f87171;
+    color: var(--danger-color);
 }
 
 /* 响应式设计 */

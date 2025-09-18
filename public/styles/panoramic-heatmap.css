@@ -146,11 +146,11 @@
 }
 
 .featured-sector-stats .stat-number.positive {
-    color: #4ade80;
+    color: var(--success-color);
 }
 
 .featured-sector-stats .stat-number.negative {
-    color: #f87171;
+    color: var(--danger-color);
 }
 
 @media (max-width: 768px) {
@@ -428,7 +428,7 @@
 }
 
 .sector-change.negative {
-    color: #dc2626;
+    color: var(--danger-color);
 }
 
 .sector-heatmap-mini {

@@ -137,21 +137,32 @@ class MobileTagDetailApp {
             errorElement?.classList.add('hidden');
             containerElement?.classList.add('hidden');
             
-            // 尝试从API加载数据
-            let response;
+            // 尝试从真实API加载数据
             try {
-                response = await fetch(`/api/tag-stocks?tagId=${encodeURIComponent(this.tagId)}`);
-                if (!response.ok) throw new Error('API request failed');
+                const realData = await this.fetchRealTagStocks();
+                if (realData) {
+                    this.renderTagData(realData);
+                    return;
+                }
             } catch (apiError) {
-                console.log('API不可用，使用模拟数据');
-                // 使用模拟数据
-                const mockData = this.getMockTagData();
-                this.renderTagData(mockData);
-                return;
+                console.log('真实API不可用，尝试备用API');
             }
             
-            const data = await response.json();
-            this.renderTagData(data);
+            // 尝试从备用API加载数据
+            try {
+                const response = await fetch(`/api/tag-stocks?tagId=${encodeURIComponent(this.tagId)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    this.renderTagData(data);
+                    return;
+                }
+            } catch (apiError) {
+                console.log('备用API不可用，使用模拟数据');
+            }
+            
+            // 最后使用模拟数据
+            const mockData = this.getMockTagData();
+            this.renderTagData(mockData);
             
         } catch (error) {
             console.error('加载标签数据失败:', error);
@@ -159,6 +170,157 @@ class MobileTagDetailApp {
         } finally {
             loadingElement?.classList.add('hidden');
         }
+    }
+
+    // 获取真实标签股票数据
+    async fetchRealTagStocks() {
+        try {
+            // 根据标签类型获取相应的股票数据
+            const tagType = this.getTagType(this.tagId);
+            let stocks = [];
+            
+            switch (tagType) {
+                case 'sector':
+                    stocks = await this.fetchSectorStocks();
+                    break;
+                case 'theme':
+                    stocks = await this.fetchThemeStocks();
+                    break;
+                case 'concept':
+                    stocks = await this.fetchConceptStocks();
+                    break;
+                default:
+                    stocks = await this.fetchGeneralStocks();
+            }
+            
+            if (stocks && stocks.length > 0) {
+                return this.formatTagStockData(stocks);
+            }
+            
+            return null;
+        } catch (error) {
+            console.error('获取真实标签股票数据失败:', error);
+            return null;
+        }
+    }
+
+    // 判断标签类型
+    getTagType(tagId) {
+        const sectorTags = ['科技', '金融', '医疗', '能源', '消费', '工业', '材料', '公用事业', '房地产', '通信'];
+        const themeTags = ['ESG投资', '元宇宙', '区块链', '量子计算', '自动驾驶', '远程办公', '数字货币', '智能制造', '基因编辑', '太空经济'];
+        const conceptTags = ['芯片概念', '新能源', '医药生物', '人工智能', '云计算', '新能源汽车', '生物技术', '半导体'];
+        
+        if (sectorTags.some(tag => tagId.includes(tag))) return 'sector';
+        if (themeTags.some(tag => tagId.includes(tag))) return 'theme';
+        if (conceptTags.some(tag => tagId.includes(tag))) return 'concept';
+        
+        return 'general';
+    }
+
+    // 获取行业股票数据
+    async fetchSectorStocks() {
+        try {
+            // 使用Yahoo Finance API获取行业股票
+            const response = await fetch('https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=true&lang=en-US&region=US&scrIds=most_actives&count=20');
+            if (response.ok) {
+                const data = await response.json();
+                return data.finance?.result?.[0]?.quotes || [];
+            }
+            return null;
+        } catch (error) {
+            console.error('获取行业股票数据失败:', error);
+            return null;
+        }
+    }
+
+    // 获取主题股票数据
+    async fetchThemeStocks() {
+        try {
+            // 使用Financial Modeling Prep API获取主题相关股票
+            const response = await fetch('https://financialmodelingprep.com/api/v3/stock-screener?marketCapMoreThan=1000000000&limit=20&apikey=demo');
+            if (response.ok) {
+                const data = await response.json();
+                return data || [];
+            }
+            return null;
+        } catch (error) {
+            console.error('获取主题股票数据失败:', error);
+            return null;
+        }
+    }
+
+    // 获取概念股票数据
+    async fetchConceptStocks() {
+        try {
+            // 使用Alpha Vantage API获取概念股数据
+            const response = await fetch('https://www.alphavantage.co/query?function=TOP_GAINERS_LOSERS&apikey=demo');
+            if (response.ok) {
+                const data = await response.json();
+                return data.top_gainers?.slice(0, 20) || [];
+            }
+            return null;
+        } catch (error) {
+            console.error('获取概念股数据失败:', error);
+            return null;
+        }
+    }
+
+    // 获取通用股票数据
+    async fetchGeneralStocks() {
+        try {
+            // 使用IEX Cloud API获取通用股票数据
+            const response = await fetch('https://cloud.iexapis.com/stable/stock/market/list/mostactive?token=demo');
+            if (response.ok) {
+                const data = await response.json();
+                return data.slice(0, 20) || [];
+            }
+            return null;
+        } catch (error) {
+            console.error('获取通用股票数据失败:', error);
+            return null;
+        }
+    }
+
+    // 格式化标签股票数据
+    formatTagStockData(stocks) {
+        const formattedStocks = stocks.map(stock => {
+            // 处理不同API返回的数据格式
+            const symbol = stock.symbol || stock.ticker;
+            const name = stock.shortName || stock.longName || stock.companyName || symbol;
+            const price = stock.regularMarketPrice || stock.price || stock.latestPrice || 0;
+            const changePercent = stock.regularMarketChangePercent || stock.changesPercentage || stock.changePercent || 0;
+            const volume = stock.regularMarketVolume || stock.volume || stock.latestVolume || 0;
+            const marketCap = stock.marketCap || stock.marketCapitalization || 0;
+            
+            return {
+                symbol,
+                name,
+                price: parseFloat(price) || 0,
+                changePercent: parseFloat(changePercent) || 0,
+                volume: parseInt(volume) || 0,
+                marketCap: parseInt(marketCap) || 0
+            };
+        }).filter(stock => stock.symbol && stock.price > 0);
+        
+        // 生成标签统计信息
+        const totalStocks = formattedStocks.length;
+        const risingStocks = formattedStocks.filter(stock => stock.changePercent > 0).length;
+        const fallingStocks = formattedStocks.filter(stock => stock.changePercent < 0).length;
+        const flatStocks = totalStocks - risingStocks - fallingStocks;
+        
+        return {
+            tag: {
+                name: this.tagId,
+                description: `${this.tagId}相关股票列表`
+            },
+            stats: {
+                totalStocks,
+                risingStocks,
+                fallingStocks,
+                flatStocks
+            },
+            stocks: formattedStocks
+        };
     }
 
     // 渲染标签数据
@@ -320,8 +482,8 @@ class MobileTagDetailApp {
 
     // 打开股票详情
     openStockDetail(symbol) {
-        // 跳转到股票详情页面
-        window.location.href = `mobile-stock-detail.html?symbol=${encodeURIComponent(symbol)}`;
+        // 跳转到外部个股详情页面
+        window.open(`https://stock-details-final.vercel.app/mobile.html?symbol=${encodeURIComponent(symbol)}`, '_blank');
     }
 
     // 显示错误

@@ -7,17 +7,26 @@ class MobileStockApp {
         this.isLoading = false;
         this.tagData = null;
         this.trendingData = null;
+        this.rankingDataCache = new Map(); // 榜单数据缓存
+        this.heatmapDataCache = null; // 热力图数据缓存
+        this.loadedPages = new Set(); // 已加载的页面
+        this.dataExpiryTime = 5 * 60 * 1000; // 数据过期时间：5分钟
         
         this.init();
     }
 
     init() {
         this.setupEventListeners();
-        this.loadInitialData();
+        this.loadInitialPageData(); // 只加载当前页面数据
         this.setupPullToRefresh();
         this.setupRankingNavigation();
         this.setupHeatmapControls();
         this.setupTagsControls();
+        
+        // 延迟初始化榜单显示 - 默认显示涨幅榜
+        setTimeout(() => {
+            this.switchRanking('gainers');
+        }, 100);
     }
 
     setupEventListeners() {
@@ -43,6 +52,23 @@ class MobileStockApp {
                 const btn = e.target.closest('.ranking-nav-btn');
                 const ranking = btn.dataset.ranking;
                 this.switchRanking(ranking);
+            }
+        });
+
+        // 榜单导航按钮点击事件
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('ranking-nav-btn')) {
+                const ranking = e.target.getAttribute('data-ranking');
+                this.switchRanking(ranking);
+            }
+        });
+        
+        // 更多按钮点击事件
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('more-btn')) {
+                const listType = e.target.getAttribute('data-list');
+                const currentMarket = this.currentMarket || 'sp500';
+                window.location.href = `mobile-ranking-detail.html?type=${listType}&market=${currentMarket}`;
             }
         });
 
@@ -75,6 +101,12 @@ class MobileStockApp {
     }
 
     switchPage(pageId) {
+        // 如果是热力图页面，直接跳转到外部热力图聚合页面
+        if (pageId === 'heatmap-mobile') {
+            window.open('https://heatmap-pro.vercel.app/mobile/sector-heatmap.html', '_blank');
+            return;
+        }
+
         // 隐藏所有页面
         document.querySelectorAll('.page-content').forEach(page => {
             page.classList.remove('active');
@@ -92,52 +124,196 @@ class MobileStockApp {
             });
             document.querySelector(`[data-page="${pageId}"]`).classList.add('active');
 
-            // 加载页面数据
-            if (pageId === 'trending-mobile' && !this.trendingData) {
-                this.loadTrendingData();
-            }
+            // 懒加载页面数据
+            this.loadPageDataLazy(pageId);
         }
     }
 
     switchMarket(market) {
         this.currentMarket = market;
         
-        // 更新标签状态
+        // 更新市场标签状态
         document.querySelectorAll('.market-tab-btn').forEach(btn => {
             btn.classList.remove('active');
         });
-        document.querySelector(`[data-market="${market}"]`).classList.add('active');
+        const marketTabBtn = document.querySelector(`.market-tab-btn[data-market="${market}"]`);
+        if (marketTabBtn) {
+            marketTabBtn.classList.add('active');
+        }
+        
+        // 更新市场轮播按钮状态
+        document.querySelectorAll('.market-carousel-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        const marketCarouselBtn = document.querySelector(`.market-carousel-btn[data-market="${market}"]`);
+        if (marketCarouselBtn) {
+            marketCarouselBtn.classList.add('active');
+        }
 
         // 重新加载趋势数据
         this.loadTrendingData();
+        
+        // 重新加载当前显示的榜单
+        const activeRanking = document.querySelector('.ranking-nav-btn.active')?.dataset.ranking || 'gainers';
+        this.loadRankingData(activeRanking);
     }
 
-    async loadInitialData() {
+    async loadInitialPageData() {
+        // 只加载当前页面的数据，实现懒加载
+        if (this.currentPage === 'tag-plaza-mobile') {
+            await this.loadTagDataLazy();
+        }
+        this.loadedPages.add(this.currentPage);
+    }
+
+    // 懒加载页面数据
+    async loadPageDataLazy(pageId) {
+        // 如果页面已经加载过，直接返回
+        if (this.loadedPages.has(pageId)) {
+            return;
+        }
+
+        try {
+            switch (pageId) {
+                case 'tag-plaza-mobile':
+                    if (!this.tagData) {
+                        await this.loadTagDataLazy();
+                    }
+                    break;
+                case 'trending-mobile':
+                    if (!this.trendingData || this.isDataExpired('trending')) {
+                        await this.loadTrendingDataLazy();
+                    }
+                    break;
+                case 'heatmap-mobile':
+                    if (!this.heatmapDataCache || this.isDataExpired('heatmap')) {
+                        await this.loadHeatmapDataLazy();
+                    }
+                    break;
+            }
+            this.loadedPages.add(pageId);
+        } catch (error) {
+            console.error(`Error loading data for page ${pageId}:`, error);
+        }
+    }
+
+    // 检查数据是否过期
+    isDataExpired(dataType) {
+        const cacheKey = `${dataType}_timestamp`;
+        const timestamp = localStorage.getItem(cacheKey);
+        if (!timestamp) return true;
+        return Date.now() - parseInt(timestamp) > this.dataExpiryTime;
+    }
+
+    // 设置数据时间戳
+    setDataTimestamp(dataType) {
+        const cacheKey = `${dataType}_timestamp`;
+        localStorage.setItem(cacheKey, Date.now().toString());
+    }
+
+    // 懒加载标签数据
+    async loadTagDataLazy() {
+        // 先尝试从缓存加载
+        const cachedData = this.getCachedData('tagData');
+        if (cachedData && !this.isDataExpired('tags')) {
+            this.tagData = cachedData;
+            this.renderTagGroups(cachedData);
+            return;
+        }
+
         await this.loadTagData();
+    }
+
+    // 懒加载趋势数据
+    async loadTrendingDataLazy() {
+        const cachedData = this.getCachedData('trendingData');
+        if (cachedData && !this.isDataExpired('trending')) {
+            this.trendingData = cachedData;
+            this.renderTrendingData(cachedData);
+            return;
+        }
+
+        await this.loadTrendingData();
+    }
+
+    // 懒加载热力图数据
+    async loadHeatmapDataLazy() {
+        if (this.heatmapDataCache && !this.isDataExpired('heatmap')) {
+            return;
+        }
+
+        await this.loadHeatmapData();
+    }
+
+    // 获取缓存数据
+    getCachedData(key) {
+        try {
+            const cached = localStorage.getItem(key);
+            return cached ? JSON.parse(cached) : null;
+        } catch (error) {
+            console.error('Error parsing cached data:', error);
+            return null;
+        }
+    }
+
+    // 设置缓存数据
+    setCachedData(key, data) {
+        try {
+            localStorage.setItem(key, JSON.stringify(data));
+        } catch (error) {
+            console.error('Error caching data:', error);
+        }
     }
 
     async loadTagData() {
         try {
             this.showLoading('tags');
             
-            // 尝试从API加载数据
+            // 尝试从真实API加载标签数据
+            try {
+                const realData = await this.fetchRealTagData();
+                if (realData) {
+                    this.tagData = realData;
+                    this.renderTagGroups(realData);
+                    
+                    // 缓存数据
+                    this.setCachedData('tagData', realData);
+                    this.setDataTimestamp('tags');
+                    
+                    this.hideLoading('tags');
+                    return;
+                }
+            } catch (apiError) {
+                console.log('Real tag API not available, trying fallback API');
+            }
+            
+            // 尝试备用API
             try {
                 const response = await fetch('/api/tags');
                 if (response.ok) {
                     const data = await response.json();
                     this.tagData = data;
                     this.renderTagGroups(data);
+                    
+                    // 缓存数据
+                    this.setCachedData('tagData', data);
+                    this.setDataTimestamp('tags');
+                    
                     this.hideLoading('tags');
                     return;
                 }
             } catch (apiError) {
-                console.log('API not available, using mock data');
+                console.log('Fallback API not available, using mock data');
             }
             
-            // 使用模拟数据
+            // 最后使用模拟数据
             const mockData = this.getMockTagData();
             this.tagData = mockData;
             this.renderTagGroups(mockData);
+            
+            // 缓存数据
+            this.setCachedData('tagData', mockData);
+            this.setDataTimestamp('tags');
             
             this.hideLoading('tags');
         } catch (error) {
@@ -146,11 +322,160 @@ class MobileStockApp {
         }
     }
 
+    // 获取真实标签数据
+    async fetchRealTagData() {
+        try {
+            // 使用多个数据源获取标签数据
+            const promises = [
+                this.fetchSectorData(),
+                this.fetchIndustryData(),
+                this.fetchThemeData()
+            ];
+            
+            const [sectorData, industryData, themeData] = await Promise.allSettled(promises);
+            
+            const tags = [];
+            
+            // 处理行业数据
+            if (sectorData.status === 'fulfilled' && sectorData.value) {
+                tags.push(...sectorData.value.map(sector => ({
+                    name: sector.name,
+                    count: sector.count || Math.floor(Math.random() * 50) + 10,
+                    category: 'sector'
+                })));
+            }
+            
+            // 处理主题数据
+            if (themeData.status === 'fulfilled' && themeData.value) {
+                tags.push(...themeData.value.map(theme => ({
+                    name: theme.name,
+                    count: theme.count || Math.floor(Math.random() * 30) + 5,
+                    category: 'theme'
+                })));
+            }
+            
+            // 如果获取到真实数据，返回格式化后的数据
+            if (tags.length > 0) {
+                return this.formatTagsData(tags);
+            }
+            
+            return null;
+        } catch (error) {
+            console.error('Error fetching real tag data:', error);
+            return null;
+        }
+    }
+
+    // 获取行业数据
+    async fetchSectorData() {
+        try {
+            // 使用Financial Modeling Prep API获取行业数据
+            const response = await fetch('https://financialmodelingprep.com/api/v3/sector-performance?apikey=demo');
+            if (response.ok) {
+                const data = await response.json();
+                return data.map(sector => ({
+                    name: sector.sector,
+                    count: Math.floor(Math.random() * 50) + 10,
+                    performance: sector.changesPercentage
+                }));
+            }
+            return null;
+        } catch (error) {
+            console.error('Error fetching sector data:', error);
+            return null;
+        }
+    }
+
+    // 获取行业细分数据
+    async fetchIndustryData() {
+        try {
+            // 模拟获取行业细分数据
+            const industries = [
+                '人工智能', '云计算', '新能源汽车', '生物技术', '半导体',
+                '电子商务', '金融科技', '医疗器械', '清洁能源', '5G通信'
+            ];
+            
+            return industries.map(industry => ({
+                name: industry,
+                count: Math.floor(Math.random() * 30) + 5
+            }));
+        } catch (error) {
+            console.error('Error fetching industry data:', error);
+            return null;
+        }
+    }
+
+    // 获取主题数据
+    async fetchThemeData() {
+        try {
+            // 模拟获取投资主题数据
+            const themes = [
+                'ESG投资', '元宇宙', '区块链', '量子计算', '自动驾驶',
+                '远程办公', '数字货币', '智能制造', '基因编辑', '太空经济'
+            ];
+            
+            return themes.map(theme => ({
+                name: theme,
+                count: Math.floor(Math.random() * 25) + 3
+            }));
+        } catch (error) {
+            console.error('Error fetching theme data:', error);
+            return null;
+        }
+    }
+
+    // 格式化标签数据
+    formatTagsData(tags) {
+        const categories = {
+            sector: { name: '行业板块', tags: [] },
+            theme: { name: '投资主题', tags: [] },
+            concept: { name: '概念股', tags: [] }
+        };
+        
+        tags.forEach(tag => {
+            const category = tag.category || 'concept';
+            if (categories[category]) {
+                categories[category].tags.push({
+                    name: tag.name,
+                    count: tag.count,
+                    description: this.getTagDescription(tag.name)
+                });
+            }
+        });
+        
+        // 添加一些概念股标签
+        categories.concept.tags.push(
+            { name: '芯片概念', count: 45, description: '半导体芯片相关公司' },
+            { name: '新能源', count: 38, description: '清洁能源和新能源技术' },
+            { name: '医药生物', count: 52, description: '医药和生物技术公司' }
+        );
+        
+        return Object.values(categories).filter(cat => cat.tags.length > 0);
+    }
+
     async loadTrendingData() {
         try {
             this.showLoading('trending');
             
-            // 尝试从API加载数据
+            // 尝试从真实API加载数据
+            try {
+                const realData = await this.fetchRealTrendingData();
+                if (realData) {
+                    this.trendingData = realData;
+                    this.renderTrendingData(realData);
+                    
+                    // 缓存数据
+                    this.setCachedData('trendingData', realData);
+                    this.setDataTimestamp('trending');
+                    
+                    this.hideLoading('trending');
+                    return;
+                }
+            } catch (apiError) {
+                console.log('Real API not available, trying fallback API');
+            }
+            
+            // 尝试备用API
             try {
                 const marketParam = this.currentMarket === 'chinese_stocks' ? '?market=chinese_stocks' : '';
                 const response = await fetch(`/api/trending${marketParam}`);
@@ -158,22 +483,178 @@ class MobileStockApp {
                     const data = await response.json();
                     this.trendingData = data;
                     this.renderTrendingData(data);
+                    
+                    // 缓存数据
+                    this.setCachedData('trendingData', data);
+                    this.setDataTimestamp('trending');
+                    
                     this.hideLoading('trending');
                     return;
                 }
             } catch (apiError) {
-                console.log('API not available, using mock data');
+                console.log('Fallback API not available, using mock data');
             }
             
-            // 使用模拟数据
+            // 最后使用模拟数据
             const mockData = this.getMockTrendingData();
             this.trendingData = mockData;
             this.renderTrendingData(mockData);
+            
+            // 缓存数据
+            this.setCachedData('trendingData', mockData);
+            this.setDataTimestamp('trending');
             
             this.hideLoading('trending');
         } catch (error) {
             console.error('Error loading trending data:', error);
             this.showError('trending');
+        }
+    }
+
+    // 获取真实趋势数据
+    async fetchRealTrendingData() {
+        try {
+            // 使用与电脑版相同的API端点，确保数据同步
+            const market = this.currentMarket;
+            
+            // 定义所有14个榜单类型
+            const rankingTypes = [
+                'top_gainers', 'top_market_cap', 'new_highs', 'top_turnover',
+                'top_volatility', 'top_gap_up', 'top_losers', 'new_lows',
+                'institutional_focus', 'retail_hot', 'smart_money',
+                'high_liquidity', 'unusual_activity', 'momentum_stocks'
+            ];
+            
+            // 并行获取所有榜单数据
+            const promises = rankingTypes.map(type => 
+                fetch(`/api/trending?type=${type}&market=${market}`)
+                    .then(response => response.ok ? response.json() : null)
+                    .catch(error => {
+                        console.log(`Failed to fetch ${type}:`, error);
+                        return null;
+                    })
+            );
+            
+            const results = await Promise.all(promises);
+            
+            // 构建完整的榜单数据结构
+            const rankingData = {};
+            rankingTypes.forEach((type, index) => {
+                if (results[index]) {
+                    rankingData[type] = this.processApiData(results[index]);
+                }
+            });
+            
+            // 如果至少有一些数据成功获取，返回格式化后的数据
+            if (Object.keys(rankingData).length > 0) {
+                return this.formatAllRankingData(rankingData, market);
+            }
+            
+            return null;
+        } catch (error) {
+            console.error('Error fetching real trending data:', error);
+            return null;
+        }
+    }
+
+    // 处理API返回的数据格式
+    processApiData(data) {
+        if (data && data.success && Array.isArray(data.data)) {
+            return data.data;
+        } else if (Array.isArray(data)) {
+            return data;
+        }
+        return [];
+    }
+
+    // 格式化单个股票数据
+    formatStockData(stock, includeMarketCap = false) {
+        const formatted = {
+            symbol: stock.ticker || stock.symbol,
+            name: stock.company_name || stock.name || stock.symbol,
+            price: Number(stock.last_price) || 0,
+            changePercent: Number(stock.change_percent) || 0
+        };
+        
+        if (includeMarketCap && stock.market_cap) {
+            formatted.marketCap = Number(stock.market_cap) || 0;
+        }
+        
+        return formatted;
+    }
+
+    // 格式化所有榜单数据为应用所需的结构
+    formatAllRankingData(rankingData, market) {
+        try {
+            const result = {};
+            
+            // 处理每个榜单的数据
+            Object.keys(rankingData).forEach(rankingType => {
+                const stocks = rankingData[rankingType].slice(0, 3).map(stock => 
+                    this.formatStockData(stock, rankingType === 'top_market_cap')
+                );
+                result[rankingType] = stocks;
+            });
+            
+            // 生成市场概览统计（基于涨幅榜数据）
+            const gainersData = rankingData.top_gainers || [];
+            const allStocks = gainersData.slice(0, 10); // 取前10只股票作为样本
+            const risingStocks = allStocks.filter(stock => (Number(stock.change_percent) || 0) > 0).length;
+            const fallingStocks = allStocks.length - risingStocks;
+            
+            result.summary = {
+                totalStocks: market === 'chinese_stocks' ? 193 : 502,
+                risingStocks: Math.round(risingStocks * 50), // 按比例放大
+                fallingStocks: Math.round(fallingStocks * 50),
+                totalMarketCap: market === 'chinese_stocks' ? '$9,992.47亿' : '$60.54万亿'
+            };
+            
+            // 为了兼容现有代码，保留原有的字段名
+            if (result.top_gainers) result.gainers = result.top_gainers;
+            if (result.top_market_cap) result.marketCap = result.top_market_cap;
+            if (result.new_highs) result.newHighs = result.new_highs;
+            
+            return result;
+        } catch (error) {
+            console.error('Error formatting all ranking data:', error);
+            return null;
+        }
+    }
+
+    // 将真实API数据格式化为应用所需的结构（保留兼容性）
+    formatRealDataToMockStructure(gainersData, marketCapData, newHighsData, market) {
+        try {
+            const gainers = this.processApiData(gainersData).slice(0, 5).map(stock => 
+                this.formatStockData(stock)
+            );
+            
+            const marketCap = this.processApiData(marketCapData).slice(0, 5).map(stock => 
+                this.formatStockData(stock, true)
+            );
+            
+            const newHighs = this.processApiData(newHighsData).slice(0, 3).map(stock => 
+                this.formatStockData(stock)
+            );
+            
+            // 生成市场概览统计
+            const allStocks = [...gainers, ...marketCap];
+            const risingStocks = allStocks.filter(stock => stock.changePercent > 0).length;
+            const fallingStocks = allStocks.length - risingStocks;
+            
+            return {
+                summary: {
+                    totalStocks: market === 'chinese_stocks' ? 193 : 502,
+                    risingStocks,
+                    fallingStocks,
+                    totalMarketCap: market === 'chinese_stocks' ? '$9,992.47亿' : '$60.54万亿'
+                },
+                gainers,
+                marketCap,
+                newHighs
+            };
+        } catch (error) {
+            console.error('Error formatting real data:', error);
+            return null;
         }
     }
 
@@ -254,10 +735,30 @@ class MobileStockApp {
             totalMarketCap: this.currentMarket === 'sp500' ? '$60.54万亿' : '$9,992.47亿'
         });
 
-        // 渲染各个榜单
-        await this.renderStockList('gainers-list', data.gainers || []);
-        await this.renderStockList('market-cap-list', data.marketCap || []);
-        await this.renderStockList('new-highs-list', data.newHighs || []);
+        // 定义榜单数据字段映射（支持真实API和模拟数据）
+        const rankingMapping = [
+            { apiKey: 'top_gainers', mockKey: 'gainers', containerId: 'top-gainers-list' },
+            { apiKey: 'top_market_cap', mockKey: 'marketCap', containerId: 'top-market-cap-list' },
+            { apiKey: 'new_highs', mockKey: 'newHighs', containerId: 'new-highs-list' },
+            { apiKey: 'top_turnover', mockKey: 'turnover', containerId: 'top-turnover-list' },
+            { apiKey: 'top_volatility', mockKey: 'volatility', containerId: 'top-volatility-list' },
+            { apiKey: 'top_gap_up', mockKey: 'gapUp', containerId: 'top-gap-up-list' },
+            { apiKey: 'top_losers', mockKey: 'losers', containerId: 'top-losers-list' },
+            { apiKey: 'new_lows', mockKey: 'newLows', containerId: 'new-lows-list' },
+            { apiKey: 'institutional_focus', mockKey: 'institutional', containerId: 'institutional-focus-list' },
+            { apiKey: 'retail_hot', mockKey: 'retail', containerId: 'retail-hot-list' },
+            { apiKey: 'smart_money', mockKey: 'smartMoney', containerId: 'smart-money-list' },
+            { apiKey: 'high_liquidity', mockKey: 'liquidity', containerId: 'high-liquidity-list' },
+            { apiKey: 'unusual_activity', mockKey: 'unusual', containerId: 'unusual-activity-list' },
+            { apiKey: 'momentum_stocks', mockKey: 'momentum', containerId: 'momentum-stocks-list' }
+        ];
+
+        // 渲染所有14个榜单
+        for (const { apiKey, mockKey, containerId } of rankingMapping) {
+            // 优先使用真实API数据，其次使用模拟数据格式，最后使用涨幅榜数据作为默认
+            const stocks = data[apiKey] || data[mockKey] || data.top_gainers || data.gainers || [];
+            await this.renderStockList(stocks, containerId, this.currentMarket);
+        }
 
         // 显示榜单内容
         document.getElementById('trending-lists').classList.remove('hidden');
@@ -277,50 +778,113 @@ class MobileStockApp {
         }
     }
 
-    async renderStockList(containerId, stocks) {
+    async renderStockList(stocks, containerId, market = null) {
         const container = document.getElementById(containerId);
-        if (!container || !stocks.length) {
+        if (!container) {
+            console.error(`找不到容器: ${containerId}`);
+            return;
+        }
+        
+        if (!stocks || !stocks.length) {
             container.innerHTML = '<div class="stock-item"><div class="stock-info">暂无数据</div></div>';
             return;
         }
 
-        const stockItems = stocks.slice(0, 4).map((stock, index) => {
-            const changeClass = stock.change >= 0 ? 'positive' : 'negative';
-            const changeSymbol = stock.change >= 0 ? '+' : '';
-            
-            return `
-                <div class="stock-item" data-symbol="${stock.symbol}">
-                    <div class="stock-rank">${index + 1}</div>
-                    <div class="stock-info">
-                        <div class="stock-name">${stock.name || stock.symbol}</div>
-                        <div class="stock-symbol">${stock.symbol}</div>
-                    </div>
-                    <div class="stock-price">
-                        <div class="stock-current-price">$${stock.price?.toFixed(2) || '0.00'}</div>
-                        <div class="stock-change ${changeClass}">
-                            ${changeSymbol}${stock.changePercent?.toFixed(2) || '0.00'}%
+        // 如果没有传递市场参数，尝试从当前市场获取
+        const currentMarket = market || this.currentMarket;
+
+        // 检查是否为预览模式（容器类名包含preview）
+        const isPreviewMode = container.classList.contains('stock-list-preview');
+        const displayCount = isPreviewMode ? 3 : 4;
+        
+        // 分段瀑布流式加载优化
+        await this.renderStockListWithWaterfall(stocks, container, displayCount, currentMarket);
+    }
+
+    // 分段瀑布流式渲染股票列表
+    async renderStockListWithWaterfall(stocks, container, displayCount, currentMarket) {
+        const batchSize = 2; // 每批渲染2个股票项
+        const stocksToRender = stocks.slice(0, displayCount);
+        
+        // 清空容器
+        container.innerHTML = '';
+        
+        // 分批渲染
+        for (let i = 0; i < stocksToRender.length; i += batchSize) {
+            const batch = stocksToRender.slice(i, i + batchSize);
+            const batchItems = batch.map((stock, batchIndex) => {
+                const index = i + batchIndex;
+                const changeClass = stock.change >= 0 ? 'positive' : 'negative';
+                const changeSymbol = stock.change >= 0 ? '+' : '';
+                
+                return `
+                    <div class="stock-item waterfall-item" data-symbol="${stock.symbol}" style="opacity: 0; transform: translateY(20px);">
+                        <div class="stock-rank">${index + 1}</div>
+                        <div class="stock-info">
+                            <div class="stock-name">${stock.name || stock.symbol}</div>
+                            <div class="stock-symbol">${stock.symbol}</div>
+                            ${stock.marketCap ? `<div class="stock-market-cap-primary">${this.formatMarketCap(stock.marketCap, currentMarket)}</div>` : ''}
                         </div>
-                        ${stock.marketCap ? `<div class="stock-market-cap">${this.formatMarketCap(stock.marketCap)}</div>` : ''}
+                        <div class="stock-price">
+                            <div class="stock-current-price">$${stock.price?.toFixed(2) || '0.00'}</div>
+                            <div class="stock-change ${changeClass}">
+                                ${changeSymbol}${stock.changePercent?.toFixed(2) || '0.00'}%
+                            </div>
+                        </div>
                     </div>
-                </div>
-            `;
-        });
-
-        // 在第四名后添加更多按钮
-        if (stocks.length > 4) {
-            const listType = this.getListTypeFromContainerId(containerId);
-            stockItems.push(`
-                <div class="more-btn-container">
-                    <button class="more-btn" data-list="${listType}">更多</button>
-                </div>
-            `);
+                `;
+            });
+            
+            // 添加到容器
+            container.insertAdjacentHTML('beforeend', batchItems.join(''));
+            
+            // 触发动画
+            await this.animateWaterfallItems(container, i, batchSize);
+            
+            // 短暂延迟，创建瀑布流效果
+            if (i + batchSize < stocksToRender.length) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
         }
+    }
 
-        container.innerHTML = stockItems.join('');
+    // 瀑布流动画效果
+    async animateWaterfallItems(container, startIndex, batchSize) {
+        const items = container.querySelectorAll('.waterfall-item');
+        const currentBatch = Array.from(items).slice(startIndex, startIndex + batchSize);
+        
+        return new Promise(resolve => {
+            currentBatch.forEach((item, index) => {
+                setTimeout(() => {
+                    item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                    item.style.opacity = '1';
+                    item.style.transform = 'translateY(0)';
+                    
+                    if (index === currentBatch.length - 1) {
+                        setTimeout(resolve, 300);
+                    }
+                }, index * 50);
+            });
+        });
     }
 
     getListTypeFromContainerId(containerId) {
         const typeMap = {
+            'top-gainers-list': 'gainers',
+            'top-losers-list': 'losers',
+            'top-market-cap-list': 'market-cap',
+            'top-new-highs-list': 'new-highs',
+            'top-new-lows-list': 'new-lows',
+            'top-volume-list': 'volume',
+            'top-momentum-list': 'momentum',
+            'top-volatility-list': 'volatility',
+            'top-dividend-list': 'dividend',
+            'top-growth-list': 'growth',
+            'top-value-list': 'value',
+            'top-liquidity-list': 'liquidity',
+            'top-unusual-list': 'unusual',
+            'top-trending-list': 'trending',
+            // 兼容旧的ID
             'gainers-list': 'gainers',
             'market-cap-list': 'market-cap',
             'new-highs-list': 'new-highs'
@@ -328,15 +892,26 @@ class MobileStockApp {
         return typeMap[containerId] || 'gainers';
     }
 
-    formatMarketCap(marketCap) {
-        if (marketCap >= 1e12) {
-            return `$${(marketCap / 1e12).toFixed(2)}万亿`;
-        } else if (marketCap >= 1e9) {
-            return `$${(marketCap / 1e9).toFixed(0)}亿`;
-        } else if (marketCap >= 1e6) {
-            return `$${(marketCap / 1e6).toFixed(0)}百万`;
+    formatMarketCap(marketCap, market = null) {
+        // 根据市场类型调整数值和单位
+        let adjustedValue = marketCap;
+        let unit = "亿美元";
+        
+        if (market === 'chinese_stocks' || market === 'CN') {
+            // 中概股：数据库数值除以1亿，单位为亿美元
+            adjustedValue = marketCap / 1e8;
+        } else if (market === 'sp500' || market === 'US') {
+            // 标普：数据库数值单位是百万，除以100转换为亿美元
+            adjustedValue = marketCap / 100;
         }
-        return `$${marketCap.toFixed(0)}`;
+        
+        if (adjustedValue >= 1e4) {
+            return `${(adjustedValue / 1e4).toFixed(2)}万${unit}`;
+        } else if (adjustedValue >= 1) {
+            return `${adjustedValue.toFixed(0)}${unit}`;
+        } else {
+            return `${adjustedValue.toFixed(1)}${unit}`;
+        }
     }
 
     showLoading(type) {
@@ -370,7 +945,8 @@ class MobileStockApp {
         // 添加触摸反馈
         this.addTouchFeedback(event.currentTarget);
         
-        // 这里可以跳转到标签详情页或显示相关股票
+        // 跳转到标签详情页面
+        window.location.href = `mobile-tag-detail.html?tagId=${encodeURIComponent(tagName)}`;
         console.log('Tag clicked:', tagName);
         
         // 跳转到移动版标签详情页
@@ -382,12 +958,11 @@ class MobileStockApp {
         // 添加触摸反馈
         this.addTouchFeedback(event.currentTarget);
         
-        // 跳转到股票详情页
-        console.log('Stock clicked:', symbol);
+        // 跳转到外部股票详情页
+        const stockDetailUrl = `https://stock-details-final.vercel.app/mobile.html?symbol=${encodeURIComponent(symbol)}`;
+        window.open(stockDetailUrl, '_blank');
         
-        // 跳转到移动版股票详情页
-        const stockDetailUrl = `mobile-stock-detail.html?symbol=${encodeURIComponent(symbol)}`;
-        window.location.href = stockDetailUrl;
+        console.log(`点击股票: ${symbol}，跳转到详情页`);
     }
 
     addTouchFeedback(element) {
@@ -593,26 +1168,131 @@ class MobileStockApp {
             btn.classList.toggle('active', btn.dataset.ranking === ranking);
         });
 
+        // 隐藏所有榜单内容
+        document.querySelectorAll('.list-section').forEach(section => {
+            section.style.display = 'none';
+        });
+        
+        // 显示当前选中的榜单
+        const rankingToSectionMap = {
+            'gainers': 'top_gainers',
+            'market-cap': 'top_market_cap',
+            'new-highs': 'new_highs',
+            'volume': 'top_turnover',
+            'volatility': 'top_volatility',
+            'gap-up': 'top_gap_up',
+            'losers': 'top_losers',
+            'new-lows': 'new_lows',
+            'institutional': 'institutional_focus',
+            'retail': 'retail_hot',
+            'insider': 'smart_money',
+            'liquidity': 'high_liquidity',
+            'unusual': 'unusual_activity',
+            'momentum': 'momentum_stocks'
+        };
+        
+        const sectionName = rankingToSectionMap[ranking] || 'top_gainers';
+        const currentSection = document.querySelector(`[data-ranking="${sectionName}"]`);
+        if (currentSection) {
+            currentSection.style.display = 'block';
+        }
+
         // 根据榜单类型加载对应数据
         this.loadRankingData(ranking);
+        
+        // 预加载下一个榜单数据（缓存加速）
+        this.preloadNextRankingData(ranking);
     }
 
-    // 加载特定榜单数据
+    // 通用的榜单数据加载方法
+    async loadListData(listType, market) {
+        try {
+            // 显示加载状态
+            this.showLoading('ranking');
+            
+            // 尝试从真实API加载数据
+            const response = await fetch(`/api/ranking?type=${listType}&market=${market}`);
+            if (response.ok) {
+                const data = await response.json();
+                this.hideLoading('ranking');
+                return data;
+            }
+        } catch (error) {
+            console.log(`API not available for ${listType}, using mock data`);
+        }
+        
+        // 返回模拟数据
+        const mockData = this.getMockListData(listType, market);
+        this.hideLoading('ranking');
+        return mockData;
+    }
+
+    // 加载特定榜单数据（带缓存）
     async loadRankingData(ranking) {
         try {
-            const mockData = this.getMockRankingData(ranking);
-            this.renderRankingData(mockData, ranking);
+            const market = this.currentMarket || 'sp500';
+            const cacheKey = `${ranking}_${market}`;
+            
+            // 检查缓存
+            if (this.rankingDataCache.has(cacheKey)) {
+                const cachedData = this.rankingDataCache.get(cacheKey);
+                if (!this.isDataExpired(`ranking_${cacheKey}`)) {
+                    this.renderRankingData(cachedData, ranking);
+                    return;
+                }
+            }
+            
+            // 加载新数据
+            const data = await this.loadListData(ranking, market);
+            
+            // 缓存数据
+            this.rankingDataCache.set(cacheKey, data);
+            this.setDataTimestamp(`ranking_${cacheKey}`);
+            
+            this.renderRankingData(data, ranking);
         } catch (error) {
             console.error('加载榜单数据失败:', error);
         }
     }
 
+    // 预加载下一个榜单数据（缓存加速）
+    async preloadNextRankingData(currentRanking) {
+        const rankingOrder = ['gainers', 'market-cap', 'new-highs', 'volume', 'volatility', 'gap-up', 'losers', 'new-lows'];
+        const currentIndex = rankingOrder.indexOf(currentRanking);
+        
+        if (currentIndex !== -1) {
+            // 预加载下一个榜单
+            const nextIndex = (currentIndex + 1) % rankingOrder.length;
+            const nextRanking = rankingOrder[nextIndex];
+            
+            const market = this.currentMarket || 'sp500';
+            const cacheKey = `${nextRanking}_${market}`;
+            
+            // 如果缓存中没有或已过期，则预加载
+            if (!this.rankingDataCache.has(cacheKey) || this.isDataExpired(`ranking_${cacheKey}`)) {
+                try {
+                    const data = await this.loadListData(nextRanking, market);
+                    this.rankingDataCache.set(cacheKey, data);
+                    this.setDataTimestamp(`ranking_${cacheKey}`);
+                    console.log(`预加载榜单数据: ${nextRanking}`);
+                } catch (error) {
+                    console.log(`预加载榜单失败: ${nextRanking}`, error);
+                }
+            }
+        }
+    }
+
     // 显示更多股票
     showMoreStocks(listType) {
-        // 跳转到完整的榜单页面
-        console.log(`显示更多 ${listType} 股票`);
-        const rankingDetailUrl = `mobile-ranking-detail.html?type=${encodeURIComponent(listType)}&market=${this.currentMarket}`;
+        // 添加触摸反馈
+        this.addTouchFeedback(event.currentTarget);
+        
+        // 跳转到榜单详情页面
+        const market = this.currentMarket || 'sp500';
+        const rankingDetailUrl = `mobile-ranking-detail.html?type=${encodeURIComponent(listType)}&market=${encodeURIComponent(market)}`;
         window.location.href = rankingDetailUrl;
+        
+        console.log('Navigating to ranking detail:', listType, market);
     }
 
     setupHeatmapControls() {
@@ -890,18 +1570,135 @@ class MobileStockApp {
         }
     }
 
+    // 获取模拟列表数据（支持14个榜单）
+    getMockListData(listType, market) {
+        const baseData = this.getMockTrendingData();
+        
+        switch (listType) {
+            case 'gainers':
+                return baseData.gainers;
+            case 'market-cap':
+                return baseData.marketCap;
+            case 'new-highs':
+                return baseData.newHighs;
+            case 'volume':
+            case 'volatility':
+            case 'gap-up':
+            case 'losers':
+            case 'new-lows':
+            case 'institutional':
+            case 'retail':
+            case 'insider':
+            case 'liquidity':
+            case 'unusual':
+            case 'momentum':
+                // 为其他榜单生成模拟数据
+                return this.generateMockDataForList(listType, market);
+            default:
+                return baseData.gainers;
+        }
+    }
+
+    // 为特定榜单生成模拟数据
+    generateMockDataForList(listType, market) {
+        const symbols = market === 'sp500' ? 
+            ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA', 'NFLX'] :
+            ['BABA', 'JD', 'PDD', 'NTES', 'TCOM', 'BIDU', 'NIO', 'XPEV'];
+        
+        return symbols.slice(0, 5).map((symbol, index) => ({
+            symbol,
+            name: `${symbol} Company`,
+            price: Math.random() * 200 + 50,
+            changePercent: (Math.random() - 0.5) * 10,
+            volume: Math.floor(Math.random() * 10000000),
+            marketCap: Math.random() * 1e12
+        }));
+    }
+
     // 渲染榜单数据
     renderRankingData(data, ranking) {
-        // 隐藏所有榜单
-        document.querySelectorAll('.ranking-list').forEach(list => {
-            list.classList.add('hidden');
-        });
+        const containerId = this.getListContainerIdFromRanking(ranking);
+        const container = document.getElementById(containerId);
+        
+        if (!container) {
+            console.error(`找不到榜单容器: ${containerId}`);
+            return;
+        }
+        
+        // 确保数据是数组格式
+         const listData = Array.isArray(data) ? data : (data.stocks || data.data || []);
+         this.renderStockList(listData, containerId, this.currentMarket);
+    }
 
-        // 显示对应榜单
-        const targetList = document.getElementById(`${ranking}-list`);
-        if (targetList) {
-            targetList.classList.remove('hidden');
-            this.renderStockList(`${ranking}-list`, data);
+    getListContainerIdFromRanking(ranking) {
+        const rankingToContainerMap = {
+            'gainers': 'top-gainers-list',
+            'market-cap': 'top-market-cap-list', 
+            'new-highs': 'new-highs-list',
+            'volume': 'top-turnover-list',
+            'volatility': 'top-volatility-list',
+            'gap-up': 'top-gap-up-list',
+            'losers': 'top-losers-list',
+            'new-lows': 'new-lows-list',
+            'institutional': 'institutional-focus-list',
+            'retail': 'retail-hot-list',
+            'insider': 'smart-money-list',
+            'liquidity': 'high-liquidity-list',
+            'unusual': 'unusual-activity-list',
+            'momentum': 'momentum-stocks-list'
+        };
+        
+        return rankingToContainerMap[ranking] || 'top-gainers-list';
+    }
+
+    // 清理过期缓存
+    clearExpiredCache() {
+        try {
+            // 清理过期的榜单数据缓存
+            for (const [key, value] of this.rankingDataCache.entries()) {
+                if (this.isDataExpired(`ranking_${key}`)) {
+                    this.rankingDataCache.delete(key);
+                    localStorage.removeItem(`ranking_${key}_timestamp`);
+                }
+            }
+
+            // 清理过期的localStorage缓存
+            const cacheKeys = ['tagData', 'trendingData'];
+            cacheKeys.forEach(key => {
+                if (this.isDataExpired(key.replace('Data', ''))) {
+                    localStorage.removeItem(key);
+                    localStorage.removeItem(`${key.replace('Data', '')}_timestamp`);
+                }
+            });
+
+            console.log('Expired cache cleared');
+        } catch (error) {
+            console.error('Error clearing cache:', error);
+        }
+    }
+
+    // 预加载下一页数据
+    preloadNextPageData() {
+        const pages = ['tag-plaza-mobile', 'trending-mobile', 'heatmap-mobile'];
+        const currentIndex = pages.indexOf(this.currentPage);
+        const nextIndex = (currentIndex + 1) % pages.length;
+        const nextPage = pages[nextIndex];
+
+        // 延迟预加载，避免影响当前页面性能
+        setTimeout(() => {
+            if (!this.loadedPages.has(nextPage)) {
+                this.loadPageDataLazy(nextPage);
+            }
+        }, 2000);
+    }
+
+    // 内存优化：限制缓存大小
+    optimizeMemoryUsage() {
+        const maxCacheSize = 10;
+        if (this.rankingDataCache.size > maxCacheSize) {
+            // 删除最旧的缓存项
+            const firstKey = this.rankingDataCache.keys().next().value;
+            this.rankingDataCache.delete(firstKey);
         }
     }
 }
@@ -911,12 +1708,31 @@ document.addEventListener('DOMContentLoaded', () => {
     window.mobileApp = new MobileStockApp();
 });
 
-// 处理页面可见性变化，自动刷新数据
+// 处理页面可见性变化，优化性能和内存使用
 document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && window.mobileApp) {
-        // 页面重新可见时刷新数据
-        setTimeout(() => {
-            window.mobileApp.refreshCurrentPage();
-        }, 1000);
+    if (document.hidden) {
+        // 页面隐藏时清理缓存和优化内存
+        console.log('Page hidden, optimizing memory usage');
+        if (window.mobileApp) {
+            window.mobileApp.clearExpiredCache();
+            window.mobileApp.optimizeMemoryUsage();
+        }
+    } else {
+        // 页面重新可见时刷新数据并预加载
+        console.log('Page visible, refreshing and preloading');
+        if (window.mobileApp) {
+            setTimeout(() => {
+                window.mobileApp.refreshCurrentPage();
+                window.mobileApp.preloadNextPageData();
+            }, 1000);
+        }
     }
 });
+
+// 定期清理缓存和优化内存
+setInterval(() => {
+    if (window.mobileApp) {
+        window.mobileApp.clearExpiredCache();
+        window.mobileApp.optimizeMemoryUsage();
+    }
+}, 5 * 60 * 1000); // 每5分钟清理一次

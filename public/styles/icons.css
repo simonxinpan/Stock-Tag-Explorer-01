@@ -129,7 +129,7 @@
 }
 
 .icon-danger {
-    color: #ef4444;
+    color: var(--danger-color);
 }
 
 .icon-warning {
