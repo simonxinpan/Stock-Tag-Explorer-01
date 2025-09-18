@@ -11,14 +11,17 @@ function updateMarketNavigation() {
   const currentMarket = getCurrentMarket();
   const marketTabs = document.querySelectorAll('.market-tab');
   
-  marketTabs.forEach(tab => {
-    const tabMarket = tab.getAttribute('data-market');
-    if (tabMarket === currentMarket) {
-      tab.classList.add('active');
-    } else {
-      tab.classList.remove('active');
-    }
-  });
+  // 添加空值检查，确保在mobile.html上安全运行
+  if (marketTabs.length > 0) {
+    marketTabs.forEach(tab => {
+      const tabMarket = tab.getAttribute('data-market');
+      if (tabMarket === currentMarket) {
+        tab.classList.add('active');
+      } else {
+        tab.classList.remove('active');
+      }
+    });
+  }
 }
 
 // 定义我们需要加载的所有榜单
@@ -441,10 +444,15 @@ async function loadAndRenderSummaryData() {
     if (!response.ok) throw new Error('API request failed');
     const data = await response.json();
 
-    // 更新 DOM 元素
-    document.getElementById('summary-total-stocks').textContent = data.totalStocks;
-    document.getElementById('summary-rising-stocks').textContent = data.risingStocks;
-    document.getElementById('summary-falling-stocks').textContent = data.fallingStocks;
+    // 更新 DOM 元素 - 兼容trending.html和mobile.html的不同ID
+    const totalStocksEl = document.getElementById('summary-total-stocks') || document.getElementById('total-stocks');
+    const risingStocksEl = document.getElementById('summary-rising-stocks') || document.getElementById('rising-stocks');
+    const fallingStocksEl = document.getElementById('summary-falling-stocks') || document.getElementById('falling-stocks');
+    const totalMarketCapEl = document.getElementById('summary-total-market-cap') || document.getElementById('total-market-cap');
+    
+    if (totalStocksEl) totalStocksEl.textContent = data.totalStocks;
+    if (risingStocksEl) risingStocksEl.textContent = data.risingStocks;
+    if (fallingStocksEl) fallingStocksEl.textContent = data.fallingStocks;
      
     // 根据市场类型使用不同的格式化函数显示总市值
     let totalMarketCapFormatted = 'N/A';
@@ -457,7 +465,7 @@ async function loadAndRenderSummaryData() {
         totalMarketCapFormatted = formatSP500MarketCap(data.totalMarketCap);
       }
     }
-    document.getElementById('summary-total-market-cap').textContent = totalMarketCapFormatted;
+    if (totalMarketCapEl) totalMarketCapEl.textContent = totalMarketCapFormatted;
 
   } catch (error) {
     console.error('加载市场汇总数据失败:', error);
