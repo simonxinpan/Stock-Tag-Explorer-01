@@ -893,26 +893,25 @@ class MobileStockApp {
     }
 
     formatMarketCap(marketCap, market = null) {
-        // 根据市场类型调整数值
+        // 根据市场类型调整数值和单位
         let adjustedValue = marketCap;
+        let unit = "亿美元";
+        
         if (market === 'chinese_stocks' || market === 'CN') {
-            // 中概股：除以1亿
+            // 中概股：数据库数值除以1亿，单位为亿美元
             adjustedValue = marketCap / 1e8;
         } else if (market === 'sp500' || market === 'US') {
-            // 标普：除以100
+            // 标普：数据库数值单位是百万，除以100转换为亿美元
             adjustedValue = marketCap / 100;
         }
         
-        if (adjustedValue >= 1e12) {
-            return `${(adjustedValue / 1e12).toFixed(2)}万亿`;
-        } else if (adjustedValue >= 1e9) {
-            return `${(adjustedValue / 1e9).toFixed(0)}亿`;
-        } else if (adjustedValue >= 1e6) {
-            return `${(adjustedValue / 1e6).toFixed(0)}亿`;
-        } else if (adjustedValue >= 1e3) {
-            return `${(adjustedValue / 1e3).toFixed(1)}亿`;
+        if (adjustedValue >= 1e4) {
+            return `${(adjustedValue / 1e4).toFixed(2)}万${unit}`;
+        } else if (adjustedValue >= 1) {
+            return `${adjustedValue.toFixed(0)}${unit}`;
+        } else {
+            return `${adjustedValue.toFixed(1)}${unit}`;
         }
-        return `${adjustedValue.toFixed(1)}亿`;
     }
 
     showLoading(type) {
