@@ -99,6 +99,7 @@ body {
 .page-content {
     display: none;
     padding: 16px;
+    padding-top: 200px; /* 为固定导航留出空间 */
     animation: fadeIn 0.3s ease;
 }
 
@@ -113,13 +114,14 @@ body {
 
 /* 固定页首导航条 */
 .fixed-top-nav {
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 100;
     background: var(--background-color);
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--border-color);
-    margin-bottom: 1rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -1168,7 +1170,7 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    color: var(--text-secondary);
+    color: var(--text-primary);
 }
 
 .nav-item.active {
@@ -1184,8 +1186,47 @@ body {
 }
 
 .nav-label {
-    font-size: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* 榜单标题行和市场切换按钮 */
+.list-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.market-toggle-buttons {
+    display: flex;
+    gap: 4px;
+}
+
+.market-toggle-btn {
+    padding: 4px 8px;
+    font-size: 11px;
     font-weight: 500;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--surface-color);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 40px;
+}
+
+.market-toggle-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.market-toggle-btn:hover {
+    background: var(--primary-color-light);
+    color: white;
+    border-color: var(--primary-color);
 }
 
 /* 响应式设计 */
