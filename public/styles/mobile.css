@@ -50,9 +50,11 @@ body {
     background: linear-gradient(135deg, var(--primary-color), #3b82f6);
     color: white;
     padding: 12px 16px 16px;
-    position: sticky;
+    position: fixed;
     top: 0;
-    z-index: 100;
+    left: 0;
+    right: 0;
+    z-index: 1000;
     box-shadow: var(--shadow-md);
 }
 
@@ -91,6 +93,7 @@ body {
 /* 主内容区域 */
 .mobile-main {
     flex: 1;
+    padding-top: 60px; /* 为固定顶部导航留空间 */
     padding-bottom: 80px; /* 为底部导航留空间 */
     overflow-y: auto;
 }
@@ -99,7 +102,7 @@ body {
 .page-content {
     display: none;
     padding: 16px;
-    padding-top: 200px; /* 为固定导航留出空间 */
+    padding-top: 220px; /* 为固定导航留出更多空间 */
     animation: fadeIn 0.3s ease;
 }
 
@@ -118,7 +121,7 @@ body {
     top: 0;
     left: 0;
     right: 0;
-    z-index: 100;
+    z-index: 999;
     background: var(--background-color);
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--border-color);

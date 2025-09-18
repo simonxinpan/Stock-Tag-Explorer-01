@@ -44,6 +44,20 @@
                  });
              });
 
+             // 市场切换按钮点击事件
+             const marketToggleBtns = document.querySelectorAll('.market-toggle-btn');
+             marketToggleBtns.forEach(btn => {
+                 btn.addEventListener('click', function() {
+                     const market = this.getAttribute('data-market');
+                     const listSection = this.closest('.list-section-preview');
+                     const rankingType = listSection.getAttribute('data-ranking');
+                     
+                     // 跳转到对应的榜单详情页面
+                     const marketParam = market === 'US' ? 'sp500' : 'chinese_stocks';
+                     window.location.href = `mobile-ranking-detail.html?type=${rankingType}&market=${marketParam}`;
+                 });
+             });
+
              // 市场轮播按钮点击功能
              const marketCarouselBtns = document.querySelectorAll('.market-carousel-btn');
              marketCarouselBtns.forEach(btn => {

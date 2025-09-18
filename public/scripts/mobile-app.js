@@ -757,7 +757,7 @@ class MobileStockApp {
         for (const { apiKey, mockKey, containerId } of rankingMapping) {
             // 优先使用真实API数据，其次使用模拟数据格式，最后使用涨幅榜数据作为默认
             const stocks = data[apiKey] || data[mockKey] || data.top_gainers || data.gainers || [];
-            await this.renderStockList(stocks, containerId);
+            await this.renderStockList(stocks, containerId, this.currentMarket);
         }
 
         // 显示榜单内容
@@ -778,7 +778,7 @@ class MobileStockApp {
         }
     }
 
-    async renderStockList(stocks, containerId) {
+    async renderStockList(stocks, containerId, market = null) {
         const container = document.getElementById(containerId);
         if (!container) {
             console.error(`找不到容器: ${containerId}`);
@@ -789,6 +789,9 @@ class MobileStockApp {
             container.innerHTML = '<div class="stock-item"><div class="stock-info">暂无数据</div></div>';
             return;
         }
+
+        // 如果没有传递市场参数，尝试从当前市场获取
+        const currentMarket = market || this.currentMarket;
 
         // 检查是否为预览模式（容器类名包含preview）
         const isPreviewMode = container.classList.contains('stock-list-preview');
@@ -810,7 +813,7 @@ class MobileStockApp {
                         <div class="stock-change ${changeClass}">
                             ${changeSymbol}${stock.changePercent?.toFixed(2) || '0.00'}%
                         </div>
-                        ${stock.marketCap ? `<div class="stock-market-cap">${this.formatMarketCap(stock.marketCap)}</div>` : ''}
+                        ${stock.marketCap ? `<div class="stock-market-cap">${this.formatMarketCap(stock.marketCap, currentMarket)}</div>` : ''}
                     </div>
                 </div>
             `;
@@ -843,15 +846,25 @@ class MobileStockApp {
         return typeMap[containerId] || 'gainers';
     }
 
-    formatMarketCap(marketCap) {
-        if (marketCap >= 1e12) {
-            return `$${(marketCap / 1e12).toFixed(2)}万亿`;
-        } else if (marketCap >= 1e9) {
-            return `$${(marketCap / 1e9).toFixed(0)}亿`;
-        } else if (marketCap >= 1e6) {
-            return `$${(marketCap / 1e6).toFixed(0)}百万`;
+    formatMarketCap(marketCap, market = null) {
+        // 根据市场类型调整数值
+        let adjustedValue = marketCap;
+        if (market === 'chinese_stocks' || market === 'CN') {
+            // 中概股：除以1亿
+            adjustedValue = marketCap / 1e8;
+        } else if (market === 'sp500' || market === 'US') {
+            // 标普：除以100
+            adjustedValue = marketCap / 100;
         }
-        return `$${marketCap.toFixed(0)}`;
+        
+        if (adjustedValue >= 1e12) {
+            return `$${(adjustedValue / 1e12).toFixed(2)}万亿`;
+        } else if (adjustedValue >= 1e9) {
+            return `$${(adjustedValue / 1e9).toFixed(0)}亿`;
+        } else if (adjustedValue >= 1e6) {
+            return `$${(adjustedValue / 1e6).toFixed(0)}百万`;
+        }
+        return `$${adjustedValue.toFixed(0)}`;
     }
 
     showLoading(type) {
@@ -1537,7 +1550,7 @@ class MobileStockApp {
         
         // 确保数据是数组格式
          const listData = Array.isArray(data) ? data : (data.stocks || data.data || []);
-         this.renderStockList(listData, containerId);
+         this.renderStockList(listData, containerId, this.currentMarket);
     }
 
     getListContainerIdFromRanking(ranking) {
