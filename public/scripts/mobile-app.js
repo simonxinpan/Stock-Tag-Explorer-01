@@ -15,18 +15,21 @@ class MobileStockApp {
         this.init();
     }
 
-    init() {
+    async init() {
+        // 设置默认市场为标普500
+        this.currentMarket = 'sp500';
+        
         this.setupEventListeners();
-        this.loadInitialPageData(); // 只加载当前页面数据
         this.setupPullToRefresh();
         this.setupRankingNavigation();
         this.setupHeatmapControls();
         this.setupTagsControls();
         
-        // 延迟初始化榜单显示 - 默认显示涨幅榜
-        setTimeout(() => {
-            this.switchRanking('top_gainers');
-        }, 100);
+        // 立即加载初始页面数据，确保秒开
+        await this.loadInitialPageData();
+        
+        // 确保所有榜单都显示，并默认滚动到涨幅榜
+        this.switchRanking('top_gainers');
     }
 
     setupEventListeners() {
@@ -50,7 +53,20 @@ class MobileStockApp {
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('market-toggle-btn')) {
                 const market = e.target.dataset.market;
-                this.switchMarket(market);
+                const listSection = e.target.closest('.list-section-preview');
+                
+                // 如果在榜单卡片中，跳转到对应的榜单详情页
+                if (listSection) {
+                    const ranking = listSection.dataset.ranking;
+                    if (market === 'US') {
+                        window.location.href = `/trending.html?market=sp500&list=${ranking}`;
+                    } else if (market === 'CN') {
+                        window.location.href = `/trending.html?market=chinese_stocks&list=${ranking}`;
+                    }
+                } else {
+                    // 否则执行原有的市场切换逻辑
+                    this.switchMarket(market);
+                }
             }
         });
 
@@ -388,7 +404,7 @@ class MobileStockApp {
     async fetchSectorData() {
         try {
             // 使用Financial Modeling Prep API获取行业数据
-            const response = await fetch('https://financialmodelingprep.com/api/v3/sector-performance?apikey=demo');
+            const response = await fetch('/api/sector-performance');
             if (response.ok) {
                 const data = await response.json();
                 return data.map(sector => ({
@@ -832,8 +848,10 @@ class MobileStockApp {
             const batch = stocksToRender.slice(i, i + batchSize);
             const batchItems = batch.map((stock, batchIndex) => {
                 const index = i + batchIndex;
-                const changeClass = stock.change >= 0 ? 'positive' : 'negative';
-                const changeSymbol = stock.change >= 0 ? '+' : '';
+                // 修复涨跌幅颜色逻辑
+                const changePercent = parseFloat(stock.changePercent) || 0;
+                const changeClass = changePercent >= 0 ? 'positive' : 'negative';
+                const changeSymbol = changePercent >= 0 ? '+' : '';
                 
                 return `
                     <div class="stock-item waterfall-item" data-symbol="${stock.symbol}" style="opacity: 0; transform: translateY(20px);">
@@ -1745,8 +1763,10 @@ class MobileStockApp {
 }
 
 // 初始化应用
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     window.mobileApp = new MobileStockApp();
+    await window.mobileApp.init();
+    console.log('移动版应用初始化完成');
 });
 
 // 处理页面可见性变化，优化性能和内存使用

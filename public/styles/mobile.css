@@ -10,8 +10,8 @@
 :root {
     --primary-color: #007AFF;
     --secondary-color: #5856D6;
-    --success-color: #10b981; /* 涨幅绿色 - 美股习惯 */
-    --danger-color: #ef4444; /* 跌幅红色 - 美股习惯 */
+    --success-color: #ef4444; /* 涨幅红色 - 中国习惯 */
+    --danger-color: #10b981; /* 跌幅绿色 - 中国习惯 */
     --neutral-color: #8E8E93; /* 无涨跌幅灰色 */
     --warning-color: #FF9500;
     --background-color: #F2F2F7;

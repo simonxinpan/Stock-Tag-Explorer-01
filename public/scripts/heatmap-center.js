@@ -339,7 +339,11 @@ class HeatmapCenter {
             });
         });
         
-        return { stocks, tag };
+        return { 
+            stocks, 
+            name: '市场概览',
+            market: 'sp500'
+        };
     }
 
     /**
