@@ -25,7 +25,7 @@ class MobileStockApp {
         
         // 延迟初始化榜单显示 - 默认显示涨幅榜
         setTimeout(() => {
-            this.switchRanking('gainers');
+            this.switchRanking('top_gainers');
         }, 100);
     }
 
@@ -44,6 +44,14 @@ class MobileStockApp {
                 const market = e.currentTarget.dataset.market;
                 this.switchMarket(market);
             });
+        });
+
+        // 榜单内的市场切换按钮
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('market-toggle-btn')) {
+                const market = e.target.dataset.market;
+                this.switchMarket(market);
+            }
         });
 
         // 榜单导航切换
@@ -141,6 +149,14 @@ class MobileStockApp {
             marketTabBtn.classList.add('active');
         }
         
+        // 更新榜单内市场切换按钮状态
+        document.querySelectorAll('.market-toggle-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelectorAll(`.market-toggle-btn[data-market="${market}"]`).forEach(btn => {
+            btn.classList.add('active');
+        });
+        
         // 更新市场轮播按钮状态
         document.querySelectorAll('.market-carousel-btn').forEach(btn => {
             btn.classList.remove('active');
@@ -154,7 +170,7 @@ class MobileStockApp {
         this.loadTrendingData();
         
         // 重新加载当前显示的榜单
-        const activeRanking = document.querySelector('.ranking-nav-btn.active')?.dataset.ranking || 'gainers';
+        const activeRanking = document.querySelector('.ranking-nav-btn.active')?.dataset.ranking || 'top_gainers';
         this.loadRankingData(activeRanking);
     }
 
@@ -183,6 +199,8 @@ class MobileStockApp {
                 case 'trending-mobile':
                     if (!this.trendingData || this.isDataExpired('trending')) {
                         await this.loadTrendingDataLazy();
+                        // 加载所有榜单数据
+                        await this.loadAllRankingData();
                     }
                     break;
                 case 'heatmap-mobile':
@@ -1168,33 +1186,33 @@ class MobileStockApp {
             btn.classList.toggle('active', btn.dataset.ranking === ranking);
         });
 
-        // 隐藏所有榜单内容
-        document.querySelectorAll('.list-section').forEach(section => {
-            section.style.display = 'none';
+        // 显示所有榜单内容（移除隐藏逻辑）
+        document.querySelectorAll('.list-section-preview').forEach(section => {
+            section.style.display = 'block';
         });
         
-        // 显示当前选中的榜单
+        // 滚动到选中的榜单
         const rankingToSectionMap = {
-            'gainers': 'top_gainers',
-            'market-cap': 'top_market_cap',
-            'new-highs': 'new_highs',
-            'volume': 'top_turnover',
-            'volatility': 'top_volatility',
-            'gap-up': 'top_gap_up',
-            'losers': 'top_losers',
-            'new-lows': 'new_lows',
-            'institutional': 'institutional_focus',
-            'retail': 'retail_hot',
-            'insider': 'smart_money',
-            'liquidity': 'high_liquidity',
-            'unusual': 'unusual_activity',
-            'momentum': 'momentum_stocks'
+            'top_gainers': 'top_gainers',
+            'top_market_cap': 'top_market_cap',
+            'new_highs': 'new_highs',
+            'top_turnover': 'top_turnover',
+            'top_volatility': 'top_volatility',
+            'top_gap_up': 'top_gap_up',
+            'top_losers': 'top_losers',
+            'new_lows': 'new_lows',
+            'institutional_focus': 'institutional_focus',
+            'retail_hot': 'retail_hot',
+            'smart_money': 'smart_money',
+            'high_liquidity': 'high_liquidity',
+            'unusual_activity': 'unusual_activity',
+            'momentum_stocks': 'momentum_stocks'
         };
         
         const sectionName = rankingToSectionMap[ranking] || 'top_gainers';
         const currentSection = document.querySelector(`[data-ranking="${sectionName}"]`);
         if (currentSection) {
-            currentSection.style.display = 'block';
+            currentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         // 根据榜单类型加载对应数据
@@ -1252,6 +1270,28 @@ class MobileStockApp {
             this.renderRankingData(data, ranking);
         } catch (error) {
             console.error('加载榜单数据失败:', error);
+        }
+    }
+
+    // 加载所有榜单数据
+    async loadAllRankingData() {
+        const allRankings = [
+            'top_gainers', 'top_market_cap', 'new_highs', 'top_turnover',
+            'top_volatility', 'top_gap_up', 'top_losers', 'new_lows',
+            'institutional_focus', 'retail_hot', 'smart_money', 'high_liquidity',
+            'unusual_activity', 'momentum_stocks'
+        ];
+        
+        try {
+            // 并行加载所有榜单数据
+            const promises = allRankings.map(ranking => {
+                return this.loadRankingData(ranking);
+            });
+            
+            await Promise.all(promises);
+            console.log('所有榜单数据加载完成');
+        } catch (error) {
+            console.error('加载所有榜单数据失败:', error);
         }
     }
 
@@ -1609,6 +1649,7 @@ class MobileStockApp {
             symbol,
             name: `${symbol} Company`,
             price: Math.random() * 200 + 50,
+            change: (Math.random() - 0.5) * 10,
             changePercent: (Math.random() - 0.5) * 10,
             volume: Math.floor(Math.random() * 10000000),
             marketCap: Math.random() * 1e12
