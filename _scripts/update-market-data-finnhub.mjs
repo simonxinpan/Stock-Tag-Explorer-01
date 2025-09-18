@@ -1,54 +1,43 @@
-// /_scripts/update-market-data-finnhub.mjs
-import { Pool } from 'pg';
-import fs from 'fs/promises';
-import 'dotenv/config';
-
-// 根据市场类型获取数据库连接字符串
-function getDatabaseUrl(marketType) {
-  switch (marketType) {
-    case 'chinese_stocks':
-      return process.env.CHINESE_STOCKS_DATABASE_URL;
-    case 'sp500':
-    default:
-      return process.env.NEON_DATABASE_URL || process.env.DATABASE_URL;
-  }
-}
-
-// 获取市场类型
-const marketType = process.env.MARKET_TYPE || 'sp500';
-const databaseUrl = getDatabaseUrl(marketType);
-
-if (!databaseUrl) {
-  console.error(`❌ Database URL not found for market type: ${marketType}`);
-  process.exit(1);
-}
-
-const pool = new Pool({ 
-    connectionString: databaseUrl, 
-    ssl: { rejectUnauthorized: false } 
-});
-
-console.log(`🎯 Market Type: ${marketType}`);
-console.log(`🔗 Database: ${databaseUrl.split('@')[1]?.split('/')[1] || 'Unknown'}`);
-
-// 延迟函数
+// 文件: /_scripts/update-sp500-data.mjs (或 update-market-data-finnhub.mjs) 
+// 版本: Final Synchronized Version 
+import pg from 'pg'; 
+const { Pool } = pg; 
+import fs from 'fs/promises'; 
+import 'dotenv/config'; 
+ 
+// --- 配置区 --- 
+const DATABASE_URL = process.env.DATABASE_URL; 
+const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY; 
+const STOCK_LIST_FILE = './sp500_stocks.json'; // 明确指向标普500列表 
+const SCRIPT_NAME = "S&P 500 Robust Update"; 
+const DEBUG = process.env.DEBUG === 'true'; 
+const DELAY_SECONDS = 1.1; // 标普500数量多，延迟可以稍短 
+ 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-// 数据库连接重试函数
-async function connectWithRetry(pool, maxRetries = 3) {
-    for (let i = 0; i < maxRetries; i++) {
-        try {
-            const client = await pool.connect();
-            console.log(`✅ Database connected successfully (attempt ${i + 1})`);
-            return client;
-        } catch (error) {
-            console.warn(`⚠️ Database connection attempt ${i + 1} failed: ${error.message}`);
-            if (i === maxRetries - 1) {
-                throw error;
-            }
-            await delay(2000 * (i + 1)); // 递增延迟
-        }
-    }
+async function fetchQuote(ticker) { 
+  const url = `https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${FINNHUB_API_KEY}`; 
+  try { 
+    const response = await fetch(url); 
+    if (!response.ok) { 
+      console.error(`❌ [${ticker}] API HTTP Error: ${response.status}`); 
+      return null; 
+    } 
+    const text = await response.text(); 
+    if (!text.startsWith('{')) { 
+      console.error(`❌ [${ticker}] Invalid API Response (not JSON). Received: ${text.substring(0, 100)}...`); 
+      return null; 
+    } 
+    const data = JSON.parse(text); 
+    if (data.c === 0 && data.pc === 0) { 
+      console.warn(`⚠️ [${ticker}] Received zero data from API, likely an invalid ticker.`); 
+      return null; 
+    } 
+    return data; 
+  } catch (error) { 
+    console.error(`❌ [${ticker}] Fetch or Parse Error:`, error.message); 
+    return null; 
+  } 
 }
 
 // 检查并刷新数据库连接
@@ -169,250 +158,97 @@ async function getFinnhubMarketData(tickers, apiKey, client = null, pool = null)
     return marketData;
 }
 
-async function main() {
-    console.log("===== Starting HIGH-FREQUENCY market data update job =====");
-    
-    // --- 核心修改：智能"燃料选择"逻辑 ---
-    const marketType = process.env.MARKET_TYPE || 'sp500'; // 默认为标普500
-    let stockListFile;
+// 连接重试函数
+async function connectWithRetry(pool, maxRetries = 3) {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            const client = await pool.connect();
+            console.log(`✅ Database connected successfully`);
+            return client;
+        } catch (error) {
+            console.warn(`⚠️ Connection attempt ${i + 1}/${maxRetries} failed: ${error.message}`);
+            if (i === maxRetries - 1) throw error;
+            await delay(2000); // 等待2秒后重试
+        }
+    }
+}
 
-    console.log(`🎯 Market Type selected: ${marketType}`);
-
-    if (marketType === 'chinese_stocks') {
-        stockListFile = './china_stocks.json';
-    } else {
-        stockListFile = './sp500_stocks.json';
-    }
-    
-    const { NEON_DATABASE_URL, DATABASE_URL, FINNHUB_API_KEY } = process.env;
-    const dbUrl = NEON_DATABASE_URL || DATABASE_URL;
-    
-    // 检查是否为测试模式
-    const isTestMode = !dbUrl || dbUrl.includes('username:password') || !FINNHUB_API_KEY || FINNHUB_API_KEY === 'your_finnhub_api_key_here';
-    
-    if (isTestMode) {
-        console.log("⚠️ Running in TEST MODE - No valid database connection or API key");
-        console.log("✅ Script structure validation passed");
-        console.log("📝 To run with real database and API:");
-        console.log("   1. Set DATABASE_URL to your Neon database connection string");
-        console.log("   2. Set FINNHUB_API_KEY to your Finnhub API key");
-        console.log("===== Test completed successfully =====");
-        return;
-    }
-    
-    if (!dbUrl || !FINNHUB_API_KEY) {
-        console.error("FATAL: Missing DATABASE_URL or FINNHUB_API_KEY environment variables.");
-        process.exit(1);
-    }
-    
-    let client;
-    try {
-        client = await connectWithRetry(pool);
-        
-        // --- 后续的所有代码，都将使用这个【动态加载】的 tickers 数组 ---
-        // 从对应的 JSON 文件中，加载正确的股票列表
-        let tickers = JSON.parse(await fs.readFile(stockListFile, 'utf-8'));
-        
-        // 支持分批处理：检查是否设置了批次范围
-        const batchStart = parseInt(process.env.BATCH_START) || 1;
-        const batchEnd = parseInt(process.env.BATCH_END) || tickers.length;
-        
-        if (batchStart > 1 || batchEnd < tickers.length) {
-            const originalLength = tickers.length;
-            tickers = tickers.slice(batchStart - 1, batchEnd);
-            console.log(`🎯 Batch Processing: Processing stocks ${batchStart}-${batchEnd} (${tickers.length} stocks) from total ${originalLength}`);
-        }
-        
-        console.log(`📋 Loaded ${tickers.length} stocks to process from ${stockListFile}.`);
-        console.log(`🎯 Market Type: ${marketType} | Database: ${databaseUrl.split('@')[1]?.split('/')[1] || 'Unknown'}`);
-        
-        // 获取市场数据（逐一获取，传递数据库连接用于保活检查）
-        console.log("🔄 Starting API data collection phase...");
-        const finnhubMarketData = await getFinnhubMarketData(tickers, FINNHUB_API_KEY, client, pool);
-        
-        // API调用完成后，重新确保数据库连接有效
-        console.log("🔄 API collection complete, verifying database connection...");
-        client = await ensureConnection(client, pool);
-        
-        if (finnhubMarketData.size === 0) {
-            console.log("⚠️ No market data available, skipping update");
-            return;
-        }
-        
-        // 日志：打印最终准备写入数据库的数据总量和样本
-        console.log(`✅ API fetching complete. Preparing to update ${finnhubMarketData.size} stocks in the database.`);
-        if (process.env.DEBUG && finnhubMarketData.size > 0) {
-            const sampleData = Array.from(finnhubMarketData.entries()).slice(0, 3);
-            console.log('📊 Sample data to be written:');
-            sampleData.forEach(([ticker, data]) => {
-                console.log(`   ${ticker}: price=${data.c}, open=${data.o}, high=${data.h}, low=${data.l}, prev_close=${data.pc}, volume=${data.v}`);
-            });
-        }
-        
-        // 从数据库获取股票公司信息
-        console.log("🔄 Fetching company data from database...");
-        const tickerList = tickers.map(t => `'${t}'`).join(',');
-        const companiesResult = await client.query(
-            `SELECT ticker, company_name FROM stocks WHERE ticker IN (${tickerList})`
-        );
-        const companies = companiesResult.rows;
-        console.log(`📋 Found ${companies.length} companies in database for update.`);
-        
-        // 分批处理，避免长时间事务导致死锁
-        const BATCH_SIZE = 10; // 市场数据更新较快，可以用稍大的批次
-        const companiesArray = Array.from(companies);
-        let updatedCount = 0;
-        
-        for (let i = 0; i < companiesArray.length; i += BATCH_SIZE) {
-            const batch = companiesArray.slice(i, i + BATCH_SIZE);
-            
-            // 每个批次前检查数据库连接
-            try {
-                client = await ensureConnection(client, pool);
-            } catch (connectionError) {
-                console.error(`❌ Failed to ensure database connection for batch ${i + 1}: ${connectionError.message}`);
-                continue; // 跳过这个批次
-            }
-            
-            // 每个批次使用独立事务
-            await client.query('BEGIN');
-            console.log(`🔄 Transaction BEGIN for batch ${i/BATCH_SIZE + 1}/${Math.ceil(companiesArray.length/BATCH_SIZE)}`);
-            
-            try {
-                for (const company of batch) {
-                    const marketData = finnhubMarketData.get(company.ticker);
-                    if (marketData && marketData.c > 0) {
-                        // 计算涨跌幅和涨跌额（基于昨日收盘价）
-                        const changePercent = marketData.pc > 0 ? 
-                            ((marketData.c - marketData.pc) / marketData.pc) * 100 : 0;
-                        const changeAmount = marketData.pc > 0 ? 
-                            (marketData.c - marketData.pc) : 0;
-                        
-                        // 准备SQL语句和参数 - 添加新字段
-                        const sql = `UPDATE stocks SET 
-                             last_price = $1, 
-                             change_amount = $2,
-                             change_percent = $3, 
-                             week_52_high = GREATEST(COALESCE(week_52_high, 0), $4),
-                             week_52_low = CASE 
-                                 WHEN week_52_low IS NULL OR week_52_low = 0 THEN $5
-                                 ELSE LEAST(week_52_low, $5)
-                             END,
-                             open_price = $6,
-                             high_price = $7,
-                             low_price = $8,
-                             previous_close = $9,
-                             volume = $10,
-                             turnover = $11,
-                             last_updated = NOW() 
-                             WHERE ticker = $12`;
-                        // 🔍 处理volume数据：确保null值正确传递到数据库
-                        const volumeValue = marketData.v !== null && marketData.v !== undefined ? marketData.v : null;
-                        
-                        // 💰 计算成交额 turnover = volume * last_price
-                        const turnoverValue = volumeValue && marketData.c ? volumeValue * marketData.c : null;
-                        
-                        const params = [marketData.c, changeAmount, changePercent, marketData.h, marketData.l, 
-                                      marketData.o, marketData.h, marketData.l, marketData.pc, volumeValue, turnoverValue, company.ticker];
-                        
-                        // 🔍 调试日志：追踪volume和turnover数据
-                        console.log(`🔍 Ticker: ${company.ticker}, Raw volume from API (marketData.v):`, marketData.v);
-                        console.log(`🔍 Processed volume value:`, volumeValue, `(type: ${typeof volumeValue})`);
-                        console.log(`💰 Calculated turnover value:`, turnoverValue, `(type: ${typeof turnoverValue})`);
-                        console.log(`  Parameters to be executed:`, params);
-                        
-                        // 日志：打印将要执行的SQL语句和参数
-                        if (process.env.DEBUG) {
-                            console.log(`🔄 Executing SQL for ${company.ticker}:`);
-                            console.log(`   SQL: ${sql.replace(/\s+/g, ' ').trim()}`);
-                            console.log(`   Params: ${JSON.stringify(params)}`);
-                        }
-                        
-                        const result = await client.query(sql, params);
-                        
-                        // 日志：打印数据库操作的结果
-                        if (process.env.DEBUG) {
-                            console.log(`✅ Update for ${company.ticker} successful. Rows affected: ${result.rowCount}`);
-                        }
-                        
-                        // 检查是否真的更新了数据
-                        if (result.rowCount === 0) {
-                            console.warn(`⚠️ WARNING: No rows updated for ${company.ticker} - ticker might not exist in database`);
-                        } else {
-                            updatedCount++;
-                        }
-                        
-                        // 详细日志（仅在DEBUG模式下）
-                        if (process.env.DEBUG) {
-                            console.log(`📊 ${company.ticker}: price=${marketData.c}, change=${changeAmount.toFixed(2)} (${changePercent.toFixed(2)}%), open=${marketData.o}, high=${marketData.h}, low=${marketData.l}, prev_close=${marketData.pc}, volume=${volumeValue}, turnover=${turnoverValue}`);
-                        }
-                        
-                        // 🔍 额外的volume和turnover调试信息
-                        console.log(`📈 Volume update for ${company.ticker}: ${volumeValue} (type: ${typeof volumeValue}) [原始API值: ${marketData.v}]`);
-                        console.log(`💰 Turnover update for ${company.ticker}: ${turnoverValue} (type: ${typeof turnoverValue}) [计算: ${volumeValue} × ${marketData.c}]`);
-                    } else {
-                        console.warn(`⚠️ No market data for ${company.ticker}: hasData=${!!marketData}, price=${marketData?.c || 'N/A'}`);
-                    }
-                }
-                
-                // 提交当前批次
-                await client.query('COMMIT');
-                console.log(`✅ Batch completed: Updated ${Math.min(i + BATCH_SIZE, companiesArray.length)} stocks`);
-                
-            } catch (batchError) {
-                // 回滚当前批次
-                try {
-                    await client.query('ROLLBACK');
-                } catch (rollbackError) {
-                    console.warn(`⚠️ Failed to rollback transaction: ${rollbackError.message}`);
-                    // 尝试重新连接
-                    try {
-                        client = await connectWithRetry(pool);
-                    } catch (reconnectError) {
-                        console.error(`❌ Failed to reconnect after rollback error: ${reconnectError.message}`);
-                    }
-                }
-                console.error(`❌ Batch failed at stocks ${i + 1}-${Math.min(i + BATCH_SIZE, companiesArray.length)}:`);
-                console.error(`   Error message: ${batchError.message}`);
-                console.error(`   Error code: ${batchError.code || 'N/A'}`);
-                console.error(`   Error detail: ${batchError.detail || 'N/A'}`);
-                if (process.env.DEBUG) {
-                    console.error(`   Full error object:`, batchError);
-                }
-                // 继续处理下一批次
-            }
-        }
-        console.log(`✅ SUCCESS: Updated market data for ${updatedCount} stocks`);
-        
-    } catch (error) {
-        if (client) {
-            try {
-                await client.query('ROLLBACK');
-            } catch (rollbackError) {
-                console.warn(`⚠️ Failed to rollback in main catch: ${rollbackError.message}`);
-            }
-        }
-        console.error("❌ JOB FAILED:", error.message);
-        console.error("Full error:", error);
-        process.exit(1);
-    } finally {
-        if (client) {
-            try {
-                client.release();
-                console.log("Database connection released");
-            } catch (releaseError) {
-                console.warn(`⚠️ Error releasing connection: ${releaseError.message}`);
-            }
-        }
-        if (pool) {
-            try {
-                await pool.end();
-                console.log("Database pool closed");
-            } catch (poolError) {
-                console.warn(`⚠️ Error closing pool: ${poolError.message}`);
-            }
-        }
-    }
+async function main() { 
+  console.log(`🚀 ===== Starting ${SCRIPT_NAME} Job =====`); 
+  if (!DATABASE_URL || !FINNHUB_API_KEY) { 
+    console.error("❌ FATAL: Missing DATABASE_URL or FINNHUB_API_KEY env vars."); 
+    process.exit(1); 
+  } 
+ 
+  const pool = new Pool({ connectionString: DATABASE_URL }); 
+  let client; 
+  try { 
+    client = await connectWithRetry(pool); 
+    console.log(`✅ [DB] Connected to S&P 500 database.`); 
+     
+    // 关键修正：不再从数据库读取，而是从JSON文件读取列表 
+    const tickers = JSON.parse(await fs.readFile(STOCK_LIST_FILE, 'utf-8')); 
+    console.log(`📋 Found ${tickers.length} stocks to update from ${STOCK_LIST_FILE}.`); 
+     
+    let updatedCount = 0; 
+    let failedCount = 0; 
+ 
+    for (const ticker of tickers) { 
+      if (DEBUG) console.log(`🔄 Processing ${ticker}...`); 
+       
+      const quote = await fetchQuote(ticker); 
+ 
+      if (quote && typeof quote.pc === 'number' && quote.pc > 0) { 
+        const change_amount = quote.c - quote.pc; 
+        const change_percent = (change_amount / quote.pc) * 100; 
+ 
+        // 关键修正：使用与中概股脚本一致的、正确的SQL UPDATE语句 
+        const sql = ` 
+          UPDATE stocks SET  
+            last_price = $1,  
+            change_amount = $2, 
+            change_percent = $3,  
+            high_price = $4, 
+            low_price = $5, 
+            open_price = $6, 
+            previous_close = $7, 
+            last_updated = NOW()  
+          WHERE ticker = $8; 
+        `; 
+        const params = [quote.c, change_amount, change_percent, quote.h, quote.l, quote.o, quote.pc, ticker]; 
+         
+        try { 
+          const result = await client.query(sql, params); 
+          if (result.rowCount > 0) { 
+            updatedCount++; 
+            if (DEBUG) console.log(`   -> ✅ Updated ${ticker}`); 
+          } else { 
+            console.warn(`   -> ⚠️ No rows updated for ${ticker}. Check if it exists in DB.`); 
+          } 
+        } catch (dbError) { 
+          console.error(`   -> ❌ DB Error for ${ticker}: ${dbError.message}`); 
+          failedCount++; 
+        } 
+      } else { 
+        console.warn(`⏭️ Skipping ${ticker} due to invalid or missing API data.`); 
+        failedCount++; 
+      } 
+ 
+      await delay(DELAY_SECONDS * 1000); 
+    } 
+     
+    console.log(`🎉 ===== Job Finished =====`); 
+    console.log(`   - Successfully updated: ${updatedCount} stocks`); 
+    console.log(`   - Failed or skipped: ${failedCount} stocks`); 
+ 
+  } catch (error) { 
+    console.error("❌ JOB FAILED WITH UNEXPECTED ERROR:", error.message); 
+    process.exit(1); 
+  } finally { 
+    if (client) client.release(); 
+    if (pool) pool.end(); 
+    console.log("🚪 Database connection closed."); 
+  } 
 }
 
 main();
