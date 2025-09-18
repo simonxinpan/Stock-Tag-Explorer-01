@@ -49,8 +49,8 @@ async function loadAllRankings(market) {
         rankingTypes.forEach((type, index) => {
             const data = results[index];
             const listElement = document.querySelector(`[data-ranking="${type}"] .stock-list-preview`);
-            if (listElement && data && data.stocks) {
-                renderIndividualStockList(listElement, data.stocks, market);
+            if (listElement && data && Array.isArray(data)) {
+                renderIndividualStockList(listElement, data, market);
             }
         });
 

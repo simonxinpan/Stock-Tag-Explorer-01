@@ -1,12 +1,27 @@
 // 文件: /api/ranking.js
-import pg from 'pg';
-const { Pool } = pg;
-import 'dotenv/config';
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
 
-// 根据market参数选择数据库连接池
-const pools = {
-  sp500: new Pool({ connectionString: process.env.NEON_DATABASE_URL }),
-  chinese_stocks: new Pool({ connectionString: process.env.CHINESE_STOCKS_DB_URL })
+// 初始化SQLite数据库连接
+const sp500DbPath = path.join(process.cwd(), 'data', 'stock_explorer.db');
+const chineseDbPath = path.join(process.cwd(), 'data', 'chinese_stocks.db');
+
+let sp500Db, chineseDb;
+try {
+  sp500Db = new sqlite3.Database(sp500DbPath);
+  chineseDb = new sqlite3.Database(chineseDbPath);
+  console.log('SQLite databases connected successfully');
+} catch (error) {
+  console.error('Failed to connect to SQLite databases:', error);
+  // 如果数据库文件不存在，使用模拟数据
+  sp500Db = null;
+  chineseDb = null;
+}
+
+// 数据库表映射
+const databases = {
+  sp500: 'sp500_stocks',
+  chinese_stocks: 'chinese_stocks'
 };
 
 // 定义不同榜单类型的SQL排序逻辑
@@ -18,7 +33,13 @@ const ORDER_BY_MAP = {
   top_turnover: 'ORDER BY turnover DESC NULLS LAST',
   new_highs: 'ORDER BY week_52_high / last_price DESC NULLS LAST',
   new_lows: 'ORDER BY last_price / week_52_low ASC NULLS LAST',
-  smart_money: 'ORDER BY market_cap DESC NULLS LAST', // 智能资金榜单
+  gap_up: 'ORDER BY change_percent DESC NULLS LAST',
+  institutional_focus: 'ORDER BY market_cap DESC NULLS LAST',
+  retail_hot: 'ORDER BY volume DESC NULLS LAST',
+  smart_money: 'ORDER BY market_cap DESC NULLS LAST',
+  high_liquidity: 'ORDER BY volume DESC NULLS LAST',
+  unusual_activity: 'ORDER BY volume DESC NULLS LAST',
+  momentum_stocks: 'ORDER BY change_percent DESC NULLS LAST',
   momentum: 'ORDER BY change_percent DESC NULLS LAST', // 动量榜单
   value: 'ORDER BY market_cap DESC NULLS LAST', // 价值榜单
   growth: 'ORDER BY change_percent DESC NULLS LAST', // 成长榜单
@@ -36,7 +57,7 @@ function mapFieldsForChineseStocks(orderByClause) {
     .replace(/week_52_low/g, 'price'); // 中概股数据库可能没有52周低点，暂用price替代
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -48,51 +69,69 @@ export default async function handler(req, res) {
   
   const { type = 'default', market = 'sp500' } = req.query;
   
-  const pool = pools[market] || pools.sp500;
-  const orderByClause = ORDER_BY_MAP[type] || ORDER_BY_MAP.default;
-
-  if (!pool) {
+  // 验证市场参数
+  if (!['sp500', 'chinese_stocks'].includes(market)) {
     return res.status(400).json({ error: 'Invalid market specified' });
   }
 
   try {
-    // 根据市场类型选择不同的字段名和表名
-    let query;
-    if (market === 'chinese_stocks') {
-      // 中概股数据库使用不同的字段名
-      const mappedOrderBy = mapFieldsForChineseStocks(orderByClause);
-      query = `
-        SELECT 
-          ticker, company_name as name_zh, price as last_price, change_percent, market_cap, volume
-        FROM chinese_stocks 
-        WHERE price IS NOT NULL AND market_cap IS NOT NULL
-        ${mappedOrderBy}
-        LIMIT 50;
-      `;
-    } else {
-      // 标普500数据库
-      query = `
-        SELECT 
-          ticker, name_zh, last_price, change_percent, market_cap, volume
-        FROM stocks 
-        WHERE last_price IS NOT NULL AND market_cap IS NOT NULL
-        ${orderByClause}
-        LIMIT 50;
-      `;
+    console.log(`[API - ranking]: type=${type}, market=${market}`);
+    
+    // 选择对应的数据库连接
+    const dbConnection = market === 'chinese_stocks' ? chineseDb : sp500Db;
+    const tableName = databases[market] || databases.sp500;
+    
+    // 如果数据库连接不可用，返回空数组
+    if (!dbConnection) {
+      console.log(`[API - ranking] Database not available for ${market}, returning empty array`);
+      return res.status(200).json([]);
     }
     
-    console.log(`[API - ranking]: type=${type}, market=${market}, query=${query}`);
+    let orderByClause = ORDER_BY_MAP[type] || ORDER_BY_MAP.default;
     
-    const { rows } = await pool.query(query);
+    // 如果是中概股，需要映射字段名
+    if (market === 'chinese_stocks') {
+      orderByClause = mapFieldsForChineseStocks(orderByClause);
+    }
     
-    // 格式化数据，确保数值类型正确
-    const formattedRows = rows.map(row => ({
-      ...row,
-      last_price: parseFloat(row.last_price) || 0,
-      change_percent: parseFloat(row.change_percent) || 0,
-      market_cap: parseFloat(row.market_cap) || 0,
-      volume: parseFloat(row.volume) || 0
-    }));
+    // 构建SQL查询
+    const query = `
+      SELECT 
+        ${market === 'chinese_stocks' ? 'ticker, company_name as name, price, change_percent, market_cap, volume' : 'ticker, name_zh as name, last_price as price, change_percent, market_cap, volume'}
+      FROM ${tableName} 
+      WHERE ${market === 'chinese_stocks' ? 'price' : 'last_price'} IS NOT NULL 
+        AND ${market === 'chinese_stocks' ? 'price' : 'last_price'} > 0
+      ${orderByClause}
+      LIMIT 20
+    `;
+    
+    console.log(`[API - ranking] Executing query: ${query}`);
+    
+    // 执行SQLite查询（使用Promise包装sqlite3的异步调用）
+    const rows = await new Promise((resolve, reject) => {
+      dbConnection.all(query, [], (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(rows || []);
+        }
+      });
+    });
+    
+    // 格式化数据，确保数值类型正确并统一字段名
+    const formattedRows = rows.map(row => {
+      const price = parseFloat(row.price) || 0;
+      const changePercent = parseFloat(row.change_percent) || 0;
+      return {
+        symbol: row.ticker,
+        name: row.name,
+        price: price,
+        change: price * changePercent / 100,
+        change_percent: changePercent,
+        market_cap: parseFloat(row.market_cap) || 0,
+        volume: parseFloat(row.volume) || 0
+      };
+    });
     
     res.status(200).json(formattedRows);
   } catch (error) {
