@@ -797,29 +797,75 @@ class MobileStockApp {
         const isPreviewMode = container.classList.contains('stock-list-preview');
         const displayCount = isPreviewMode ? 3 : 4;
         
-        const stockItems = stocks.slice(0, displayCount).map((stock, index) => {
-            const changeClass = stock.change >= 0 ? 'positive' : 'negative';
-            const changeSymbol = stock.change >= 0 ? '+' : '';
-            
-            return `
-                <div class="stock-item" data-symbol="${stock.symbol}">
-                    <div class="stock-rank">${index + 1}</div>
-                    <div class="stock-info">
-                        <div class="stock-name">${stock.name || stock.symbol}</div>
-                        <div class="stock-symbol">${stock.symbol}</div>
-                    </div>
-                    <div class="stock-price">
-                        <div class="stock-current-price">$${stock.price?.toFixed(2) || '0.00'}</div>
-                        <div class="stock-change ${changeClass}">
-                            ${changeSymbol}${stock.changePercent?.toFixed(2) || '0.00'}%
-                        </div>
-                        ${stock.marketCap ? `<div class="stock-market-cap">${this.formatMarketCap(stock.marketCap, currentMarket)}</div>` : ''}
-                    </div>
-                </div>
-            `;
-        });
+        // 分段瀑布流式加载优化
+        await this.renderStockListWithWaterfall(stocks, container, displayCount, currentMarket);
+    }
 
-        container.innerHTML = stockItems.join('');
+    // 分段瀑布流式渲染股票列表
+    async renderStockListWithWaterfall(stocks, container, displayCount, currentMarket) {
+        const batchSize = 2; // 每批渲染2个股票项
+        const stocksToRender = stocks.slice(0, displayCount);
+        
+        // 清空容器
+        container.innerHTML = '';
+        
+        // 分批渲染
+        for (let i = 0; i < stocksToRender.length; i += batchSize) {
+            const batch = stocksToRender.slice(i, i + batchSize);
+            const batchItems = batch.map((stock, batchIndex) => {
+                const index = i + batchIndex;
+                const changeClass = stock.change >= 0 ? 'positive' : 'negative';
+                const changeSymbol = stock.change >= 0 ? '+' : '';
+                
+                return `
+                    <div class="stock-item waterfall-item" data-symbol="${stock.symbol}" style="opacity: 0; transform: translateY(20px);">
+                        <div class="stock-rank">${index + 1}</div>
+                        <div class="stock-info">
+                            <div class="stock-name">${stock.name || stock.symbol}</div>
+                            <div class="stock-symbol">${stock.symbol}</div>
+                            ${stock.marketCap ? `<div class="stock-market-cap-primary">${this.formatMarketCap(stock.marketCap, currentMarket)}</div>` : ''}
+                        </div>
+                        <div class="stock-price">
+                            <div class="stock-current-price">$${stock.price?.toFixed(2) || '0.00'}</div>
+                            <div class="stock-change ${changeClass}">
+                                ${changeSymbol}${stock.changePercent?.toFixed(2) || '0.00'}%
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // 添加到容器
+            container.insertAdjacentHTML('beforeend', batchItems.join(''));
+            
+            // 触发动画
+            await this.animateWaterfallItems(container, i, batchSize);
+            
+            // 短暂延迟，创建瀑布流效果
+            if (i + batchSize < stocksToRender.length) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+        }
+    }
+
+    // 瀑布流动画效果
+    async animateWaterfallItems(container, startIndex, batchSize) {
+        const items = container.querySelectorAll('.waterfall-item');
+        const currentBatch = Array.from(items).slice(startIndex, startIndex + batchSize);
+        
+        return new Promise(resolve => {
+            currentBatch.forEach((item, index) => {
+                setTimeout(() => {
+                    item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                    item.style.opacity = '1';
+                    item.style.transform = 'translateY(0)';
+                    
+                    if (index === currentBatch.length - 1) {
+                        setTimeout(resolve, 300);
+                    }
+                }, index * 50);
+            });
+        });
     }
 
     getListTypeFromContainerId(containerId) {
@@ -858,13 +904,15 @@ class MobileStockApp {
         }
         
         if (adjustedValue >= 1e12) {
-            return `$${(adjustedValue / 1e12).toFixed(2)}万亿`;
+            return `${(adjustedValue / 1e12).toFixed(2)}万亿`;
         } else if (adjustedValue >= 1e9) {
-            return `$${(adjustedValue / 1e9).toFixed(0)}亿`;
+            return `${(adjustedValue / 1e9).toFixed(0)}亿`;
         } else if (adjustedValue >= 1e6) {
-            return `$${(adjustedValue / 1e6).toFixed(0)}百万`;
+            return `${(adjustedValue / 1e6).toFixed(0)}亿`;
+        } else if (adjustedValue >= 1e3) {
+            return `${(adjustedValue / 1e3).toFixed(1)}亿`;
         }
-        return `$${adjustedValue.toFixed(0)}`;
+        return `${adjustedValue.toFixed(1)}亿`;
     }
 
     showLoading(type) {
@@ -1152,6 +1200,9 @@ class MobileStockApp {
 
         // 根据榜单类型加载对应数据
         this.loadRankingData(ranking);
+        
+        // 预加载下一个榜单数据（缓存加速）
+        this.preloadNextRankingData(ranking);
     }
 
     // 通用的榜单数据加载方法
@@ -1202,6 +1253,33 @@ class MobileStockApp {
             this.renderRankingData(data, ranking);
         } catch (error) {
             console.error('加载榜单数据失败:', error);
+        }
+    }
+
+    // 预加载下一个榜单数据（缓存加速）
+    async preloadNextRankingData(currentRanking) {
+        const rankingOrder = ['gainers', 'market-cap', 'new-highs', 'volume', 'volatility', 'gap-up', 'losers', 'new-lows'];
+        const currentIndex = rankingOrder.indexOf(currentRanking);
+        
+        if (currentIndex !== -1) {
+            // 预加载下一个榜单
+            const nextIndex = (currentIndex + 1) % rankingOrder.length;
+            const nextRanking = rankingOrder[nextIndex];
+            
+            const market = this.currentMarket || 'sp500';
+            const cacheKey = `${nextRanking}_${market}`;
+            
+            // 如果缓存中没有或已过期，则预加载
+            if (!this.rankingDataCache.has(cacheKey) || this.isDataExpired(`ranking_${cacheKey}`)) {
+                try {
+                    const data = await this.loadListData(nextRanking, market);
+                    this.rankingDataCache.set(cacheKey, data);
+                    this.setDataTimestamp(`ranking_${cacheKey}`);
+                    console.log(`预加载榜单数据: ${nextRanking}`);
+                } catch (error) {
+                    console.log(`预加载榜单失败: ${nextRanking}`, error);
+                }
+            }
         }
     }
 
