@@ -3,7 +3,7 @@
 class MobileStockApp {
     constructor() {
         this.currentPage = 'tag-plaza-mobile';
-        this.currentMarket = 'sp500';
+        this.currentMarket = 'chinese_stocks';
         this.isLoading = false;
         this.tagData = null;
         this.trendingData = null;
@@ -16,8 +16,13 @@ class MobileStockApp {
     }
 
     async init() {
-        // 设置默认市场为标普500
-        this.currentMarket = 'sp500';
+        // 检查URL参数
+        const urlParams = new URLSearchParams(window.location.search);
+        const marketParam = urlParams.get('market');
+        const listParam = urlParams.get('list');
+        
+        // 设置市场，优先使用URL参数，否则默认为中概股
+        this.currentMarket = marketParam || 'chinese_stocks';
         
         this.setupEventListeners();
         this.setupPullToRefresh();
@@ -28,8 +33,32 @@ class MobileStockApp {
         // 立即加载初始页面数据，确保秒开
         await this.loadInitialPageData();
         
-        // 确保所有榜单都显示，并默认滚动到涨幅榜
-        this.switchRanking('top_gainers');
+        // 根据URL参数设置榜单，否则默认显示涨幅榜
+        const targetRanking = listParam || 'top_gainers';
+        this.switchRanking(targetRanking);
+        
+        // 更新市场切换按钮状态
+        this.updateMarketButtonsState();
+    }
+    
+    updateMarketButtonsState() {
+        // 更新顶部市场标签状态
+        document.querySelectorAll('.market-tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if ((btn.dataset.market === 'US' && this.currentMarket === 'sp500') ||
+                (btn.dataset.market === 'CN' && this.currentMarket === 'chinese_stocks')) {
+                btn.classList.add('active');
+            }
+        });
+        
+        // 更新榜单内市场切换按钮状态
+        document.querySelectorAll('.market-toggle-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if ((btn.dataset.market === 'US' && this.currentMarket === 'sp500') ||
+                (btn.dataset.market === 'CN' && this.currentMarket === 'chinese_stocks')) {
+                btn.classList.add('active');
+            }
+        });
     }
 
     setupEventListeners() {
@@ -59,9 +88,9 @@ class MobileStockApp {
                 if (listSection) {
                     const ranking = listSection.dataset.ranking;
                     if (market === 'US') {
-                        window.location.href = `/trending.html?market=sp500&list=${ranking}`;
+                        window.location.href = `/mobile.html?market=sp500&list=${ranking}`;
                     } else if (market === 'CN') {
-                        window.location.href = `/trending.html?market=chinese_stocks&list=${ranking}`;
+                        window.location.href = `/mobile.html?market=chinese_stocks&list=${ranking}`;
                     }
                 } else {
                     // 否则执行原有的市场切换逻辑

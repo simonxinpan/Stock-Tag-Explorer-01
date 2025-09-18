@@ -28,6 +28,14 @@ const ORDER_BY_MAP = {
   default: 'ORDER BY market_cap DESC NULLS LAST'
 };
 
+// 字段名映射函数 - 将标普500字段名映射到中概股字段名
+function mapFieldsForChineseStocks(orderByClause) {
+  return orderByClause
+    .replace(/last_price/g, 'price')
+    .replace(/week_52_high/g, 'price') // 中概股数据库可能没有52周高点，暂用price替代
+    .replace(/week_52_low/g, 'price'); // 中概股数据库可能没有52周低点，暂用price替代
+}
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -48,15 +56,30 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 我们只取每个榜单的前50名进行展示
-    const query = `
-      SELECT 
-        ticker, name_zh, last_price, change_percent, market_cap, volume
-      FROM stocks 
-      WHERE last_price IS NOT NULL AND market_cap IS NOT NULL
-      ${orderByClause}
-      LIMIT 50;
-    `;
+    // 根据市场类型选择不同的字段名和表名
+    let query;
+    if (market === 'chinese_stocks') {
+      // 中概股数据库使用不同的字段名
+      const mappedOrderBy = mapFieldsForChineseStocks(orderByClause);
+      query = `
+        SELECT 
+          ticker, company_name as name_zh, price as last_price, change_percent, market_cap, volume
+        FROM chinese_stocks 
+        WHERE price IS NOT NULL AND market_cap IS NOT NULL
+        ${mappedOrderBy}
+        LIMIT 50;
+      `;
+    } else {
+      // 标普500数据库
+      query = `
+        SELECT 
+          ticker, name_zh, last_price, change_percent, market_cap, volume
+        FROM stocks 
+        WHERE last_price IS NOT NULL AND market_cap IS NOT NULL
+        ${orderByClause}
+        LIMIT 50;
+      `;
+    }
     
     console.log(`[API - ranking]: type=${type}, market=${market}, query=${query}`);
     
