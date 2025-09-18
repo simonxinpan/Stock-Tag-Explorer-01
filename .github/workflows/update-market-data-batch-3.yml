@@ -59,7 +59,7 @@ jobs:
         run: |
           echo "🚀 Starting S&P 500 market data update - Batch 3 (stocks 101-150)..."
           echo "📊 Expected runtime: 2-3 minutes for 50 stocks"
-          node _scripts/update-market-data.mjs
+          node _scripts/update-market-data-finnhub.mjs
           
       - name: Verify Update Success
         run: |

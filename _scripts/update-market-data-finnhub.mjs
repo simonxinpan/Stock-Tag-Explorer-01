@@ -211,7 +211,18 @@ async function main() {
         
         // --- 后续的所有代码，都将使用这个【动态加载】的 tickers 数组 ---
         // 从对应的 JSON 文件中，加载正确的股票列表
-        const tickers = JSON.parse(await fs.readFile(stockListFile, 'utf-8'));
+        let tickers = JSON.parse(await fs.readFile(stockListFile, 'utf-8'));
+        
+        // 支持分批处理：检查是否设置了批次范围
+        const batchStart = parseInt(process.env.BATCH_START) || 1;
+        const batchEnd = parseInt(process.env.BATCH_END) || tickers.length;
+        
+        if (batchStart > 1 || batchEnd < tickers.length) {
+            const originalLength = tickers.length;
+            tickers = tickers.slice(batchStart - 1, batchEnd);
+            console.log(`🎯 Batch Processing: Processing stocks ${batchStart}-${batchEnd} (${tickers.length} stocks) from total ${originalLength}`);
+        }
+        
         console.log(`📋 Loaded ${tickers.length} stocks to process from ${stockListFile}.`);
         console.log(`🎯 Market Type: ${marketType} | Database: ${databaseUrl.split('@')[1]?.split('/')[1] || 'Unknown'}`);
         
@@ -237,6 +248,15 @@ async function main() {
                 console.log(`   ${ticker}: price=${data.c}, open=${data.o}, high=${data.h}, low=${data.l}, prev_close=${data.pc}, volume=${data.v}`);
             });
         }
+        
+        // 从数据库获取股票公司信息
+        console.log("🔄 Fetching company data from database...");
+        const tickerList = tickers.map(t => `'${t}'`).join(',');
+        const companiesResult = await client.query(
+            `SELECT ticker, company_name FROM stocks WHERE ticker IN (${tickerList})`
+        );
+        const companies = companiesResult.rows;
+        console.log(`📋 Found ${companies.length} companies in database for update.`);
         
         // 分批处理，避免长时间事务导致死锁
         const BATCH_SIZE = 10; // 市场数据更新较快，可以用稍大的批次
