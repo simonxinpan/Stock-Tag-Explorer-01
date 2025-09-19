@@ -300,9 +300,9 @@ async function loadAndRenderList(listConfig) {
     if (stocks.length === 0) {
       listElement.innerHTML = '<li class="no-data">暂无符合条件的股票</li>';
     } else {
-      // 移动端显示前3条数据，桌面端显示前5条数据
+      // 移动端显示前4条数据，桌面端显示前5条数据
       const isMobile = window.innerWidth <= 768;
-      const displayCount = isMobile ? 3 : 5;
+      const displayCount = isMobile ? 4 : 5;
       const topStocks = stocks.slice(0, displayCount);
       const topHTML = topStocks.map((stock, index) => createStockListItemHTML(stock, listConfig.type, index + 1, currentMarket)).join('');
       listElement.innerHTML = topHTML;
@@ -478,6 +478,13 @@ async function loadAndRenderSummaryData() {
 }
 
 // 当整个页面加载完成后，开始执行我们的脚本
+// 跳转到榜单详情页面
+function navigateToRankingDetail(type) {
+  const currentMarket = getCurrentMarket();
+  const detailUrl = `mobile-ranking-detail.html?type=${type}&market=${currentMarket}`;
+  window.location.href = detailUrl;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   console.log('📈 页面加载完成，开始获取所有趋势榜单数据...');
   
@@ -487,6 +494,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // 并发地加载所有榜单和汇总数据
   loadAndRenderSummaryData(); // <-- 新增的调用
   TRENDING_LISTS_CONFIG.forEach(loadAndRenderList);
+  
+  // 为榜单导航按钮添加点击事件
+  const rankingNavBtns = document.querySelectorAll('.ranking-nav-btn');
+  rankingNavBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const rankingType = btn.getAttribute('data-ranking');
+      if (rankingType) {
+        navigateToRankingDetail(rankingType);
+      }
+    });
+  });
   
   // 为所有"更多"按钮添加事件监听
   document.addEventListener('click', (e) => {
@@ -520,3 +538,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
+// 将函数暴露到全局作用域，供HTML中的onclick使用
+window.navigateToRankingDetail = navigateToRankingDetail;
