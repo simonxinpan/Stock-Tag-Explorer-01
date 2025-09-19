@@ -3,98 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Stock Explorer Mobile - 移动版美股数据应用</title>
     <link rel="stylesheet" href="./styles/mobile.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="scripts/mobile-app.js" defer></script>
-    <script>
-        // 导航到标签详情页面
-        function navigateToTagDetail(tagId) {
-            window.location.href = `mobile-tag-detail.html?tagId=${tagId}`;
-        }
 
-        // 导航到标签（保留原有功能）
-        function navigateToTag(tagId) {
-            console.log(`查看 ${tagId} 标签`);
-            // 这里可以跳转到标签详情页面
-        }
-
-        // 导航到榜单详情页面
-        function navigateToRankingDetail(rankingType) {
-            const currentMarket = document.querySelector('.market-carousel-btn.active')?.getAttribute('data-market') || 'sp500';
-            window.location.href = `mobile-ranking-detail.html?type=${rankingType}&market=${currentMarket}`;
-        }
-
-        // 市场轮播功能（已停用自动切换）
-        let marketCarouselInterval = null;
-
-        // 榜单"更多"按钮功能
-         document.addEventListener('DOMContentLoaded', function() {
-             // 市场轮播自动切换已停用
-             
-             const moreButtons = document.querySelectorAll('.more-btn');
-             moreButtons.forEach(btn => {
-                 btn.addEventListener('click', function() {
-                     const listType = this.getAttribute('data-list');
-                     navigateToRankingDetail(listType);
-                 });
-             });
-
-             // 市场切换按钮点击事件
-             const marketToggleBtns = document.querySelectorAll('.market-toggle-btn');
-             marketToggleBtns.forEach(btn => {
-                 btn.addEventListener('click', function() {
-                     const market = this.getAttribute('data-market');
-                     const listSection = this.closest('.list-section-preview');
-                     const rankingType = listSection.getAttribute('data-ranking');
-                     
-                     // 跳转到对应的榜单详情页面
-                     const marketParam = market === 'US' ? 'sp500' : 'chinese_stocks';
-                     window.location.href = `mobile-ranking-detail.html?type=${rankingType}&market=${marketParam}`;
-                 });
-             });
-
-             // 市场轮播按钮点击功能
-             const marketCarouselBtns = document.querySelectorAll('.market-carousel-btn');
-             marketCarouselBtns.forEach(btn => {
-                 btn.addEventListener('click', function() {
-                     const market = this.getAttribute('data-market');
-                     
-                     // 移除所有活跃状态
-                     marketCarouselBtns.forEach(b => b.classList.remove('active'));
-                     // 添加当前活跃状态
-                     this.classList.add('active');
-                     
-                     // 触发市场切换
-                     if (window.mobileApp && window.mobileApp.switchMarket) {
-                         window.mobileApp.switchMarket(market);
-                     }
-                 });
-             });
-
-             // 榜单导航按钮功能
-             const rankingNavBtns = document.querySelectorAll('.ranking-nav-btn');
-             rankingNavBtns.forEach(btn => {
-                 btn.addEventListener('click', function() {
-                     const ranking = this.getAttribute('data-ranking');
-                     
-                     // 移除所有活跃状态
-                     rankingNavBtns.forEach(b => b.classList.remove('active'));
-                     // 添加当前活跃状态
-                     this.classList.add('active');
-                     
-                     // 切换榜单显示
-                     if (window.mobileApp && window.mobileApp.switchRanking) {
-                         window.mobileApp.switchRanking(ranking);
-                     }
-                 });
-             });
-         });
-    </script>
 </head>
 <body>
     <!-- 移动端应用容器 -->
@@ -114,10 +30,10 @@
                                 <p>实时股票排行榜</p>
                             </div>
                             <div class="market-carousel">
-                                <button class="market-carousel-btn active" data-market="sp500">
+                                <button class="market-carousel-btn active" data-market-target="sp500">
                                     标普500 <span id="sp500-count-mobile" class="market-count">502</span>
                                 </button>
-                                <button class="market-carousel-btn" data-market="chinese_stocks">
+                                <button class="market-carousel-btn" data-market-target="chinese_stocks">
                                     中概股 <span id="chinese-count-mobile" class="market-count">55</span>
                                 </button>
                             </div>
@@ -229,8 +145,8 @@
                             <div class="list-title-row">
                                 <h3>🚀 涨幅榜</h3>
                                 <div class="market-toggle-buttons">
-                                    <button class="market-toggle-btn active" data-market="US">标普</button>
-                                    <button class="market-toggle-btn" data-market="CN">中概股</button>
+                                    <button class="market-toggle-btn active" data-market-target="sp500">标普</button>
+                                    <button class="market-toggle-btn" data-market-target="chinese_stocks">中概股</button>
                                 </div>
                             </div>
                             <p class="list-description">按当日涨跌幅排序，反映市场热点和资金偏好</p>
@@ -245,8 +161,8 @@
                             <div class="list-title-row">
                                 <h3>💰 市值榜</h3>
                                 <div class="market-toggle-buttons">
-                                    <button class="market-toggle-btn active" data-market="US">标普</button>
-                                    <button class="market-toggle-btn" data-market="CN">中概股</button>
+                                    <button class="market-toggle-btn active" data-market-target="sp500">标普</button>
+                                    <button class="market-toggle-btn" data-market-target="chinese_stocks">中概股</button>
                                 </div>
                             </div>
                             <p class="list-description">按市值排序，展示市场巨头和蓝筹股</p>
@@ -261,8 +177,8 @@
                             <div class="list-title-row">
                                 <h3>⬆️ 创年内新高</h3>
                                 <div class="market-toggle-buttons">
-                                    <button class="market-toggle-btn active" data-market="US">标普</button>
-                                    <button class="market-toggle-btn" data-market="CN">中概股</button>
+                                    <button class="market-toggle-btn active" data-market-target="sp500">标普</button>
+                                    <button class="market-toggle-btn" data-market-target="chinese_stocks">中概股</button>
                                 </div>
                             </div>
                             <p class="list-description">突破52周最高价的股票，显示强劲上升趋势</p>
@@ -277,8 +193,8 @@
                             <div class="list-title-row">
                                 <h3>💰 成交额榜</h3>
                                 <div class="market-toggle-buttons">
-                                    <button class="market-toggle-btn active" data-market="US">标普</button>
-                                    <button class="market-toggle-btn" data-market="CN">中概股</button>
+                                    <button class="market-toggle-btn active" data-market-target="sp500">标普</button>
+                                    <button class="market-toggle-btn" data-market-target="chinese_stocks">中概股</button>
                                 </div>
                             </div>
                             <p class="list-description">按成交金额排序，反映市场关注度和流动性</p>
@@ -293,8 +209,8 @@
                             <div class="list-title-row">
                                 <h3>📊 振幅榜</h3>
                                 <div class="market-toggle-buttons">
-                                    <button class="market-toggle-btn active" data-market="US">标普</button>
-                                    <button class="market-toggle-btn" data-market="CN">中概股</button>
+                                    <button class="market-toggle-btn active" data-market-target="sp500">标普</button>
+                                    <button class="market-toggle-btn" data-market-target="chinese_stocks">中概股</button>
                                 </div>
                             </div>
                             <p class="list-description">按日内最高最低价差计算，反映股价波动程度</p>
@@ -309,8 +225,8 @@
                             <div class="list-title-row">
                                 <h3>🌅 高开缺口榜</h3>
                                 <div class="market-toggle-buttons">
-                                    <button class="market-toggle-btn active" data-market="US">标普</button>
-                                    <button class="market-toggle-btn" data-market="CN">中概股</button>
+                                    <button class="market-toggle-btn active" data-market-target="sp500">标普</button>
+                                    <button class="market-toggle-btn" data-market-target="chinese_stocks">中概股</button>
                                 </div>
                             </div>
                             <p class="list-description">开盘价相对前收盘价的涨幅，反映隔夜消息面影响</p>
@@ -325,8 +241,8 @@
                             <div class="list-title-row">
                                 <h3>📉 跌幅榜</h3>
                                 <div class="market-toggle-buttons">
-                                    <button class="market-toggle-btn active" data-market="US">标普</button>
-                                    <button class="market-toggle-btn" data-market="CN">中概股</button>
+                                    <button class="market-toggle-btn active" data-market-target="sp500">标普</button>
+                                    <button class="market-toggle-btn" data-market-target="chinese_stocks">中概股</button>
                                 </div>
                             </div>
                             <p class="list-description">按当日跌幅排序，识别市场风险和避险情绪</p>
@@ -341,8 +257,8 @@
                             <div class="list-title-row">
                                 <h3>⬇️ 创年内新低</h3>
                                 <div class="market-toggle-buttons">
-                                    <button class="market-toggle-btn active" data-market="US">标普</button>
-                                    <button class="market-toggle-btn" data-market="CN">中概股</button>
+                                    <button class="market-toggle-btn active" data-market-target="sp500">标普</button>
+                                    <button class="market-toggle-btn" data-market-target="chinese_stocks">中概股</button>
                                 </div>
                             </div>
                             <p class="list-description">跌破52周最低价的股票，显示弱势趋势</p>
@@ -357,8 +273,8 @@
                             <div class="list-title-row">
                                 <h3>🏛️ 机构关注榜</h3>
                                 <div class="market-toggle-buttons">
-                                    <button class="market-toggle-btn active" data-market="US">标普</button>
-                                    <button class="market-toggle-btn" data-market="CN">中概股</button>
+                                    <button class="market-toggle-btn active" data-market-target="sp500">标普</button>
+                                    <button class="market-toggle-btn" data-market-target="chinese_stocks">中概股</button>
                                 </div>
                             </div>
                             <p class="list-description">基于大额交易和VWAP偏离度，追踪机构资金动向</p>
@@ -373,8 +289,8 @@
                             <div class="list-title-row">
                                 <h3>👥 散户热门榜</h3>
                                 <div class="market-toggle-buttons">
-                                    <button class="market-toggle-btn active" data-market="US">标普</button>
-                                    <button class="market-toggle-btn" data-market="CN">中概股</button>
+                                    <button class="market-toggle-btn active" data-market-target="sp500">标普</button>
+                                    <button class="market-toggle-btn" data-market-target="chinese_stocks">中概股</button>
                                 </div>
                             </div>
                             <p class="list-description">基于散户持股比例和交易活跃度，反映散户投资偏好</p>
@@ -389,8 +305,8 @@
                             <div class="list-title-row">
                                 <h3>🏛️ 主力动向榜</h3>
                                 <div class="market-toggle-buttons">
-                                    <button class="market-toggle-btn active" data-market="US">标普</button>
-                                    <button class="market-toggle-btn" data-market="CN">中概股</button>
+                                    <button class="market-toggle-btn active" data-market-target="sp500">标普</button>
+                                    <button class="market-toggle-btn" data-market-target="chinese_stocks">中概股</button>
                                 </div>
                             </div>
                             <p class="list-description">基于机构持股变化和大额交易，追踪主力资金动向</p>
@@ -405,8 +321,8 @@
                             <div class="list-title-row">
                                 <h3>💧 高流动性榜</h3>
                                 <div class="market-toggle-buttons">
-                                    <button class="market-toggle-btn active" data-market="US">标普</button>
-                                    <button class="market-toggle-btn" data-market="CN">中概股</button>
+                                    <button class="market-toggle-btn active" data-market-target="sp500">标普</button>
+                                    <button class="market-toggle-btn" data-market-target="chinese_stocks">中概股</button>
                                 </div>
                             </div>
                             <p class="list-description">基于成交量和买卖价差，评估股票流动性</p>
@@ -421,8 +337,8 @@
                             <div class="list-title-row">
                                 <h3>⚡ 异动榜</h3>
                                 <div class="market-toggle-buttons">
-                                    <button class="market-toggle-btn active" data-market="US">标普</button>
-                                    <button class="market-toggle-btn" data-market="CN">中概股</button>
+                                    <button class="market-toggle-btn active" data-market-target="sp500">标普</button>
+                                    <button class="market-toggle-btn" data-market-target="chinese_stocks">中概股</button>
                                 </div>
                             </div>
                             <p class="list-description">交易量异常放大的股票，可能有重大消息或资金异动</p>
@@ -437,8 +353,8 @@
                             <div class="list-title-row">
                                 <h3>🚀 动量榜</h3>
                                 <div class="market-toggle-buttons">
-                                    <button class="market-toggle-btn active" data-market="US">标普</button>
-                                    <button class="market-toggle-btn" data-market="CN">中概股</button>
+                                    <button class="market-toggle-btn active" data-market-target="sp500">标普</button>
+                                    <button class="market-toggle-btn" data-market-target="chinese_stocks">中概股</button>
                                 </div>
                             </div>
                             <p class="list-description">综合价格、成交量、技术指标的动量评分</p>
@@ -659,5 +575,7 @@
         </nav>
     </div>
 
+    <!-- JavaScript - 使用trending.js作为数据处理引擎 -->
+    <script src="js/trending.js"></script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 class MobileStockApp {
     constructor() {
         this.currentPage = 'tag-plaza-mobile';
-        this.currentMarket = 'sp500';
+        this.currentMarket = 'chinese_stocks';
         this.isLoading = false;
         this.tagData = null;
         this.trendingData = null;
@@ -15,18 +15,50 @@ class MobileStockApp {
         this.init();
     }
 
-    init() {
+    async init() {
+        // 检查URL参数
+        const urlParams = new URLSearchParams(window.location.search);
+        const marketParam = urlParams.get('market');
+        const listParam = urlParams.get('list');
+        
+        // 设置市场，优先使用URL参数，否则默认为中概股
+        this.currentMarket = marketParam || 'chinese_stocks';
+        
         this.setupEventListeners();
-        this.loadInitialPageData(); // 只加载当前页面数据
         this.setupPullToRefresh();
         this.setupRankingNavigation();
         this.setupHeatmapControls();
         this.setupTagsControls();
         
-        // 延迟初始化榜单显示 - 默认显示涨幅榜
-        setTimeout(() => {
-            this.switchRanking('gainers');
-        }, 100);
+        // 立即加载初始页面数据，确保秒开
+        await this.loadInitialPageData();
+        
+        // 根据URL参数设置榜单，否则默认显示涨幅榜
+        const targetRanking = listParam || 'top_gainers';
+        this.switchRanking(targetRanking);
+        
+        // 更新市场切换按钮状态
+        this.updateMarketButtonsState();
+    }
+    
+    updateMarketButtonsState() {
+        // 更新顶部市场标签状态
+        document.querySelectorAll('.market-tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if ((btn.dataset.market === 'US' && this.currentMarket === 'sp500') ||
+                (btn.dataset.market === 'CN' && this.currentMarket === 'chinese_stocks')) {
+                btn.classList.add('active');
+            }
+        });
+        
+        // 更新榜单内市场切换按钮状态
+        document.querySelectorAll('.market-toggle-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if ((btn.dataset.market === 'US' && this.currentMarket === 'sp500') ||
+                (btn.dataset.market === 'CN' && this.currentMarket === 'chinese_stocks')) {
+                btn.classList.add('active');
+            }
+        });
     }
 
     setupEventListeners() {
@@ -44,6 +76,27 @@ class MobileStockApp {
                 const market = e.currentTarget.dataset.market;
                 this.switchMarket(market);
             });
+        });
+
+        // 榜单内的市场切换按钮
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('market-toggle-btn')) {
+                const market = e.target.dataset.market;
+                const listSection = e.target.closest('.list-section-preview');
+                
+                // 如果在榜单卡片中，跳转到对应的榜单详情页
+                if (listSection) {
+                    const ranking = listSection.dataset.ranking;
+                    if (market === 'US') {
+                        window.location.href = `/mobile.html?market=sp500&list=${ranking}`;
+                    } else if (market === 'CN') {
+                        window.location.href = `/mobile.html?market=chinese_stocks&list=${ranking}`;
+                    }
+                } else {
+                    // 否则执行原有的市场切换逻辑
+                    this.switchMarket(market);
+                }
+            }
         });
 
         // 榜单导航切换
@@ -141,6 +194,14 @@ class MobileStockApp {
             marketTabBtn.classList.add('active');
         }
         
+        // 更新榜单内市场切换按钮状态
+        document.querySelectorAll('.market-toggle-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelectorAll(`.market-toggle-btn[data-market="${market}"]`).forEach(btn => {
+            btn.classList.add('active');
+        });
+        
         // 更新市场轮播按钮状态
         document.querySelectorAll('.market-carousel-btn').forEach(btn => {
             btn.classList.remove('active');
@@ -154,7 +215,7 @@ class MobileStockApp {
         this.loadTrendingData();
         
         // 重新加载当前显示的榜单
-        const activeRanking = document.querySelector('.ranking-nav-btn.active')?.dataset.ranking || 'gainers';
+        const activeRanking = document.querySelector('.ranking-nav-btn.active')?.dataset.ranking || 'top_gainers';
         this.loadRankingData(activeRanking);
     }
 
@@ -183,6 +244,8 @@ class MobileStockApp {
                 case 'trending-mobile':
                     if (!this.trendingData || this.isDataExpired('trending')) {
                         await this.loadTrendingDataLazy();
+                        // 加载所有榜单数据
+                        await this.loadAllRankingData();
                     }
                     break;
                 case 'heatmap-mobile':
@@ -370,7 +433,7 @@ class MobileStockApp {
     async fetchSectorData() {
         try {
             // 使用Financial Modeling Prep API获取行业数据
-            const response = await fetch('https://financialmodelingprep.com/api/v3/sector-performance?apikey=demo');
+            const response = await fetch('/api/sector-performance');
             if (response.ok) {
                 const data = await response.json();
                 return data.map(sector => ({
@@ -814,8 +877,10 @@ class MobileStockApp {
             const batch = stocksToRender.slice(i, i + batchSize);
             const batchItems = batch.map((stock, batchIndex) => {
                 const index = i + batchIndex;
-                const changeClass = stock.change >= 0 ? 'positive' : 'negative';
-                const changeSymbol = stock.change >= 0 ? '+' : '';
+                // 修复涨跌幅颜色逻辑
+                const changePercent = parseFloat(stock.changePercent) || 0;
+                const changeClass = changePercent >= 0 ? 'positive' : 'negative';
+                const changeSymbol = changePercent >= 0 ? '+' : '';
                 
                 return `
                     <div class="stock-item waterfall-item" data-symbol="${stock.symbol}" style="opacity: 0; transform: translateY(20px);">
@@ -1168,33 +1233,33 @@ class MobileStockApp {
             btn.classList.toggle('active', btn.dataset.ranking === ranking);
         });
 
-        // 隐藏所有榜单内容
-        document.querySelectorAll('.list-section').forEach(section => {
-            section.style.display = 'none';
+        // 显示所有榜单内容（移除隐藏逻辑）
+        document.querySelectorAll('.list-section-preview').forEach(section => {
+            section.style.display = 'block';
         });
         
-        // 显示当前选中的榜单
+        // 滚动到选中的榜单
         const rankingToSectionMap = {
-            'gainers': 'top_gainers',
-            'market-cap': 'top_market_cap',
-            'new-highs': 'new_highs',
-            'volume': 'top_turnover',
-            'volatility': 'top_volatility',
-            'gap-up': 'top_gap_up',
-            'losers': 'top_losers',
-            'new-lows': 'new_lows',
-            'institutional': 'institutional_focus',
-            'retail': 'retail_hot',
-            'insider': 'smart_money',
-            'liquidity': 'high_liquidity',
-            'unusual': 'unusual_activity',
-            'momentum': 'momentum_stocks'
+            'top_gainers': 'top_gainers',
+            'top_market_cap': 'top_market_cap',
+            'new_highs': 'new_highs',
+            'top_turnover': 'top_turnover',
+            'top_volatility': 'top_volatility',
+            'top_gap_up': 'top_gap_up',
+            'top_losers': 'top_losers',
+            'new_lows': 'new_lows',
+            'institutional_focus': 'institutional_focus',
+            'retail_hot': 'retail_hot',
+            'smart_money': 'smart_money',
+            'high_liquidity': 'high_liquidity',
+            'unusual_activity': 'unusual_activity',
+            'momentum_stocks': 'momentum_stocks'
         };
         
         const sectionName = rankingToSectionMap[ranking] || 'top_gainers';
         const currentSection = document.querySelector(`[data-ranking="${sectionName}"]`);
         if (currentSection) {
-            currentSection.style.display = 'block';
+            currentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         // 根据榜单类型加载对应数据
@@ -1252,6 +1317,28 @@ class MobileStockApp {
             this.renderRankingData(data, ranking);
         } catch (error) {
             console.error('加载榜单数据失败:', error);
+        }
+    }
+
+    // 加载所有榜单数据
+    async loadAllRankingData() {
+        const allRankings = [
+            'top_gainers', 'top_market_cap', 'new_highs', 'top_turnover',
+            'top_volatility', 'top_gap_up', 'top_losers', 'new_lows',
+            'institutional_focus', 'retail_hot', 'smart_money', 'high_liquidity',
+            'unusual_activity', 'momentum_stocks'
+        ];
+        
+        try {
+            // 并行加载所有榜单数据
+            const promises = allRankings.map(ranking => {
+                return this.loadRankingData(ranking);
+            });
+            
+            await Promise.all(promises);
+            console.log('所有榜单数据加载完成');
+        } catch (error) {
+            console.error('加载所有榜单数据失败:', error);
         }
     }
 
@@ -1609,6 +1696,7 @@ class MobileStockApp {
             symbol,
             name: `${symbol} Company`,
             price: Math.random() * 200 + 50,
+            change: (Math.random() - 0.5) * 10,
             changePercent: (Math.random() - 0.5) * 10,
             volume: Math.floor(Math.random() * 10000000),
             marketCap: Math.random() * 1e12
@@ -1704,8 +1792,10 @@ class MobileStockApp {
 }
 
 // 初始化应用
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     window.mobileApp = new MobileStockApp();
+    await window.mobileApp.init();
+    console.log('移动版应用初始化完成');
 });
 
 // 处理页面可见性变化，优化性能和内存使用

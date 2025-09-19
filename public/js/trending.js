@@ -11,14 +11,17 @@ function updateMarketNavigation() {
   const currentMarket = getCurrentMarket();
   const marketTabs = document.querySelectorAll('.market-tab');
   
-  marketTabs.forEach(tab => {
-    const tabMarket = tab.getAttribute('data-market');
-    if (tabMarket === currentMarket) {
-      tab.classList.add('active');
-    } else {
-      tab.classList.remove('active');
-    }
-  });
+  // 添加空值检查，确保在mobile.html上安全运行
+  if (marketTabs.length > 0) {
+    marketTabs.forEach(tab => {
+      const tabMarket = tab.getAttribute('data-market');
+      if (tabMarket === currentMarket) {
+        tab.classList.add('active');
+      } else {
+        tab.classList.remove('active');
+      }
+    });
+  }
 }
 
 // 定义我们需要加载的所有榜单
@@ -148,12 +151,14 @@ function createStockListItemHTML(stock, type, rank, marketType = 'sp500') {
   return `
     <li class="stock-item">
       <a href="${detailsPageUrl}" target="_blank" class="stock-link">
-        <div class="rank-circle">${rank}</div>
-        <div class="stock-info">
-          <div class="name">${stock.name_zh || stock.name || 'N/A'}</div>
-          <div class="ticker">${stock.ticker}</div>
+        <div class="stock-header">
+          <div class="rank-circle">${rank}</div>
+          <div class="stock-basic">
+            <div class="name">${stock.name_zh || stock.name || 'N/A'}</div>
+            <div class="ticker">${stock.ticker}</div>
+          </div>
         </div>
-        <div class="stock-performance">
+        <div class="stock-metrics">
           ${mainMetricHTML}
           <div class="change ${colorClass}">${sign}${changePercent.toFixed(2)}%</div>
         </div>
@@ -295,10 +300,12 @@ async function loadAndRenderList(listConfig) {
     if (stocks.length === 0) {
       listElement.innerHTML = '<li class="no-data">暂无符合条件的股票</li>';
     } else {
-      // 只显示前5条数据
-      const top5Stocks = stocks.slice(0, 5);
-      const top5HTML = top5Stocks.map((stock, index) => createStockListItemHTML(stock, listConfig.type, index + 1, currentMarket)).join('');
-      listElement.innerHTML = top5HTML;
+      // 移动端显示前4条数据，桌面端显示前5条数据
+      const isMobile = window.innerWidth <= 768;
+      const displayCount = isMobile ? 4 : 5;
+      const topStocks = stocks.slice(0, displayCount);
+      const topHTML = topStocks.map((stock, index) => createStockListItemHTML(stock, listConfig.type, index + 1, currentMarket)).join('');
+      listElement.innerHTML = topHTML;
     }
   } catch (error) {
     console.error(`加载榜单 "${listConfig.title}" 失败:`, error);
@@ -441,10 +448,15 @@ async function loadAndRenderSummaryData() {
     if (!response.ok) throw new Error('API request failed');
     const data = await response.json();
 
-    // 更新 DOM 元素
-    document.getElementById('summary-total-stocks').textContent = data.totalStocks;
-    document.getElementById('summary-rising-stocks').textContent = data.risingStocks;
-    document.getElementById('summary-falling-stocks').textContent = data.fallingStocks;
+    // 更新 DOM 元素 - 兼容trending.html和mobile.html的不同ID
+    const totalStocksEl = document.getElementById('summary-total-stocks') || document.getElementById('total-stocks');
+    const risingStocksEl = document.getElementById('summary-rising-stocks') || document.getElementById('rising-stocks');
+    const fallingStocksEl = document.getElementById('summary-falling-stocks') || document.getElementById('falling-stocks');
+    const totalMarketCapEl = document.getElementById('summary-total-market-cap') || document.getElementById('total-market-cap');
+    
+    if (totalStocksEl) totalStocksEl.textContent = data.totalStocks;
+    if (risingStocksEl) risingStocksEl.textContent = data.risingStocks;
+    if (fallingStocksEl) fallingStocksEl.textContent = data.fallingStocks;
      
     // 根据市场类型使用不同的格式化函数显示总市值
     let totalMarketCapFormatted = 'N/A';
@@ -457,7 +469,7 @@ async function loadAndRenderSummaryData() {
         totalMarketCapFormatted = formatSP500MarketCap(data.totalMarketCap);
       }
     }
-    document.getElementById('summary-total-market-cap').textContent = totalMarketCapFormatted;
+    if (totalMarketCapEl) totalMarketCapEl.textContent = totalMarketCapFormatted;
 
   } catch (error) {
     console.error('加载市场汇总数据失败:', error);
@@ -466,6 +478,13 @@ async function loadAndRenderSummaryData() {
 }
 
 // 当整个页面加载完成后，开始执行我们的脚本
+// 跳转到榜单详情页面
+function navigateToRankingDetail(type) {
+  const currentMarket = getCurrentMarket();
+  const detailUrl = `mobile-ranking-detail.html?type=${type}&market=${currentMarket}`;
+  window.location.href = detailUrl;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   console.log('📈 页面加载完成，开始获取所有趋势榜单数据...');
   
@@ -476,6 +495,17 @@ document.addEventListener('DOMContentLoaded', () => {
   loadAndRenderSummaryData(); // <-- 新增的调用
   TRENDING_LISTS_CONFIG.forEach(loadAndRenderList);
   
+  // 为榜单导航按钮添加点击事件
+  const rankingNavBtns = document.querySelectorAll('.ranking-nav-btn');
+  rankingNavBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const rankingType = btn.getAttribute('data-ranking');
+      if (rankingType) {
+        navigateToRankingDetail(rankingType);
+      }
+    });
+  });
+  
   // 为所有"更多"按钮添加事件监听
   document.addEventListener('click', (e) => {
     if (e.target.classList.contains('more-btn') || e.target.classList.contains('more-btn-small')) {
@@ -484,5 +514,30 @@ document.addEventListener('DOMContentLoaded', () => {
         handleMoreButtonClick(type);
       }
     }
+    
+    // 处理顶部导航的市场切换按钮
+    if (e.target.classList.contains('market-carousel-btn')) {
+      const targetMarket = e.target.getAttribute('data-market-target');
+      if (targetMarket) {
+        // 跳转到对应市场的榜单首页
+        const currentUrl = new URL(window.location);
+        currentUrl.searchParams.set('market', targetMarket);
+        window.location.href = currentUrl.toString();
+      }
+    }
+    
+    // 处理榜单右侧的市场切换按钮
+    if (e.target.classList.contains('market-toggle-btn')) {
+      const targetMarket = e.target.getAttribute('data-market-target');
+      if (targetMarket) {
+        // 跳转到对应市场的榜单首页
+        const currentUrl = new URL(window.location);
+        currentUrl.searchParams.set('market', targetMarket);
+        window.location.href = currentUrl.toString();
+      }
+    }
   });
 });
+
+// 将函数暴露到全局作用域，供HTML中的onclick使用
+window.navigateToRankingDetail = navigateToRankingDetail;
