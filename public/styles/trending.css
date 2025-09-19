@@ -297,6 +297,60 @@
     box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
+/* 市场切换链接样式 */
+.ranking-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.market-toggle-links {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.market-link {
+    padding: 0.25rem 0.75rem;
+    background: rgba(248,250,252,0.8);
+    color: #64748b;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(226,232,240,0.5);
+}
+
+.market-link:hover {
+    background: rgba(79,70,229,0.08);
+    color: #4f46e5;
+    border-color: rgba(79,70,229,0.2);
+}
+
+.market-link.active {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: white;
+    border-color: transparent;
+}
+
+.more-btn-link {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.more-btn-link:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(79,70,229,0.3);
+}
+
 /* 顶部统计数据 - 横排展示 */
 .top-stats-horizontal {
     margin-bottom: 3rem;
