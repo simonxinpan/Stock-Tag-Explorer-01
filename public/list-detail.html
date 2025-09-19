@@ -67,40 +67,51 @@
                         <svg class="nav-icon trending-icon">
                             <use href="#icon-trending"></use>
                         </svg>
-                        趋势榜单
+                        趋势风云榜
                     </a>
                 </li>
-                <li>
-                    <a href="heatmap-center.html" class="global-nav-link">
+                <li class="dropdown">
+                    <a href="https://heatmap-pro.vercel.app/sector-aggregation.html" class="global-nav-link dropdown-toggle">
                         <svg class="nav-icon heatmap-icon">
                             <use href="#icon-heatmap"></use>
                         </svg>
-                        热力图中心
+                        股票热力图
+                        <svg class="dropdown-arrow">
+                            <use href="#icon-chevron-down"></use>
+                        </svg>
                     </a>
+                    <ul class="dropdown-menu">
+                        <li><a href="https://heatmap-pro.vercel.app/">全景热力图</a></li>
+                        <li><a href="https://heatmap-pro.vercel.app/sector-aggregation.html">行业热力图 <span class="hot-badge">HOT</span></a></li>
+                    </ul>
                 </li>
             </ul>
         </div>
     </nav>
+    
 
-    <div class="page-wrapper">
-        <!-- 页面头部 -->
-        <header class="page-header">
+    
+    <div id="app">
+        <!-- 头部 -->
+        <header class="header">
             <div class="container">
                 <div class="header-content">
                     <div class="header-left">
-                        <h1 class="page-title" id="page-title">榜单详情</h1>
-                        <p class="page-subtitle" id="page-subtitle">实时数据，精准分析</p>
+                        <h1 class="logo" id="page-title">📈 榜单详情</h1>
+                        <p class="subtitle" id="page-subtitle">实时追踪市场热点 - 发现投资机会</p>
                     </div>
                     <div class="header-right">
-                        <div class="market-selector">
-                            <button class="market-btn active" data-market="sp500" id="sp500-btn">
+                        <div class="market-tabs">
+                            <a href="?market=sp500" class="market-tab active" data-market="sp500">
                                 <span class="market-flag">🇺🇸</span>
                                 <span class="market-name">标普500</span>
-                            </button>
-                            <button class="market-btn" data-market="chinese_stocks" id="chinese-btn">
+                                <span class="market-count" id="sp500-count">502</span>
+                            </a>
+                            <a href="?market=chinese_stocks" class="market-tab" data-market="chinese_stocks">
                                 <span class="market-flag">🇨🇳</span>
                                 <span class="market-name">中概股</span>
-                            </button>
+                                <span class="market-count" id="chinese-stocks-count">193</span>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -111,11 +122,45 @@
         <main class="main">
             <div class="container">
                 <!-- 面包屑导航 -->
-                <nav class="breadcrumb">
+                <nav class="breadcrumb" style="margin-bottom: 20px;">
                     <a href="trending.html" class="breadcrumb-link">趋势榜单</a>
-                    <span class="breadcrumb-separator">></span>
+                    <span class="breadcrumb-separator"> > </span>
                     <span class="breadcrumb-current" id="breadcrumb-current">榜单详情</span>
                 </nav>
+
+                <!-- 顶部统计数据 - 横排展示 -->
+                <section class="top-stats-horizontal">
+                    <div class="stats-container">
+                        <div class="stat-item-horizontal">
+                            <div class="stat-icon-horizontal">📊</div>
+                            <div class="stat-content-horizontal">
+                                <div class="stat-number-horizontal" id="summary-total-stocks">--</div>
+                                <div class="stat-label-horizontal">总股票数</div>
+                            </div>
+                        </div>
+                        <div class="stat-item-horizontal">
+                            <div class="stat-icon-horizontal">📈</div>
+                            <div class="stat-content-horizontal">
+                                <div class="stat-number-horizontal" id="summary-rising-stocks">--</div>
+                                <div class="stat-label-horizontal">上涨股票</div>
+                            </div>
+                        </div>
+                        <div class="stat-item-horizontal">
+                            <div class="stat-icon-horizontal">📉</div>
+                            <div class="stat-content-horizontal">
+                                <div class="stat-number-horizontal" id="summary-falling-stocks">--</div>
+                                <div class="stat-label-horizontal">下跌股票</div>
+                            </div>
+                        </div>
+                        <div class="stat-item-horizontal">
+                            <div class="stat-icon-horizontal">💎</div>
+                            <div class="stat-content-horizontal">
+                                <div class="stat-number-horizontal" id="summary-total-market-cap">--</div>
+                                <div class="stat-label-horizontal">总市值</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
                 <!-- 单个榜单展示区 -->
                 <section class="trending-rankings single-ranking-view">
@@ -123,15 +168,24 @@
                         <h2 class="section-title-main" id="ranking-title">📊 榜单详情</h2>
                         <div class="section-controls-main">
                             <span class="update-time">已更新至最新数据</span>
+                            <a href="https://heatmap-pro.vercel.app/sector-aggregation.html" class="heatmap-link-btn" title="查看热力图">
+                                <span class="heatmap-icon">🔥</span>
+                                <span class="heatmap-text">热力图</span>
+                            </a>
                             <button class="refresh-btn" id="refresh-btn">🔄 刷新</button>
                         </div>
                     </div>
                     
                     <div class="rankings-grid-two">
-                        <!-- 动态榜单卡片 -->
+                        <!-- 单个榜单卡片 -->
                         <div class="ranking-card" id="main-ranking-card">
                             <div class="ranking-header">
-                                <h3 class="ranking-title" id="card-title">榜单加载中...</h3>
+                                <div class="ranking-title-row">
+                                    <h3 class="ranking-title" id="card-title">榜单加载中...</h3>
+                                    <div class="market-toggle-links" id="market-toggle-links">
+                                        <!-- 动态生成市场切换链接 -->
+                                    </div>
+                                </div>
                                 <div class="ranking-description" id="card-description">
                                     正在加载榜单数据...
                                 </div>
