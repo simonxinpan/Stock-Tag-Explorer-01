@@ -568,39 +568,55 @@ async function loadAndRenderSummaryData() {
 }
 
 /**
- * 【新的核心函数】加载并渲染指定的单个榜单（用于二级页面）
+ * 【最终调试版】加载并渲染指定的单个榜单（用于二级页面）
  * @param {string} market - 市场类型 'sp500' | 'chinese_stocks'
  * @param {string} listType - 榜单类型 e.g., 'top_gainers', 'top_market_cap'
  */
 async function loadAndRenderSingleList(market, listType) {
-  try {
-    console.log(`🔄 开始加载单个榜单: ${listType} (${market})`);
-    
-    // 显示加载状态
-    showLoadingSpinner();
-    
-    // 构建正确的API请求URL
-    const apiUrl = `/api/ranking?market=${market}&type=${listType}`;
-    const response = await fetch(apiUrl);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    console.log(`🔄 [1/5] 开始加载单个榜单: ${listType} (市场: ${market})`);
+    const listContainer = document.getElementById('ranking-list'); // 确保这是正确的容器ID
+
+    // DOM 检查: 确保我们的目标容器存在
+    if (!listContainer) {
+        console.error("❌ [CRITICAL ERROR] 渲染失败: 未在HTML中找到 ID 为 'ranking-list' 的元素。");
+        return;
     }
+    console.log(`✅ [1/5] 成功找到容器元素 'ranking-list'`);
+  
+  try {
+    listContainer.innerHTML = '<li class="loading-item">📊 正在加载数据...</li>'; // 显示加载状态
     
+    const apiUrl = `/api/ranking?market=${market}&type=${listType}`;
+    console.log(`🔄 [2/5] 准备请求API: ${apiUrl}`);
+    
+    const response = await fetch(apiUrl);
+    console.log(`🔄 [3/5] API 响应已收到，状态码: ${response.status}`);
+
+    if (!response.ok) {
+      throw new Error(`API请求失败，状态码: ${response.status}`);
+    }
+
     const stocks = await response.json();
-    console.log(`✅ 榜单 ${listType} 数据加载成功:`, stocks);
+    console.log(`🔄 [4/5] 成功解析JSON数据，获取到 ${stocks.length} 条股票记录。`);
     
+    if (stocks.length === 0) {
+      listContainer.innerHTML = '<li class="no-data-item">📊 暂无数据</li>';
+      return;
+    }
+
     // 更新页面标题和UI
     updateSingleListPageUI(listType, market);
     
     // 渲染股票列表
+    console.log(`🔄 [5/5] 准备渲染 ${stocks.length} 条股票到页面...`);
     renderSingleRankingList(stocks, listType, market);
+    console.log("✅ [SUCCESS] 渲染流程调用完成。");
     
   } catch (error) {
-    console.error(`❌ 加载榜单 ${listType} 失败:`, error);
-    showErrorMessage(`加载${RANKING_CONFIG[listType]?.name || '榜单'}数据失败，请稍后重试`);
-  } finally {
-    hideLoadingSpinner();
+    console.error(`❌ [CRITICAL ERROR] 加载或渲染榜单 ${listType} 时发生错误:`, error);
+    if (listContainer) {
+      listContainer.innerHTML = `<li class="error-item">❌ 加载${RANKING_CONFIG[listType]?.name || '榜单'}数据失败，请稍后重试</li>`;
+    }
   }
 }
 
@@ -676,24 +692,53 @@ function updateMarketButtons(currentMarket) {
  * @param {string} listType - 榜单类型
  * @param {string} market - 市场类型
  */
+/**
+ * 【最终调试版】渲染单个榜单的股票列表
+ */
 function renderSingleRankingList(stocks, listType, market) {
+  console.log(`🎨 [RENDER-1/4] 开始渲染榜单，股票数量: ${stocks ? stocks.length : 0}`);
+  
   const listContainer = document.getElementById('ranking-list');
-  if (!listContainer) return;
+  if (!listContainer) {
+    console.error("❌ [RENDER-ERROR] 渲染失败: 未在HTML中找到 ID 为 'ranking-list' 的元素。");
+    return;
+  }
+  console.log(`🎨 [RENDER-2/4] 找到容器元素 'ranking-list'`);
   
   if (!stocks || stocks.length === 0) {
+    console.log(`🎨 [RENDER-3/4] 无数据，显示空状态`);
     listContainer.innerHTML = '<li class="no-data-item">📊 暂无数据</li>';
     return;
   }
   
-  // 生成股票列表HTML
-  const stocksHTML = stocks.map((stock, index) => 
-    createStockListItemHTML(stock, listType, index + 1, market)
-  ).join('');
-  
-  listContainer.innerHTML = stocksHTML;
-  
-  // 更新统计信息
-  updateRankingStats(stocks, listType);
+  try {
+    console.log(`🎨 [RENDER-3/4] 开始生成 ${stocks.length} 条股票的HTML`);
+    // 生成股票列表HTML
+    const stocksHTML = stocks.map((stock, index) => {
+      const html = createStockListItemHTML(stock, listType, index + 1, market);
+      if (!html) {
+        console.warn(`⚠️ 第 ${index + 1} 条股票HTML生成失败:`, stock);
+      }
+      return html;
+    }).join('');
+    
+    if (!stocksHTML) {
+      console.error(`❌ [RENDER-ERROR] 所有股票HTML生成失败`);
+      listContainer.innerHTML = '<li class="error-item">❌ 数据渲染失败</li>';
+      return;
+    }
+    
+    console.log(`🎨 [RENDER-4/4] HTML生成成功，长度: ${stocksHTML.length} 字符，开始插入DOM`);
+    listContainer.innerHTML = stocksHTML;
+    console.log(`✅ [RENDER-SUCCESS] 榜单渲染完成，容器内元素数量: ${listContainer.children.length}`);
+    
+    // 更新统计信息
+    updateRankingStats(stocks, listType);
+    
+  } catch (error) {
+    console.error(`❌ [RENDER-ERROR] 渲染过程中发生错误:`, error);
+    listContainer.innerHTML = '<li class="error-item">❌ 渲染失败，请刷新重试</li>';
+  }
 }
 
 /**
