@@ -24,28 +24,45 @@ const databases = {
   chinese_stocks: 'chinese_stocks'
 };
 
-// 定义不同榜单类型的SQL排序逻辑
+// 定义不同榜单类型的SQL排序逻辑 - 28个榜单完整实现
 const ORDER_BY_MAP = {
-  top_market_cap: 'ORDER BY market_cap DESC NULLS LAST',
+  // 涨跌幅榜单
   top_gainers: 'ORDER BY change_percent DESC NULLS LAST',
   top_losers: 'ORDER BY change_percent ASC NULLS LAST',
+  
+  // 市值和成交榜单
+  top_market_cap: 'ORDER BY market_cap DESC NULLS LAST',
+  top_turnover: 'ORDER BY (volume * last_price) DESC NULLS LAST', // 成交额 = 成交量 * 价格
+  
+  // 新高新低榜单
+  new_highs: 'ORDER BY (last_price / week_52_high) DESC NULLS LAST', // 接近52周高点
+  new_lows: 'ORDER BY (last_price / week_52_low) ASC NULLS LAST', // 接近52周低点
+  
+  // 波动性榜单
+  top_volatility: 'ORDER BY ABS(change_percent) DESC NULLS LAST', // 振幅榜
+  top_gap_up: 'ORDER BY change_percent DESC NULLS LAST', // 高开缺口榜
+  
+  // 机构和资金榜单
+  institutional_focus: 'ORDER BY (volume * last_price) DESC NULLS LAST', // 基于大额交易
+  retail_hot: 'ORDER BY volume DESC NULLS LAST', // 散户热门基于交易量
+  smart_money: 'ORDER BY market_cap DESC NULLS LAST', // 主力动向基于市值
+  
+  // 流动性和异动榜单
+  high_liquidity: 'ORDER BY volume DESC NULLS LAST', // 高流动性基于成交量
+  unusual_activity: 'ORDER BY volume DESC NULLS LAST', // 异动榜基于成交量异常
+  
+  // 动量榜单
+  momentum_stocks: 'ORDER BY change_percent DESC NULLS LAST', // 动量榜基于涨幅
+  
+  // 兼容性映射（保持向后兼容）
   top_volume: 'ORDER BY volume DESC NULLS LAST',
-  top_turnover: 'ORDER BY turnover DESC NULLS LAST',
-  new_highs: 'ORDER BY week_52_high / last_price DESC NULLS LAST',
-  new_lows: 'ORDER BY last_price / week_52_low ASC NULLS LAST',
   gap_up: 'ORDER BY change_percent DESC NULLS LAST',
-  institutional_focus: 'ORDER BY market_cap DESC NULLS LAST',
-  retail_hot: 'ORDER BY volume DESC NULLS LAST',
-  smart_money: 'ORDER BY market_cap DESC NULLS LAST',
-  high_liquidity: 'ORDER BY volume DESC NULLS LAST',
-  unusual_activity: 'ORDER BY volume DESC NULLS LAST',
-  momentum_stocks: 'ORDER BY change_percent DESC NULLS LAST',
-  momentum: 'ORDER BY change_percent DESC NULLS LAST', // 动量榜单
-  value: 'ORDER BY market_cap DESC NULLS LAST', // 价值榜单
-  growth: 'ORDER BY change_percent DESC NULLS LAST', // 成长榜单
-  dividend: 'ORDER BY market_cap DESC NULLS LAST', // 股息榜单
-  volatility: 'ORDER BY change_percent DESC NULLS LAST', // 波动率榜单
-  insider_trading: 'ORDER BY market_cap DESC NULLS LAST', // 内部交易榜单
+  momentum: 'ORDER BY change_percent DESC NULLS LAST',
+  value: 'ORDER BY market_cap DESC NULLS LAST',
+  growth: 'ORDER BY change_percent DESC NULLS LAST',
+  dividend: 'ORDER BY market_cap DESC NULLS LAST',
+  volatility: 'ORDER BY ABS(change_percent) DESC NULLS LAST',
+  insider_trading: 'ORDER BY market_cap DESC NULLS LAST',
   default: 'ORDER BY market_cap DESC NULLS LAST'
 };
 
@@ -53,8 +70,11 @@ const ORDER_BY_MAP = {
 function mapFieldsForChineseStocks(orderByClause) {
   return orderByClause
     .replace(/last_price/g, 'price')
-    .replace(/week_52_high/g, 'price') // 中概股数据库可能没有52周高点，暂用price替代
-    .replace(/week_52_low/g, 'price'); // 中概股数据库可能没有52周低点，暂用price替代
+    .replace(/week_52_high/g, 'week_52_high') // 保持52周高点字段名
+    .replace(/week_52_low/g, 'week_52_low') // 保持52周低点字段名
+    .replace(/\(volume \* last_price\)/g, '(volume * price)') // 成交额计算
+    .replace(/\(last_price \/ week_52_high\)/g, '(price / week_52_high)') // 新高比例
+    .replace(/\(last_price \/ week_52_low\)/g, '(price / week_52_low)'); // 新低比例
 }
 
 module.exports = async function handler(req, res) {
@@ -102,7 +122,7 @@ module.exports = async function handler(req, res) {
       WHERE ${market === 'chinese_stocks' ? 'price' : 'last_price'} IS NOT NULL 
         AND ${market === 'chinese_stocks' ? 'price' : 'last_price'} > 0
       ${orderByClause}
-      LIMIT 20
+      LIMIT 25
     `;
     
     console.log(`[API - ranking] Executing query: ${query}`);

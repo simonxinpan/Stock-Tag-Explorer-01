@@ -644,8 +644,29 @@ function updateMarketButtons(currentMarket) {
   const chineseBtn = document.getElementById('chinese-btn');
   
   if (sp500Btn && chineseBtn) {
+    // 更新按钮状态
     sp500Btn.classList.toggle('active', currentMarket === 'sp500');
     chineseBtn.classList.toggle('active', currentMarket === 'chinese_stocks');
+    
+    // 获取当前榜单类型
+    const currentListType = getCurrentListType();
+    
+    // 为按钮添加点击事件和链接
+    if (currentListType) {
+      sp500Btn.onclick = () => {
+        window.location.href = `list-detail.html?market=sp500&list=${currentListType}`;
+      };
+      
+      chineseBtn.onclick = () => {
+        window.location.href = `list-detail.html?market=chinese_stocks&list=${currentListType}`;
+      };
+      
+      // 移除禁用状态
+      sp500Btn.style.pointerEvents = 'auto';
+      chineseBtn.style.pointerEvents = 'auto';
+      sp500Btn.style.opacity = '1';
+      chineseBtn.style.opacity = '1';
+    }
   }
 }
 
