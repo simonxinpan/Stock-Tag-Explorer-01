@@ -779,6 +779,19 @@ function bindMarketSwitchEvents(currentListType) {
 document.addEventListener('DOMContentLoaded', () => {
   console.log('📊 趋势页面脚本开始执行...');
   
+  // ================================================================
+  // == 关键修正：将核心逻辑包裹在一个微小的 setTimeout 中 ==
+  // ================================================================
+  // 这会将我们的数据请求操作，推迟到浏览器当前的所有导航和渲染任务都完成之后再执行，
+  // 从而彻底避免 ERR_NETWORK_IO_SUSPENDED 错误。
+  setTimeout(() => {
+    initializeApp();
+  }, 0);
+  // ================================================================
+});
+
+// 整个应用的初始化函数
+function initializeApp() {
   // --- 智能路由核心 ---
   const pageType = getCurrentPageType();
   const urlParams = new URLSearchParams(window.location.search);
@@ -872,7 +885,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   console.log('✅ 趋势页面脚本执行完成');
-});
+}
 
 // 将函数暴露到全局作用域，供HTML中的onclick使用
 window.navigateToRankingDetail = navigateToRankingDetail;
