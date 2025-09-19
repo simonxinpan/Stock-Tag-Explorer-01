@@ -820,117 +820,114 @@ function bindMarketSwitchEvents(currentListType) {
   }
 }
 
-// 当整个页面加载完成后，开始执行我们的脚本
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('📊 趋势页面脚本开始执行...');
-  
-  // ================================================================
-  // == 关键修正：将核心逻辑包裹在一个微小的 setTimeout 中 ==
-  // ================================================================
-  // 这会将我们的数据请求操作，推迟到浏览器当前的所有导航和渲染任务都完成之后再执行，
-  // 从而彻底避免 ERR_NETWORK_IO_SUSPENDED 错误。
-  setTimeout(() => {
-    initializeApp();
-  }, 0);
-  // ================================================================
-});
+// ================================================================
+// == 最终执行模式：将主逻辑封装为独立的、自执行的异步函数 ==
+// ================================================================
 
-// 整个应用的初始化函数
-function initializeApp() {
-  // --- 智能路由核心 ---
-  const pageType = getCurrentPageType();
-  const urlParams = new URLSearchParams(window.location.search);
-  const market = urlParams.get('market') || getCurrentMarket();
-  const listType = urlParams.get('list');
-  
-  console.log(`🔍 页面类型: ${pageType}, 市场: ${market}, 榜单类型: ${listType}`);
-  
-  if (pageType === 'list-detail' && listType) {
-     // 二级榜单页面逻辑
-     console.log('📋 加载二级榜单页面...');
-     loadAndRenderSingleList(market, listType);
-     
-     // 绑定市场切换事件（如果存在）
-     bindMarketSwitchEvents(listType);
-     
-   } else {
-     // 一级趋势页面逻辑（原有逻辑）
-     console.log('📊 加载一级趋势页面...');
-    
-    // 更新市场导航状态
-    updateMarketNavigation();
-    
-    // 并发地加载所有榜单和汇总数据
-    loadAndRenderSummaryData(); // <-- 新增的调用
-    TRENDING_LISTS_CONFIG.forEach(loadAndRenderList);
-    
-    // 为榜单导航按钮添加点击事件
-    const rankingNavBtns = document.querySelectorAll('.ranking-nav-btn');
-    rankingNavBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const rankingType = btn.getAttribute('data-ranking');
-        if (rankingType) {
-          navigateToRankingDetail(rankingType);
-        }
-      });
-    });
-    
-    // 为所有"更多"按钮添加事件监听
-    document.addEventListener('click', (e) => {
-      if (e.target.classList.contains('more-btn') || e.target.classList.contains('more-btn-small')) {
-        const type = e.target.getAttribute('data-type');
-        if (type) {
-          handleMoreButtonClick(type);
-        }
-      }
-      
-      // 处理顶部导航的市场切换按钮
-      if (e.target.classList.contains('market-carousel-btn')) {
-        const targetMarket = e.target.getAttribute('data-market-target');
-        if (targetMarket) {
-          // 跳转到对应市场的榜单首页
-          const currentUrl = new URL(window.location);
-          currentUrl.searchParams.set('market', targetMarket);
-          window.location.href = currentUrl.toString();
-        }
-      }
-      
-      // 处理榜单右侧的市场切换按钮
-      if (e.target.classList.contains('market-toggle-btn')) {
-        const targetMarket = e.target.getAttribute('data-market-target');
-        if (targetMarket) {
-          // 跳转到对应市场的榜单首页
-          const currentUrl = new URL(window.location);
-          currentUrl.searchParams.set('market', targetMarket);
-          window.location.href = currentUrl.toString();
-        }
-      }
-      
-      // 处理榜单卡片内的市场切换链接
-      if (e.target.classList.contains('market-link')) {
-        e.preventDefault();
-        const targetMarket = e.target.getAttribute('data-market');
-        if (targetMarket) {
-          // 跳转到对应市场的榜单首页
-          const currentUrl = new URL(window.location);
-          currentUrl.searchParams.set('market', targetMarket);
-          window.location.href = currentUrl.toString();
-        }
-      }
-      
-      // 处理榜单卡片内的"查看更多"链接
-      if (e.target.classList.contains('more-btn-link')) {
-        e.preventDefault();
-        const type = e.target.getAttribute('data-type');
-        if (type) {
-          handleMoreButtonClick(type);
-        }
-      }
-    });
-  }
-  
-  console.log('✅ 趋势页面脚本执行完成');
+// 1. 将所有主逻辑，都放入一个名为 main 的异步函数中
+async function main() {
+    try {
+        console.log("📊 趋势页面脚本开始执行...");
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const pageType = getCurrentPageType();
+        const market = urlParams.get('market') || getCurrentMarket();
+        const listType = urlParams.get('list');
+
+        console.log(`🔍 页面类型: ${pageType}, 市场: ${market}, 榜单类型: ${listType || 'N/A'}`);
+
+        if (pageType === 'list-detail' && listType) {
+            console.log(`📋 加载二级榜单页面...`);
+            // 直接 await 调用，确保我们能看到它的完整执行过程
+            await loadAndRenderSingleList(market, listType);
+            
+            // 绑定市场切换事件（如果存在）
+            bindMarketSwitchEvents(listType);
+        } else {
+            // 一级趋势页面逻辑（原有逻辑）
+            console.log('📊 加载一级趋势页面...');
+           
+           // 更新市场导航状态
+           updateMarketNavigation();
+           
+           // 并发地加载所有榜单和汇总数据
+           loadAndRenderSummaryData(); // <-- 新增的调用
+           TRENDING_LISTS_CONFIG.forEach(loadAndRenderList);
+           
+           // 为榜单导航按钮添加点击事件
+           const rankingNavBtns = document.querySelectorAll('.ranking-nav-btn');
+           rankingNavBtns.forEach(btn => {
+             btn.addEventListener('click', () => {
+               const rankingType = btn.getAttribute('data-ranking');
+               if (rankingType) {
+                 navigateToRankingDetail(rankingType);
+               }
+             });
+           });
+           
+           // 为所有"更多"按钮添加事件监听
+           document.addEventListener('click', (e) => {
+             if (e.target.classList.contains('more-btn') || e.target.classList.contains('more-btn-small')) {
+               const type = e.target.getAttribute('data-type');
+               if (type) {
+                 handleMoreButtonClick(type);
+               }
+             }
+             
+             // 处理顶部导航的市场切换按钮
+             if (e.target.classList.contains('market-carousel-btn')) {
+               const targetMarket = e.target.getAttribute('data-market-target');
+               if (targetMarket) {
+                 // 跳转到对应市场的榜单首页
+                 const currentUrl = new URL(window.location);
+                 currentUrl.searchParams.set('market', targetMarket);
+                 window.location.href = currentUrl.toString();
+               }
+             }
+             
+             // 处理榜单右侧的市场切换按钮
+             if (e.target.classList.contains('market-toggle-btn')) {
+               const targetMarket = e.target.getAttribute('data-market-target');
+               if (targetMarket) {
+                 // 跳转到对应市场的榜单首页
+                 const currentUrl = new URL(window.location);
+                 currentUrl.searchParams.set('market', targetMarket);
+                 window.location.href = currentUrl.toString();
+               }
+             }
+             
+             // 处理榜单卡片内的市场切换链接
+             if (e.target.classList.contains('market-link')) {
+               e.preventDefault();
+               const targetMarket = e.target.getAttribute('data-market');
+               if (targetMarket) {
+                 // 跳转到对应市场的榜单首页
+                 const currentUrl = new URL(window.location);
+                 currentUrl.searchParams.set('market', targetMarket);
+                 window.location.href = currentUrl.toString();
+               }
+             }
+             
+             // 处理榜单卡片内的"查看更多"链接
+             if (e.target.classList.contains('more-btn-link')) {
+               e.preventDefault();
+               const type = e.target.getAttribute('data-type');
+               if (type) {
+                 handleMoreButtonClick(type);
+               }
+             }
+           });
+         }
+
+        console.log("✅ 趋势页面脚本执行完成");
+
+    } catch (error) {
+        console.error("❌ 脚本主流程发生致命错误:", error);
+    }
 }
+
+// 2. 在脚本的最后，直接调用这个 main 函数
+main();
 
 // 将函数暴露到全局作用域，供HTML中的onclick使用
 window.navigateToRankingDetail = navigateToRankingDetail;
