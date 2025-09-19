@@ -1525,26 +1525,114 @@ body {
     list-style: none;
     padding: 0;
     margin: 0;
+    /* 移动端两列布局 */
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
 }
 
 .stock-list-preview .stock-item {
     display: flex;
+    flex-direction: column;
     justify-content: space-between;
-    align-items: center;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--border-color);
-    transition: background-color 0.2s ease;
+    padding: 12px 8px;
+    background: var(--surface-color);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+    min-height: 80px;
 }
 
 .stock-list-preview .stock-item:last-child {
-    border-bottom: none;
+    /* 移除原有的border-bottom样式，因为现在使用卡片布局 */
 }
 
 .stock-list-preview .stock-item:hover {
     background: var(--background-color);
-    border-radius: 8px;
-    margin: 0 -8px;
-    padding: 12px 8px;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-color);
+}
+
+/* 股票卡片内部布局样式 */
+.stock-item .stock-link {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    text-decoration: none;
+    color: inherit;
+}
+
+.stock-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.rank-circle {
+    width: 24px;
+    height: 24px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.stock-basic {
+    flex: 1;
+    min-width: 0;
+}
+
+.stock-basic .name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+.stock-basic .ticker {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.stock-metrics {
+    margin-top: auto;
+}
+
+.stock-metrics .price {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+}
+
+.stock-metrics .metric-small {
+    font-size: 10px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.stock-metrics .change {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.text-green-500 {
+    color: var(--success-color);
+}
+
+.text-red-500 {
+    color: var(--danger-color);
 }
 
 /* 更多按钮样式 */

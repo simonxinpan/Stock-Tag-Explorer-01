@@ -151,12 +151,14 @@ function createStockListItemHTML(stock, type, rank, marketType = 'sp500') {
   return `
     <li class="stock-item">
       <a href="${detailsPageUrl}" target="_blank" class="stock-link">
-        <div class="rank-circle">${rank}</div>
-        <div class="stock-info">
-          <div class="name">${stock.name_zh || stock.name || 'N/A'}</div>
-          <div class="ticker">${stock.ticker}</div>
+        <div class="stock-header">
+          <div class="rank-circle">${rank}</div>
+          <div class="stock-basic">
+            <div class="name">${stock.name_zh || stock.name || 'N/A'}</div>
+            <div class="ticker">${stock.ticker}</div>
+          </div>
         </div>
-        <div class="stock-performance">
+        <div class="stock-metrics">
           ${mainMetricHTML}
           <div class="change ${colorClass}">${sign}${changePercent.toFixed(2)}%</div>
         </div>
@@ -298,10 +300,12 @@ async function loadAndRenderList(listConfig) {
     if (stocks.length === 0) {
       listElement.innerHTML = '<li class="no-data">暂无符合条件的股票</li>';
     } else {
-      // 只显示前5条数据
-      const top5Stocks = stocks.slice(0, 5);
-      const top5HTML = top5Stocks.map((stock, index) => createStockListItemHTML(stock, listConfig.type, index + 1, currentMarket)).join('');
-      listElement.innerHTML = top5HTML;
+      // 移动端显示前3条数据，桌面端显示前5条数据
+      const isMobile = window.innerWidth <= 768;
+      const displayCount = isMobile ? 3 : 5;
+      const topStocks = stocks.slice(0, displayCount);
+      const topHTML = topStocks.map((stock, index) => createStockListItemHTML(stock, listConfig.type, index + 1, currentMarket)).join('');
+      listElement.innerHTML = topHTML;
     }
   } catch (error) {
     console.error(`加载榜单 "${listConfig.title}" 失败:`, error);
@@ -490,6 +494,28 @@ document.addEventListener('DOMContentLoaded', () => {
       const type = e.target.getAttribute('data-type');
       if (type) {
         handleMoreButtonClick(type);
+      }
+    }
+    
+    // 处理顶部导航的市场切换按钮
+    if (e.target.classList.contains('market-carousel-btn')) {
+      const targetMarket = e.target.getAttribute('data-market-target');
+      if (targetMarket) {
+        // 跳转到对应市场的榜单首页
+        const currentUrl = new URL(window.location);
+        currentUrl.searchParams.set('market', targetMarket);
+        window.location.href = currentUrl.toString();
+      }
+    }
+    
+    // 处理榜单右侧的市场切换按钮
+    if (e.target.classList.contains('market-toggle-btn')) {
+      const targetMarket = e.target.getAttribute('data-market-target');
+      if (targetMarket) {
+        // 跳转到对应市场的榜单首页
+        const currentUrl = new URL(window.location);
+        currentUrl.searchParams.set('market', targetMarket);
+        window.location.href = currentUrl.toString();
       }
     }
   });
