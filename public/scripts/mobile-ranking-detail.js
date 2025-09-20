@@ -150,57 +150,47 @@ class MobileRankingDetailApp {
 
     async fetchRealRankingData() {
         try {
-            let apiUrl = '';
+            // 榜单类型映射到trending API的type参数
+            const typeMapping = {
+                'gainers': 'top_gainers',
+                'losers': 'top_losers',
+                'market-cap': 'market_cap',
+                'volume': 'volume',
+                'new-highs': 'new_highs',
+                'momentum': 'momentum'
+            };
             
-            // 根据榜单类型和市场构建API URL
-            switch (this.rankingType) {
-                case 'gainers':
-                    apiUrl = `https://financialmodelingprep.com/api/v3/stock_market/gainers?apikey=demo`;
-                    break;
-                case 'losers':
-                    apiUrl = `https://financialmodelingprep.com/api/v3/stock_market/losers?apikey=demo`;
-                    break;
-                case 'market-cap':
-                    apiUrl = `https://financialmodelingprep.com/api/v3/stock-screener?marketCapMoreThan=1000000000&limit=50&apikey=demo`;
-                    break;
-                case 'volume':
-                    apiUrl = `https://financialmodelingprep.com/api/v3/stock_market/actives?apikey=demo`;
-                    break;
-                default:
-                    apiUrl = `https://financialmodelingprep.com/api/v3/stock_market/gainers?apikey=demo`;
-            }
+            const trendingType = typeMapping[this.rankingType] || 'top_gainers';
+            const apiUrl = `/api/trending?type=${trendingType}&market=${this.currentMarket}`;
             
             const response = await fetch(apiUrl);
             if (response.ok) {
-                const data = await response.json();
-                return this.formatRealRankingData(data);
+                const result = await response.json();
+                if (result.success && result.data) {
+                    return this.formatTrendingApiData(result.data);
+                }
             }
             
             return null;
         } catch (error) {
-            console.error('获取真实榜单数据失败:', error);
+            console.error('获取榜单数据失败:', error);
             return null;
         }
     }
 
-    formatRealRankingData(data) {
+    formatTrendingApiData(data) {
         if (!Array.isArray(data)) return [];
         
         return data.map(stock => {
-            const symbol = stock.symbol || stock.ticker;
-            const name = stock.name || stock.companyName || symbol;
-            const price = stock.price || stock.latestPrice || 0;
-            const changePercent = stock.changesPercentage || stock.changePercent || 0;
-            const volume = stock.volume || stock.latestVolume || 0;
-            const marketCap = stock.marketCap || stock.marketCapitalization || 0;
-            
             return {
-                symbol,
-                name,
-                price: parseFloat(price) || 0,
-                changePercent: parseFloat(changePercent) || 0,
-                volume: parseInt(volume) || 0,
-                marketCap: parseInt(marketCap) || 0
+                symbol: stock.ticker,
+                name: stock.name_zh || stock.ticker,
+                price: parseFloat(stock.last_price) || 0,
+                changePercent: parseFloat(stock.change_percent) || 0,
+                volume: parseInt(stock.volume) || 0,
+                marketCap: parseInt(stock.market_cap) || 0,
+                marketCapFormatted: stock.market_cap_formatted || '',
+                turnover: parseFloat(stock.turnover) || 0
             };
         }).filter(stock => stock.symbol && stock.price > 0);
     }

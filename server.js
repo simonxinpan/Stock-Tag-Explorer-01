@@ -37,10 +37,10 @@ const server = createServer(async (req, res) => {
     const apiPath = join(__dirname, 'api', `${apiName}.js`);
     
     try {
-      // 🔧 临时使用模拟数据API
+      // 🔧 使用真实API，在数据库为空时自动回退到智能模拟数据
       let apiHandler;
       if (apiName === 'trending') {
-        apiHandler = importAPI('./api/trending-mock.js');
+        apiHandler = importAPI('./api/trending.js');
       } else if (apiName === 'market-summary') {
         apiHandler = importAPI('./api/market-summary-mock.js');
       } else if (apiName === 'ranking') {
