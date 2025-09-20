@@ -116,21 +116,16 @@ class MobileStockApp {
             }
         });
         
-        // 更多按钮点击事件
+        // 更多按钮点击事件 - 跳转到移动版榜单详情页
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('more-btn')) {
                 const listType = e.target.getAttribute('data-list');
                 const currentMarket = this.currentMarket || 'sp500';
-                window.location.href = `mobile-ranking-detail.html?type=${listType}&market=${currentMarket}`;
-            }
-        });
-
-        // 更多按钮点击
-        document.addEventListener('click', (e) => {
-            if (e.target.closest('.more-btn')) {
-                const btn = e.target.closest('.more-btn');
-                const listType = btn.dataset.list;
-                this.showMoreStocks(listType);
+                
+                // 构造移动版详情页面URL
+                const marketPrefix = currentMarket === 'sp500' ? 'sp500' : 'chinese-stocks';
+                const detailUrl = `/mobile-${marketPrefix}-${listType.replace(/_/g, '-')}.html`;
+                window.location.href = detailUrl;
             }
         });
 

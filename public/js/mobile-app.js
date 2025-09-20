@@ -152,12 +152,13 @@ function renderIndividualStockList(element, stocks, marketType) {
     element.innerHTML = stocksHtml;
 }
 
-// 导航到榜单详情页面
+// 导航到移动版榜单详情页面
 function navigateToRankingDetail(listType) {
     const urlParams = new URLSearchParams(window.location.search);
     const currentMarket = urlParams.get('market') || 'chinese_stocks';
     
-    // 构造详情页面URL
-    const detailUrl = `/trending.html?list=${listType}&market=${currentMarket}`;
+    // 构造移动版详情页面URL
+    const marketPrefix = currentMarket === 'sp500' ? 'sp500' : 'chinese-stocks';
+    const detailUrl = `/mobile-${marketPrefix}-${listType.replace(/_/g, '-')}.html`;
     window.location.href = detailUrl;
 }
