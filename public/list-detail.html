@@ -128,39 +128,7 @@
                     <span class="breadcrumb-current" id="breadcrumb-current">榜单详情</span>
                 </nav>
 
-                <!-- 顶部统计数据 - 横排展示 -->
-                <section class="top-stats-horizontal">
-                    <div class="stats-container">
-                        <div class="stat-item-horizontal">
-                            <div class="stat-icon-horizontal">📊</div>
-                            <div class="stat-content-horizontal">
-                                <div class="stat-number-horizontal" id="summary-total-stocks">--</div>
-                                <div class="stat-label-horizontal">总股票数</div>
-                            </div>
-                        </div>
-                        <div class="stat-item-horizontal">
-                            <div class="stat-icon-horizontal">📈</div>
-                            <div class="stat-content-horizontal">
-                                <div class="stat-number-horizontal" id="summary-rising-stocks">--</div>
-                                <div class="stat-label-horizontal">上涨股票</div>
-                            </div>
-                        </div>
-                        <div class="stat-item-horizontal">
-                            <div class="stat-icon-horizontal">📉</div>
-                            <div class="stat-content-horizontal">
-                                <div class="stat-number-horizontal" id="summary-falling-stocks">--</div>
-                                <div class="stat-label-horizontal">下跌股票</div>
-                            </div>
-                        </div>
-                        <div class="stat-item-horizontal">
-                            <div class="stat-icon-horizontal">💎</div>
-                            <div class="stat-content-horizontal">
-                                <div class="stat-number-horizontal" id="summary-total-market-cap">--</div>
-                                <div class="stat-label-horizontal">总市值</div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+
 
                 <!-- 单个榜单展示区 -->
                 <section class="trending-rankings single-ranking-view">
@@ -176,7 +144,7 @@
                         </div>
                     </div>
                     
-                    <div class="rankings-grid-two">
+                    <div class="rankings-grid-three">
                         <!-- 单个榜单卡片 -->
                         <div class="ranking-card" id="main-ranking-card">
                             <div class="ranking-header">
@@ -198,6 +166,17 @@
                                 <div class="ranking-stats" id="ranking-stats">
                                     <!-- 榜单统计信息 -->
                                 </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 右侧榜单导航 -->
+                        <div class="ranking-navigation-sidebar">
+                            <div class="navigation-header">
+                                <h3 class="navigation-title">📊 全部榜单</h3>
+                                <p class="navigation-subtitle">快速切换查看其他榜单</p>
+                            </div>
+                            <div class="navigation-buttons" id="navigation-buttons">
+                                <!-- 动态生成导航按钮 -->
                             </div>
                         </div>
                     </div>

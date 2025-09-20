@@ -144,7 +144,7 @@ const RANKING_CONFIG = {
 function createStockListItemHTML(stock, type, rank, marketType = 'sp500') {
   const changePercent = parseFloat(stock.change_percent) || 0;
   const price = parseFloat(stock.last_price) || 0;
-  const colorClass = changePercent >= 0 ? 'text-green-500' : 'text-red-500';
+  const colorClass = changePercent >= 0 ? 'positive' : 'negative';
   const sign = changePercent >= 0 ? '+' : '';
    
   // 构建指向正确详情页的链接
@@ -554,6 +554,9 @@ async function loadAndRenderSingleList(market, listType) {
     // 更新页面标题和UI
     updateSingleListPageUI(listType, market);
     
+    // 生成右侧导航按钮
+    generateNavigationButtons(listType, market);
+    
     // 渲染股票列表
     console.log(`🔄 [5/5] 准备渲染 ${stocks.length} 条股票到页面...`);
     renderSingleRankingList(stocks, listType, market);
@@ -765,6 +768,36 @@ function bindMarketSwitchEvents(currentListType) {
       window.location.href = newUrl;
     });
   }
+}
+
+// 生成右侧榜单导航按钮
+function generateNavigationButtons(currentListType, currentMarket) {
+  const navigationContainer = document.getElementById('navigation-buttons');
+  if (!navigationContainer) return;
+
+  const navigationHTML = TRENDING_LISTS_CONFIG.map(config => {
+    const rankingConfig = RANKING_CONFIG[config.type];
+    if (!rankingConfig) return '';
+    
+    const isActive = config.type === currentListType;
+    const activeClass = isActive ? 'active' : '';
+    
+    // 提取emoji图标
+    const titleParts = rankingConfig.title.split(' ');
+    const icon = titleParts[0];
+    const name = titleParts.slice(1).join(' ');
+    
+    return `
+      <a href="list-detail.html?market=${currentMarket}&list=${config.type}" 
+         class="navigation-button ${activeClass}" 
+         data-list-type="${config.type}">
+        <span class="navigation-button-icon">${icon}</span>
+        <span class="navigation-button-text">${name}</span>
+      </a>
+    `;
+  }).join('');
+
+  navigationContainer.innerHTML = navigationHTML;
 }
 
 // ================================================================
