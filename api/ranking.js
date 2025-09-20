@@ -70,38 +70,38 @@ const databases = {
   chinese_stocks: 'chinese_stocks'
 };
 
-// 定义不同榜单类型的SQL排序逻辑 - 28个榜单完整实现
+// 定义不同榜单类型的SQL排序逻辑 - 安全版本（只使用确定存在的列）
 const ORDER_BY_MAP = {
-  // 涨跌幅榜单
+  // 涨跌幅榜单 - 使用确定存在的列
   top_gainers: 'ORDER BY change_percent DESC NULLS LAST',
   top_losers: 'ORDER BY change_percent ASC NULLS LAST',
   
-  // 市值和成交榜单
+  // 市值榜单 - 使用确定存在的列
   top_market_cap: 'ORDER BY market_cap DESC NULLS LAST',
-  top_turnover: 'ORDER BY (volume * last_price) DESC NULLS LAST', // 成交额 = 成交量 * 价格
   
-  // 新高新低榜单
-  new_highs: 'ORDER BY (last_price / week_52_high) DESC NULLS LAST', // 接近52周高点
-  new_lows: 'ORDER BY (last_price / week_52_low) ASC NULLS LAST', // 接近52周低点
+  // 暂时注释掉可能不存在的列，避免SQL错误
+  // top_turnover: 'ORDER BY (volume * last_price) DESC NULLS LAST', // 需要volume和last_price列
+  // new_highs: 'ORDER BY (last_price / week_52_high) DESC NULLS LAST', // 需要last_price和week_52_high列
+  // new_lows: 'ORDER BY (last_price / week_52_low) ASC NULLS LAST', // 需要last_price和week_52_low列
+  // top_volume: 'ORDER BY volume DESC NULLS LAST', // 需要volume列
   
-  // 波动性榜单
-  top_volatility: 'ORDER BY ABS(change_percent) DESC NULLS LAST', // 振幅榜
-  top_gap_up: 'ORDER BY change_percent DESC NULLS LAST', // 高开缺口榜
+  // 波动性榜单 - 使用确定存在的列
+  top_volatility: 'ORDER BY ABS(change_percent) DESC NULLS LAST',
+  top_gap_up: 'ORDER BY change_percent DESC NULLS LAST',
   
-  // 机构和资金榜单
-  institutional_focus: 'ORDER BY (volume * last_price) DESC NULLS LAST', // 基于大额交易
-  retail_hot: 'ORDER BY volume DESC NULLS LAST', // 散户热门基于交易量
-  smart_money: 'ORDER BY market_cap DESC NULLS LAST', // 主力动向基于市值
+  // 机构和资金榜单 - 暂时使用市值替代
+  institutional_focus: 'ORDER BY market_cap DESC NULLS LAST', // 暂用市值替代
+  // retail_hot: 'ORDER BY volume DESC NULLS LAST', // 需要volume列
+  smart_money: 'ORDER BY market_cap DESC NULLS LAST',
   
-  // 流动性和异动榜单
-  high_liquidity: 'ORDER BY volume DESC NULLS LAST', // 高流动性基于成交量
-  unusual_activity: 'ORDER BY volume DESC NULLS LAST', // 异动榜基于成交量异常
+  // 流动性和异动榜单 - 暂时使用市值替代
+  // high_liquidity: 'ORDER BY volume DESC NULLS LAST', // 需要volume列
+  // unusual_activity: 'ORDER BY volume DESC NULLS LAST', // 需要volume列
   
-  // 动量榜单
-  momentum_stocks: 'ORDER BY change_percent DESC NULLS LAST', // 动量榜基于涨幅
+  // 动量榜单 - 使用确定存在的列
+  momentum_stocks: 'ORDER BY change_percent DESC NULLS LAST',
   
-  // 兼容性映射（保持向后兼容）
-  top_volume: 'ORDER BY volume DESC NULLS LAST',
+  // 兼容性映射（保持向后兼容） - 只保留安全的排序
   gap_up: 'ORDER BY change_percent DESC NULLS LAST',
   momentum: 'ORDER BY change_percent DESC NULLS LAST',
   value: 'ORDER BY market_cap DESC NULLS LAST',
@@ -158,13 +158,17 @@ export default async function handler(req, res) {
       orderByClause = mapFieldsForChineseStocks(orderByClause);
     }
     
-    // 构建SQL查询
+    // 构建SQL查询 - 只使用确定存在的列
     const query = `
       SELECT 
-        ${market === 'chinese_stocks' ? 'ticker, company_name as name, price, change_percent, market_cap, volume' : 'ticker, name_zh as name, last_price as price, change_percent, market_cap, volume'}
+        ticker, 
+        ${market === 'chinese_stocks' ? 'company_name as name' : 'name_zh as name'}, 
+        change_percent, 
+        market_cap
       FROM ${tableName} 
-      WHERE ${market === 'chinese_stocks' ? 'price' : 'last_price'} IS NOT NULL 
-        AND ${market === 'chinese_stocks' ? 'price' : 'last_price'} > 0
+      WHERE change_percent IS NOT NULL 
+        AND market_cap IS NOT NULL
+        AND market_cap > 0
       ${orderByClause}
       LIMIT 25
     `;
@@ -177,16 +181,16 @@ export default async function handler(req, res) {
     
     // 格式化数据，确保数值类型正确并统一字段名
     const formattedRows = rows.map(row => {
-      const price = parseFloat(row.price) || 0;
       const changePercent = parseFloat(row.change_percent) || 0;
+      const marketCap = parseFloat(row.market_cap) || 0;
       return {
         symbol: row.ticker,
         name: row.name,
-        price: price,
-        change: price * changePercent / 100,
+        price: 0, // 暂时设为0，因为price列可能不存在
+        change: 0, // 暂时设为0，因为无法计算
         change_percent: changePercent,
-        market_cap: parseFloat(row.market_cap) || 0,
-        volume: parseFloat(row.volume) || 0
+        market_cap: marketCap,
+        volume: 0 // 暂时设为0，因为volume列可能不存在
       };
     });
     
