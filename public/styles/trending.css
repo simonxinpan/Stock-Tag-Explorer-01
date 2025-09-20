@@ -1710,6 +1710,7 @@
     border-radius: 12px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
+    justify-content: space-between;
     gap: 20px;
 }
 
@@ -2232,7 +2233,7 @@
     }
     
     .stock-metrics {
-        text-align: left;
+        text-align: right;
         width: 100%;
     }
     
