@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>🚀 标普500动量榜 - Stock Explorer Mobile</title>
+    <link rel="stylesheet" href="./styles/mobile.css">
+    <link rel="stylesheet" href="./styles/mobile-ranking-detail.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+    <!-- 移动端应用容器 -->
+    <div id="mobile-app" class="mobile-app">
+        <!-- 主内容区域 -->
+        <main class="mobile-main">
+            <!-- 榜单详情页面 -->
+            <div id="ranking-detail-mobile" class="page-content active">
+                <!-- 固定顶部导航条 -->
+                <div class="fixed-top-nav">
+                    <div class="page-header-card">
+                        <div class="header-content-row">
+                            <div class="header-back-section">
+                                <button class="back-btn" onclick="history.back()">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                        <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                                <div class="header-text">
+                                    <h2 id="ranking-title">🚀 标普500动量榜</h2>
+                                    <p id="ranking-description">具有强劲上涨动量的股票</p>
+                                </div>
+                            </div>
+                            <div class="market-carousel">
+                                <button class="market-carousel-btn active" data-market-target="sp500">
+                                    标普500 <span id="sp500-count-mobile" class="market-count">502</span>
+                                </button>
+                                <button class="market-carousel-btn" data-market-target="chinese_stocks">
+                                    中概股 <span id="chinese-count-mobile" class="market-count">55</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                
+                <!-- 榜单统计信息 -->
+                <div class="ranking-stats-card">
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-icon">📊</div>
+                            <div class="stat-content">
+                                <span class="stat-label">榜单股票数</span>
+                                <span id="ranking-count" class="stat-value">25</span>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon positive">📈</div>
+                            <div class="stat-content">
+                                <span class="stat-label">上涨股票</span>
+                                <span id="rising-count" class="stat-value positive">--</span>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon negative">📉</div>
+                            <div class="stat-content">
+                                <span class="stat-label">下跌股票</span>
+                                <span id="falling-count" class="stat-value negative">--</span>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon">🚀</div>
+                            <div class="stat-content">
+                                <span class="stat-label">动量指数</span>
+                                <span id="avg-change" class="stat-value">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 加载状态 -->
+                <div id="loading-ranking" class="loading-state hidden">
+                    <div class="loading-spinner"></div>
+                    <p>正在加载榜单数据...</p>
+                </div>
+                
+                <!-- 错误状态 -->
+                <div id="error-ranking" class="error-state hidden">
+                    <p>加载失败，请下拉刷新重试</p>
+                </div>
+                
+                <!-- 榜单完整列表 -->
+                <div id="ranking-full-list" class="ranking-full-container">
+                    <div class="ranking-list-header">
+                        <h3>完整榜单</h3>
+                        <div class="list-meta">
+                            <span id="update-time">更新时间: --</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 股票列表 -->
+                    <div id="stock-list" class="stock-list-mobile">
+                        <!-- 动态加载股票数据 -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="./js/mobile-ranking-detail.js"></script>
+    <script>
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置榜单类型和市场
+            const rankingType = 'momentum_stocks';
+            const market = 'sp500';
+            
+            // 初始化页面
+            if (typeof initializeRankingDetail === 'function') {
+                initializeRankingDetail(rankingType, market);
+            }
+        });
+    </script>
+</body>
+</html>
