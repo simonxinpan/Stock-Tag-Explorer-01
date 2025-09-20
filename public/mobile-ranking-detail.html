@@ -32,6 +32,14 @@
                                 <div class="header-text">
                                     <h2 id="ranking-title">榜单详情</h2>
                                     <p id="ranking-description">榜单说明</p>
+                                    <!-- 隐藏的trending.js期望的元素 -->
+                                    <div style="display: none;">
+                                        <div id="page-title"></div>
+                                        <div id="page-subtitle"></div>
+                                        <div id="breadcrumb-current"></div>
+                                        <div id="card-title"></div>
+                                        <div id="card-description"></div>
+                                    </div>
                                 </div>
                             </div>
                             <div class="market-carousel">
@@ -47,39 +55,8 @@
                 </div>
 
                 
-                <!-- 榜单统计信息 -->
-                <div class="ranking-stats-card">
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <div class="stat-icon">📊</div>
-                            <div class="stat-content">
-                                <span class="stat-label">榜单股票数</span>
-                                <span id="ranking-count" class="stat-value">25</span>
-                            </div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-icon positive">📈</div>
-                            <div class="stat-content">
-                                <span class="stat-label">上涨股票</span>
-                                <span id="rising-count" class="stat-value positive">--</span>
-                            </div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-icon negative">📉</div>
-                            <div class="stat-content">
-                                <span class="stat-label">下跌股票</span>
-                                <span id="falling-count" class="stat-value negative">--</span>
-                            </div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-icon">💰</div>
-                            <div class="stat-content">
-                                <span class="stat-label">平均涨跌幅</span>
-                                <span id="avg-change" class="stat-value">--</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <!-- 隐藏的trending.js期望的统计元素 -->
+                <div id="ranking-stats" style="display: none;"></div>
                 
                 <!-- 加载状态 -->
                 <div id="loading-ranking" class="loading-state hidden">
@@ -103,7 +80,7 @@
                     
                     <!-- 股票列表 -->
                     <div class="stock-list-container">
-                        <ul id="stock-list" class="stock-list-full">
+                        <ul id="ranking-list" class="stock-list-full">
                             <!-- 动态加载股票列表 -->
                         </ul>
                     </div>
@@ -113,7 +90,7 @@
     </div>
 
     <!-- JavaScript -->
-    <script src="./scripts/mobile-ranking-detail.js"></script>
+    <script src="./js/trending.js"></script>
 </body>
 </html>
                             <span class="stat-label">平均涨跌幅</span>
@@ -188,7 +165,8 @@
     <!-- Toast 通知 -->
     <div id="toast" class="toast"></div>
 
-    <script src="scripts/mobile-ranking-detail.js"></script>
+    <!-- 移动版页面现在使用 trending.js 处理数据加载 -->
+    <script src="scripts/trending.js"></script>
     <script>
         // 生成模拟股票数据（保留用于兼容性）
         function generateMockStocks(type, market, count) {
@@ -239,23 +217,7 @@
             // 这里可以跳转到股票详情页面
         }
 
-        // 排序和筛选事件监听
-        document.addEventListener('DOMContentLoaded', function() {
-            // 排序选择变化
-            document.getElementById('sort-select').addEventListener('change', function() {
-                showToast('重新排序中...', 'info');
-                setTimeout(() => loadRankingData(), 500);
-            });
-
-            // 市场筛选变化
-            document.getElementById('market-select').addEventListener('change', function() {
-                showToast('筛选中...', 'info');
-                setTimeout(() => loadRankingData(), 500);
-            });
-
-            // 页面初始化
-            loadRankingData();
-        });
+        // 移动版页面现在使用trending.js处理数据加载
     </script>
 </body>
 </html>

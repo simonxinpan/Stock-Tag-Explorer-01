@@ -7,16 +7,17 @@ function getCurrentMarket() {
   return urlParams.get('market') || 'sp500'; // 默认为标普500
 }
 
-// 获取当前榜单类型（仅在二级页面使用）
+// 获取当前榜单类型（支持桌面版list参数和移动版type参数）
 function getCurrentListType() {
   const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get('list') || null;
+  // 优先使用list参数（桌面版），其次使用type参数（移动版）
+  return urlParams.get('list') || urlParams.get('type') || null;
 }
 
 // 检测当前页面类型
 function getCurrentPageType() {
   const pathname = window.location.pathname;
-  if (pathname.includes('list-detail.html')) {
+  if (pathname.includes('list-detail.html') || pathname.includes('mobile-ranking-detail.html')) {
     return 'list-detail';
   }
   return 'overview';
@@ -606,18 +607,23 @@ function updateSingleListPageUI(listType, market) {
  * @param {string} currentMarket - 当前市场
  */
 function updateMarketButtons(currentMarket) {
+  // 桌面版按钮
   const sp500Btn = document.getElementById('sp500-btn');
   const chineseBtn = document.getElementById('chinese-btn');
   
+  // 移动版按钮
+  const mobileSp500Btn = document.querySelector('[data-market-target="sp500"]');
+  const mobileChineseBtn = document.querySelector('[data-market-target="chinese_stocks"]');
+  
+  // 获取当前榜单类型
+  const currentListType = getCurrentListType();
+  const currentPageType = getCurrentPageType();
+  
+  // 更新桌面版按钮
   if (sp500Btn && chineseBtn) {
-    // 更新按钮状态
     sp500Btn.classList.toggle('active', currentMarket === 'sp500');
     chineseBtn.classList.toggle('active', currentMarket === 'chinese_stocks');
     
-    // 获取当前榜单类型
-    const currentListType = getCurrentListType();
-    
-    // 为按钮添加点击事件和链接
     if (currentListType) {
       sp500Btn.onclick = () => {
         window.location.href = `list-detail.html?market=sp500&list=${currentListType}`;
@@ -627,11 +633,30 @@ function updateMarketButtons(currentMarket) {
         window.location.href = `list-detail.html?market=chinese_stocks&list=${currentListType}`;
       };
       
-      // 移除禁用状态
       sp500Btn.style.pointerEvents = 'auto';
       chineseBtn.style.pointerEvents = 'auto';
       sp500Btn.style.opacity = '1';
       chineseBtn.style.opacity = '1';
+    }
+  }
+  
+  // 更新移动版按钮
+  if (mobileSp500Btn && mobileChineseBtn) {
+    mobileSp500Btn.classList.toggle('active', currentMarket === 'sp500');
+    mobileChineseBtn.classList.toggle('active', currentMarket === 'chinese_stocks');
+    
+    if (currentListType) {
+      mobileSp500Btn.onclick = () => {
+        if (currentPageType === 'list-detail') {
+          window.location.href = `mobile-ranking-detail.html?market=sp500&type=${currentListType}`;
+        }
+      };
+      
+      mobileChineseBtn.onclick = () => {
+        if (currentPageType === 'list-detail') {
+          window.location.href = `mobile-ranking-detail.html?market=chinese_stocks&type=${currentListType}`;
+        }
+      };
     }
   }
 }
@@ -812,7 +837,7 @@ async function main() {
         const urlParams = new URLSearchParams(window.location.search);
         const pageType = getCurrentPageType();
         const market = urlParams.get('market') || getCurrentMarket();
-        const listType = urlParams.get('list');
+        const listType = getCurrentListType(); // 使用getCurrentListType函数，它已经处理了list和type参数
 
         console.log(`🔍 页面类型: ${pageType}, 市场: ${market}, 榜单类型: ${listType || 'N/A'}`);
 
