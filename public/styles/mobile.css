@@ -955,11 +955,11 @@ body {
 }
 
 .overview-value.positive {
-    color: var(--success-color);
+    color: #10b981; /* 涨幅绿色 */
 }
 
 .overview-value.negative {
-    color: var(--danger-color);
+    color: #ef4444; /* 跌幅红色 */
 }
 
 /* 保留原有市场概览样式以兼容其他页面 */
@@ -1131,11 +1131,11 @@ body {
 }
 
 .stock-change.positive {
-    color: var(--success-color);
+    color: #10b981; /* 涨幅绿色 */
 }
 
 .stock-change.negative {
-    color: var(--danger-color);
+    color: #ef4444; /* 跌幅红色 */
 }
 
 .stock-change.neutral {

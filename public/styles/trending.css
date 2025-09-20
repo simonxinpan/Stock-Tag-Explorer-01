@@ -1119,7 +1119,7 @@
 .ranking-list-compact .stock-link {
     display: grid;
     grid-template-columns: auto 1fr auto;
-    gap: 2rem;
+    gap: 2.5rem;
     align-items: center;
     padding: 1rem 1.5rem;
     background: rgba(255, 255, 255, 0.6);
@@ -1179,6 +1179,8 @@
     flex-direction: column;
     align-items: flex-end;
     text-align: right;
+    min-width: 120px;
+    gap: 4px;
 }
 
 .ranking-list-compact .price {
@@ -1194,6 +1196,14 @@
     padding: 0.2rem 0.4rem;
     border-radius: 4px;
     background: rgba(255, 255, 255, 0.8);
+}
+
+.ranking-list-compact .change.positive {
+    color: #10b981; /* 涨幅绿色 */
+}
+
+.ranking-list-compact .change.negative {
+    color: #ef4444; /* 跌幅红色 */
 }
 
 /* 🆕 新榜单辅助指标样式 */
@@ -1690,6 +1700,7 @@
 .stock-item {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     padding: 16px 20px;
     background: linear-gradient(135deg, 
         rgba(255, 255, 255, 0.1) 0%, 
@@ -1699,6 +1710,7 @@
     border-radius: 12px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
+    gap: 20px;
 }
 
 .stock-item:hover {
@@ -1825,6 +1837,11 @@
 .stock-price {
     text-align: right;
     flex-shrink: 0;
+    min-width: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
 }
 
 .current-price {
@@ -1845,13 +1862,13 @@
 
 .stock-change.positive {
     background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(5,150,105,0.1));
-    color: var(--success-color); /* 涨幅绿色 */
+    color: #10b981; /* 涨幅绿色 */
     border: 1px solid rgba(16,185,129,0.2);
 }
 
 .stock-change.negative {
     background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(220,38,38,0.1));
-    color: var(--danger-color); /* 跌幅红色 */
+    color: #ef4444; /* 跌幅红色 */
     border: 1px solid rgba(239,68,68,0.2);
 }
 
@@ -2146,11 +2163,11 @@
 }
 
 .featured-trending-stats .stat-number.positive {
-    color: var(--success-color);
+    color: #10b981; /* 涨幅绿色 */
 }
 
 .featured-trending-stats .stat-number.negative {
-    color: var(--danger-color);
+    color: #ef4444; /* 跌幅红色 */
 }
 
 /* 响应式设计 */
