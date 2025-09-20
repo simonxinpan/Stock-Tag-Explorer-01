@@ -409,69 +409,16 @@ async function loadAndRenderList(listConfig) {
  */
 async function handleMoreButtonClick(type) {
   try {
+    console.log(`🔗 跳转到榜单详情页: ${type}`);
     const currentMarket = getCurrentMarket();
-    const response = await fetch(`/api/trending?type=${type}&market=${currentMarket}`);
-    if (!response.ok) throw new Error(`API 请求失败，状态码: ${response.status}`);
-    let data = await response.json();
-
-    // 检查是否是错误响应
-    if (data.error) {
-      throw new Error(data.message || data.error);
-    }
-
-    // 处理包装格式的响应 {success: true, data: []}
-    let stocksArray = data;
-    if (data.success && Array.isArray(data.data)) {
-      stocksArray = data.data;
-    } else if (!Array.isArray(data)) {
-      throw new Error('API返回的数据格式不正确');
-    }
-
-    // 确保数据类型正确，进行类型转换
-    let stocks = stocksArray.map(stock => ({
-      ...stock,
-      ticker: stock.ticker || stock.symbol || 'N/A', // 确保ticker字段存在
-      last_price: Number(stock.last_price) || 0,
-      change_percent: Number(stock.change_percent) || 0,
-      market_cap: Number(stock.market_cap) || 0
-    }));
-
-    // 创建模态框显示完整榜单
-    const modal = document.createElement('div');
-    modal.className = 'ranking-modal';
-    modal.innerHTML = `
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>${getRankingTitle(type)}</h3>
-          <button class="modal-close">&times;</button>
-        </div>
-        <div class="modal-body">
-          <ul class="ranking-list-full">
-            ${stocks.map((stock, index) => createStockListItemHTML(stock, type, index + 1, currentMarket)).join('')}
-          </ul>
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    // 添加关闭事件
-    const closeBtn = modal.querySelector('.modal-close');
-    const modalContent = modal.querySelector('.modal-content');
     
-    closeBtn.addEventListener('click', () => {
-      document.body.removeChild(modal);
-    });
+    // 跳转到二级详情页面
+    const detailUrl = `./list-detail.html?market=${currentMarket}&list=${type}`;
+    window.location.href = detailUrl;
     
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        document.body.removeChild(modal);
-      }
-    });
-
   } catch (error) {
-    console.error('加载完整榜单失败:', error);
-    alert('加载数据失败，请稍后重试');
+    console.error('跳转榜单详情页失败:', error);
+    alert('跳转失败，请稍后重试');
   }
 }
 

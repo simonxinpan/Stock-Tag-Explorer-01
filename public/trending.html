@@ -86,18 +86,7 @@
                         <p class="subtitle">实时追踪市场热点 - 发现投资机会</p>
                     </div>
                     <div class="header-right">
-                        <div class="market-tabs">
-                            <a href="?market=sp500" class="market-tab active" data-market="sp500">
-                                <span class="market-flag">🇺🇸</span>
-                                <span class="market-name">标普500</span>
-                                <span class="market-count" id="sp500-count">502</span>
-                            </a>
-                            <a href="?market=chinese_stocks" class="market-tab" data-market="chinese_stocks">
-                                <span class="market-flag">🇨🇳</span>
-                                <span class="market-name">中概股</span>
-                                <span class="market-count" id="chinese-stocks-count">193</span>
-                            </a>
-                        </div>
+                        <!-- 市场切换标签已移除以优化页面布局 -->
                     </div>
                 </div>
             </div>
@@ -162,10 +151,6 @@
                             <div class="ranking-header">
                                 <div class="ranking-title-row">
                                     <h3 class="ranking-title">🚀 涨幅榜</h3>
-                                    <div class="market-toggle-links">
-                                        <a href="./list-detail.html?market=sp500&list=top_gainers" class="market-link active">标普</a>
-                                        <a href="./list-detail.html?market=chinese_stocks&list=top_gainers" class="market-link">中概股</a>
-                                    </div>
                                 </div>
                                 <div class="ranking-description">
                                     按当日涨跌幅排序，反映市场热点和资金偏好，适合捕捉短期强势股和题材炒作机会。
@@ -175,7 +160,7 @@
                                 <!-- 动态加载涨幅榜前5名数据 -->
                             </ul>
                             <div class="ranking-footer">
-                                <a href="./list-detail.html?market=sp500&list=top_gainers" class="more-btn-link">查看更多</a>
+                                <a href="#" class="more-btn-link" data-type="top_gainers">查看更多</a>
                             </div>
                         </div>
                         
@@ -184,10 +169,6 @@
                             <div class="ranking-header">
                                 <div class="ranking-title-row">
                                     <h3 class="ranking-title">💰 市值榜</h3>
-                                    <div class="market-toggle-links">
-                                        <a href="./list-detail.html?market=sp500&list=top_market_cap" class="market-link active">标普</a>
-                                        <a href="./list-detail.html?market=chinese_stocks&list=top_market_cap" class="market-link">中概股</a>
-                                    </div>
                                 </div>
                                 <div class="ranking-description">
                                     按市值排序，展示市场巨头和蓝筹股，适合稳健投资和长期价值投资策略。
@@ -197,7 +178,7 @@
                                 <!-- 动态加载市值榜前5名数据 -->
                             </ul>
                             <div class="ranking-footer">
-                                <a href="./list-detail.html?market=sp500&list=top_market_cap" class="more-btn-link">查看更多</a>
+                                <a href="#" class="more-btn-link" data-type="top_market_cap">查看更多</a>
                             </div>
                         </div>
                         
@@ -206,10 +187,6 @@
                             <div class="ranking-header">
                                 <div class="ranking-title-row">
                                     <h3 class="ranking-title">⬆️ 创年内新高</h3>
-                                    <div class="market-toggle-links">
-                                        <a href="./list-detail.html?market=sp500&list=new_highs" class="market-link active">标普</a>
-                                        <a href="./list-detail.html?market=chinese_stocks&list=new_highs" class="market-link">中概股</a>
-                                    </div>
                                 </div>
                                 <div class="ranking-description">
                                     突破52周最高价的股票，显示强劲上升趋势，适合趋势跟踪和动量投资策略。
@@ -219,7 +196,7 @@
                                 <!-- 动态加载新高榜前5名数据 -->
                             </ul>
                             <div class="ranking-footer">
-                                <a href="./list-detail.html?market=sp500&list=new_highs" class="more-btn-link">查看更多</a>
+                                <a href="#" class="more-btn-link" data-type="new_highs">查看更多</a>
                             </div>
                         </div>
                         
@@ -228,10 +205,6 @@
                             <div class="ranking-header">
                                 <div class="ranking-title-row">
                                     <h3 class="ranking-title">💰 成交额榜</h3>
-                                    <div class="market-toggle-links">
-                                        <a href="./list-detail.html?market=sp500&list=top_turnover" class="market-link active">标普</a>
-                                        <a href="./list-detail.html?market=chinese_stocks&list=top_turnover" class="market-link">中概股</a>
-                                    </div>
                                 </div>
                                 <div class="ranking-description">
                                     按成交金额排序，反映市场关注度和流动性，大资金进出的重要参考指标。
@@ -241,7 +214,7 @@
                                 <!-- 动态加载成交额榜前5名数据 -->
                             </ul>
                             <div class="ranking-footer">
-                                <a href="./list-detail.html?market=sp500&list=top_turnover" class="more-btn-link">查看更多</a>
+                                <a href="#" class="more-btn-link" data-type="top_turnover">查看更多</a>
                             </div>
                         </div>
                         
@@ -250,10 +223,6 @@
                             <div class="ranking-header">
                                 <div class="ranking-title-row">
                                     <h3 class="ranking-title">📊 振幅榜</h3>
-                                    <div class="market-toggle-links">
-                                        <a href="./list-detail.html?market=sp500&list=top_volatility" class="market-link active">标普</a>
-                                        <a href="./list-detail.html?market=chinese_stocks&list=top_volatility" class="market-link">中概股</a>
-                                    </div>
                                 </div>
                                 <div class="ranking-description">
                                     按日内最高最低价差计算，反映股价波动程度，适合短线交易和波段操作。
@@ -263,7 +232,7 @@
                                 <!-- 动态加载振幅榜前5名数据 -->
                             </ul>
                             <div class="ranking-footer">
-                                <a href="./list-detail.html?market=sp500&list=top_volatility" class="more-btn-link">查看更多</a>
+                                <a href="#" class="more-btn-link" data-type="top_volatility">查看更多</a>
                             </div>
                         </div>
                         
@@ -272,10 +241,6 @@
                             <div class="ranking-header">
                                 <div class="ranking-title-row">
                                     <h3 class="ranking-title">🌅 高开缺口榜</h3>
-                                    <div class="market-toggle-links">
-                                        <a href="./list-detail.html?market=sp500&list=top_gap_up" class="market-link active">标普</a>
-                                        <a href="./list-detail.html?market=chinese_stocks&list=top_gap_up" class="market-link">中概股</a>
-                                    </div>
                                 </div>
                                 <div class="ranking-description">
                                     开盘价相对前收盘价的涨幅，反映隔夜消息面影响和市场预期变化。
@@ -285,7 +250,7 @@
                                  <!-- 动态加载高开缺口榜前5名数据 -->
                              </ul>
                              <div class="ranking-footer">
-                                 <a href="./list-detail.html?market=sp500&list=top_gap_up" class="more-btn-link">查看更多</a>
+                                 <a href="#" class="more-btn-link" data-type="top_gap_up">查看更多</a>
                              </div>
                          </div>
                         
@@ -294,10 +259,6 @@
                             <div class="ranking-header">
                                 <div class="ranking-title-row">
                                     <h3 class="ranking-title">📉 跌幅榜</h3>
-                                    <div class="market-toggle-links">
-                                        <a href="./list-detail.html?market=sp500&list=top_losers" class="market-link active">标普</a>
-                                        <a href="./list-detail.html?market=chinese_stocks&list=top_losers" class="market-link">中概股</a>
-                                    </div>
                                 </div>
                                 <div class="ranking-description">
                                     按当日跌幅排序，识别市场风险和避险情绪，适合风险控制和逆向投资参考。
@@ -307,7 +268,7 @@
                                 <!-- 动态加载跌幅榜前5名数据 -->
                             </ul>
                             <div class="ranking-footer">
-                                <a href="./list-detail.html?market=sp500&list=top_losers" class="more-btn-link">查看更多</a>
+                                <a href="#" class="more-btn-link" data-type="top_losers">查看更多</a>
                             </div>
                         </div>
                         
@@ -316,10 +277,6 @@
                             <div class="ranking-header">
                                 <div class="ranking-title-row">
                                     <h3 class="ranking-title">⬇️ 创年内新低</h3>
-                                    <div class="market-toggle-links">
-                                        <a href="./list-detail.html?market=sp500&list=new_lows" class="market-link active">标普</a>
-                                        <a href="./list-detail.html?market=chinese_stocks&list=new_lows" class="market-link">中概股</a>
-                                    </div>
                                 </div>
                                 <div class="ranking-description">
                                     跌破52周最低价的股票，显示弱势趋势，需谨慎关注基本面变化和止损风险。
@@ -329,7 +286,7 @@
                                 <!-- 动态加载新低榜前5名数据 -->
                             </ul>
                             <div class="ranking-footer">
-                                <a href="./list-detail.html?market=sp500&list=new_lows" class="more-btn-link">查看更多</a>
+                                <a href="#" class="more-btn-link" data-type="new_lows">查看更多</a>
                             </div>
                         </div>
                         
@@ -340,10 +297,6 @@
                             <div class="ranking-header">
                                 <div class="ranking-title-row">
                                     <h3 class="ranking-title">🏛️ 机构关注榜</h3>
-                                    <div class="market-toggle-links">
-                                        <a href="./list-detail.html?market=sp500&list=institutional_focus" class="market-link active">标普</a>
-                                        <a href="./list-detail.html?market=chinese_stocks&list=institutional_focus" class="market-link">中概股</a>
-                                    </div>
                                 </div>
                                 <div class="ranking-description">
                                     基于大额交易和VWAP偏离度，追踪机构资金动向，适合跟随聪明钱投资策略。
@@ -353,7 +306,7 @@
                                 <!-- 动态加载机构关注榜前5名数据 -->
                             </ul>
                             <div class="ranking-footer">
-                                <a href="./list-detail.html?market=sp500&list=institutional_focus" class="more-btn-link">查看更多</a>
+                                <a href="#" class="more-btn-link" data-type="institutional_focus">查看更多</a>
                             </div>
                         </div>
                         
@@ -362,10 +315,6 @@
                             <div class="ranking-header">
                                 <div class="ranking-title-row">
                                     <h3 class="ranking-title">👥 散户热门榜</h3>
-                                    <div class="market-toggle-links">
-                                        <a href="./list-detail.html?market=sp500&list=retail_hot" class="market-link active">标普</a>
-                                        <a href="./list-detail.html?market=chinese_stocks&list=retail_hot" class="market-link">中概股</a>
-                                    </div>
                                 </div>
                                 <div class="ranking-description">
                                     基于散户持股比例和交易活跃度，反映散户投资偏好和市场情绪。
@@ -375,7 +324,7 @@
                                 <!-- 动态加载散户热门榜前5名数据 -->
                             </ul>
                             <div class="ranking-footer">
-                                <a href="./list-detail.html?market=sp500&list=retail_hot" class="more-btn-link">查看更多</a>
+                                <a href="#" class="more-btn-link" data-type="retail_hot">查看更多</a>
                             </div>
                         </div>
                         
@@ -384,10 +333,6 @@
                             <div class="ranking-header">
                                 <div class="ranking-title-row">
                                     <h3 class="ranking-title">🏛️ 主力动向榜</h3>
-                                    <div class="market-toggle-links">
-                                        <a href="./list-detail.html?market=sp500&list=smart_money" class="market-link active">标普</a>
-                                        <a href="./list-detail.html?market=chinese_stocks&list=smart_money" class="market-link">中概股</a>
-                                    </div>
                                 </div>
                                 <div class="ranking-description">
                                     基于机构持股变化和大额交易，追踪主力资金动向和投资逻辑。
@@ -397,7 +342,7 @@
                                 <!-- 动态加载主力动向榜前5名数据 -->
                             </ul>
                             <div class="ranking-footer">
-                                <a href="./list-detail.html?market=sp500&list=smart_money" class="more-btn-link">查看更多</a>
+                                <a href="#" class="more-btn-link" data-type="smart_money">查看更多</a>
                             </div>
                         </div>
                         
@@ -406,10 +351,6 @@
                             <div class="ranking-header">
                                 <div class="ranking-title-row">
                                     <h3 class="ranking-title">💧 高流动性榜</h3>
-                                    <div class="market-toggle-links">
-                                        <a href="./list-detail.html?market=sp500&list=high_liquidity" class="market-link active">标普</a>
-                                        <a href="./list-detail.html?market=chinese_stocks&list=high_liquidity" class="market-link">中概股</a>
-                                    </div>
                                 </div>
                                 <div class="ranking-description">
                                     基于成交量和买卖价差，评估股票流动性，适合大额交易和快速进出。
@@ -419,7 +360,7 @@
                                 <!-- 动态加载高流动性榜前5名数据 -->
                             </ul>
                             <div class="ranking-footer">
-                                <a href="./list-detail.html?market=sp500&list=high_liquidity" class="more-btn-link">查看更多</a>
+                                <a href="#" class="more-btn-link" data-type="high_liquidity">查看更多</a>
                             </div>
                         </div>
                         
@@ -428,10 +369,6 @@
                             <div class="ranking-header">
                                 <div class="ranking-title-row">
                                     <h3 class="ranking-title">⚡ 异动榜</h3>
-                                    <div class="market-toggle-links">
-                                        <a href="./list-detail.html?market=sp500&list=unusual_activity" class="market-link active">标普</a>
-                                        <a href="./list-detail.html?market=chinese_stocks&list=unusual_activity" class="market-link">中概股</a>
-                                    </div>
                                 </div>
                                 <div class="ranking-description">
                                     交易量异常放大的股票，可能有重大消息或资金异动，需及时关注基本面变化。
@@ -441,7 +378,7 @@
                                 <!-- 动态加载异动榜前5名数据 -->
                             </ul>
                             <div class="ranking-footer">
-                                <a href="./list-detail.html?market=sp500&list=unusual_activity" class="more-btn-link">查看更多</a>
+                                <a href="#" class="more-btn-link" data-type="unusual_activity">查看更多</a>
                             </div>
                         </div>
                         
@@ -450,10 +387,6 @@
                             <div class="ranking-header">
                                 <div class="ranking-title-row">
                                     <h3 class="ranking-title">🚀 动量榜</h3>
-                                    <div class="market-toggle-links">
-                                        <a href="./list-detail.html?market=sp500&list=momentum_stocks" class="market-link active">标普</a>
-                                        <a href="./list-detail.html?market=chinese_stocks&list=momentum_stocks" class="market-link">中概股</a>
-                                    </div>
                                 </div>
                                 <div class="ranking-description">
                                     综合价格、成交量、技术指标的动量评分，识别强势上涨趋势，适合趋势跟踪策略。
@@ -463,7 +396,7 @@
                                 <!-- 动态加载动量榜前5名数据 -->
                             </ul>
                             <div class="ranking-footer">
-                                <a href="./list-detail.html?market=sp500&list=momentum_stocks" class="more-btn-link">查看更多</a>
+                                <a href="#" class="more-btn-link" data-type="momentum_stocks">查看更多</a>
                             </div>
                         </div>
                     </div>
