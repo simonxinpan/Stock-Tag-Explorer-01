@@ -592,7 +592,42 @@
 }
 
 /* 优化后的股票项目样式 - 两列布局 */
-.stock-item .stock-rank {
+.stock-item {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    background: white;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background-color 0.2s ease;
+}
+
+.stock-item:last-child {
+    border-bottom: none;
+}
+
+.stock-item:hover {
+    background-color: #f8fafc;
+}
+
+/* 股票项链接样式 */
+.stock-link {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    text-decoration: none;
+    color: inherit;
+}
+
+/* 股票头部信息（左侧） */
+.stock-header {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+}
+
+/* 排名圆圈 */
+.rank-circle {
     width: 32px;
     height: 32px;
     border-radius: 50%;
@@ -607,13 +642,13 @@
     flex-shrink: 0;
 }
 
-.stock-item .stock-info {
+/* 股票基本信息 */
+.stock-basic {
     flex: 1;
     min-width: 0;
-    text-align: left;
 }
 
-.stock-item .stock-name {
+.stock-basic .name {
     font-size: 16px;
     font-weight: 600;
     color: #1e293b;
@@ -623,27 +658,48 @@
     text-overflow: ellipsis;
 }
 
-.stock-item .stock-symbol {
+.stock-basic .ticker {
     font-size: 12px;
     color: #64748b;
     text-transform: uppercase;
 }
 
-.stock-item .stock-price-section {
+/* 股票指标（右侧） */
+.stock-metrics {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
     text-align: right;
     flex-shrink: 0;
 }
 
-.stock-item .stock-price {
+.stock-metrics .price {
     font-size: 16px;
     font-weight: 600;
     color: #1e293b;
     margin-bottom: 2px;
 }
 
-.stock-item .stock-change {
+.stock-metrics .metric-small {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.stock-metrics .change {
     font-size: 12px;
     font-weight: 500;
     padding: 2px 6px;
     border-radius: 6px;
+}
+
+/* 涨跌幅颜色 */
+.stock-metrics .change.positive {
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.stock-metrics .change.negative {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
 }
