@@ -39,16 +39,50 @@ function initializePage() {
     }
     
     // 设置页面标题
-    const titleElement = document.querySelector('.page-title');
-    if (titleElement) {
-        titleElement.textContent = rankingInfo.title;
-    }
+    updatePageTitle(type);
     
     // 设置市场切换按钮状态
     updateMarketButtons(market);
     
+    // 设置榜单导航按钮状态
+    updateRankingNavButtons(type);
+    
     // 加载榜单数据
     loadRankingData(type, market);
+}
+
+// 更新页面标题
+function updatePageTitle(type) {
+    const rankingInfo = RANKING_TYPES[type];
+    if (!rankingInfo) return;
+    
+    const titleElement = document.getElementById('ranking-title');
+    const subtitleElement = document.getElementById('ranking-subtitle');
+    
+    if (titleElement) {
+        titleElement.textContent = `${rankingInfo.icon} ${rankingInfo.title}`;
+    }
+    
+    if (subtitleElement) {
+        // 根据榜单类型设置不同的描述
+        const descriptions = {
+            'top_gainers': '按当日涨跌幅排序，反映市场热点和资金偏好',
+            'top_losers': '按当日跌幅排序，识别市场调整和风险信号',
+            'top_market_cap': '按市值排序，展示市场巨头和蓝筹股',
+            'new_highs': '创年内新高的股票，反映强势上涨趋势',
+            'new_lows': '创年内新低的股票，需关注基本面变化',
+            'top_turnover': '按成交额排序，反映资金活跃度',
+            'top_volatility': '按波动率排序，适合短线交易机会',
+            'top_gap_up': '跳空高开的股票，可能有重大利好消息',
+            'institutional_focus': '机构重点关注的股票，具有投资价值',
+            'retail_hot': '散户热门股票，反映市场情绪',
+            'smart_money': '聪明钱关注的股票，跟随主力资金',
+            'high_liquidity': '高流动性股票，适合大额交易',
+            'unusual_activity': '交易异动股票，需及时关注',
+            'momentum_stocks': '动量强劲股票，适合趋势跟踪'
+        };
+        subtitleElement.textContent = descriptions[type] || '榜单数据实时更新';
+    }
 }
 
 // 更新市场切换按钮状态
@@ -57,6 +91,19 @@ function updateMarketButtons(currentMarket) {
     marketButtons.forEach(btn => {
         const btnMarket = btn.getAttribute('data-market');
         if (btnMarket === currentMarket) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+}
+
+// 更新榜单导航按钮状态
+function updateRankingNavButtons(currentType) {
+    const navButtons = document.querySelectorAll('.ranking-nav-btn');
+    navButtons.forEach(btn => {
+        const type = btn.dataset.type;
+        if (type === currentType) {
             btn.classList.add('active');
         } else {
             btn.classList.remove('active');
@@ -295,6 +342,26 @@ document.addEventListener('DOMContentLoaded', () => {
             // 更新按钮状态并重新加载数据
             updateMarketButtons(newMarket);
             loadRankingData(type, newMarket);
+        });
+    });
+    
+    // 榜单导航按钮事件
+    const rankingNavButtons = document.querySelectorAll('.ranking-nav-btn');
+    rankingNavButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const newType = btn.getAttribute('data-type');
+            const { market } = getUrlParams();
+            
+            // 更新URL并重新加载数据
+            const newUrl = `${window.location.pathname}?type=${newType}&market=${market}`;
+            window.history.pushState({}, '', newUrl);
+            
+            // 更新页面标题和按钮状态
+            updatePageTitle(newType);
+            updateRankingNavButtons(newType);
+            
+            // 重新加载数据
+            loadRankingData(newType, market);
         });
     });
     

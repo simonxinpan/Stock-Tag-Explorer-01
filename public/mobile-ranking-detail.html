@@ -54,6 +54,69 @@
                     </div>
                 </div>
 
+                <!-- 榜单导航 -->
+                <div class="ranking-nav-container">
+                    <div class="ranking-nav-scroll">
+                        <div class="ranking-nav-buttons">
+                            <button class="ranking-nav-btn active" data-type="top_gainers">
+                                <span class="nav-icon">📈</span>
+                                <span class="nav-text">涨幅榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="top_losers">
+                                <span class="nav-icon">📉</span>
+                                <span class="nav-text">跌幅榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="top_market_cap">
+                                <span class="nav-icon">💰</span>
+                                <span class="nav-text">市值榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="new_highs">
+                                <span class="nav-icon">🚀</span>
+                                <span class="nav-text">新高榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="new_lows">
+                                <span class="nav-icon">📊</span>
+                                <span class="nav-text">新低榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="top_turnover">
+                                <span class="nav-icon">💹</span>
+                                <span class="nav-text">成交额榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="top_volatility">
+                                <span class="nav-icon">⚡</span>
+                                <span class="nav-text">波动榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="top_gap_up">
+                                <span class="nav-icon">⬆️</span>
+                                <span class="nav-text">跳空高开榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="institutional_focus">
+                                <span class="nav-icon">🏛️</span>
+                                <span class="nav-text">机构关注榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="retail_hot">
+                                <span class="nav-icon">🔥</span>
+                                <span class="nav-text">散户热门榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="smart_money">
+                                <span class="nav-icon">🧠</span>
+                                <span class="nav-text">聪明钱榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="high_liquidity">
+                                <span class="nav-icon">💧</span>
+                                <span class="nav-text">高流动性榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="unusual_activity">
+                                <span class="nav-icon">⚠️</span>
+                                <span class="nav-text">异动榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="momentum_stocks">
+                                <span class="nav-icon">🎯</span>
+                                <span class="nav-text">动量榜</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
                 
                 <!-- 隐藏的trending.js期望的统计元素 -->
                 <div id="ranking-stats" style="display: none;"></div>
@@ -106,31 +169,7 @@
                 </div>
             </div>
 
-            <!-- 排序筛选卡片 -->
-            <div class="filter-card">
-                <div class="filter-line"></div>
-                <div class="filter-content">
-                    <div class="filter-group">
-                        <label class="filter-label">排序方式</label>
-                        <select class="filter-select" id="sort-select">
-                            <option value="change_desc">涨跌幅 ↓</option>
-                            <option value="change_asc">涨跌幅 ↑</option>
-                            <option value="market_cap_desc">市值 ↓</option>
-                            <option value="market_cap_asc">市值 ↑</option>
-                            <option value="volume_desc">成交量 ↓</option>
-                            <option value="volume_asc">成交量 ↑</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label class="filter-label">市场</label>
-                        <select class="filter-select" id="market-select">
-                            <option value="all">全部市场</option>
-                            <option value="sp500">标普500</option>
-                            <option value="chinese">中概股</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
+
 
             <!-- 股票列表卡片 -->
             <div class="stock-list-card">

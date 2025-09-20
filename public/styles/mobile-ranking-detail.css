@@ -26,7 +26,7 @@
 /* 固定顶部导航 */
 .fixed-top-nav {
     position: fixed;
-    top: 44px;
+    top: 0;
     left: 0;
     right: 0;
     z-index: 1000;
@@ -112,6 +112,85 @@
 
 .market-btn:hover:not(.active) {
     background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+/* 页面内容区域 - 避免被固定导航遮挡 */
+.page-content {
+    padding-top: 80px;
+}
+
+/* 榜单导航样式 */
+.ranking-nav-container {
+    margin: 20px 0;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.ranking-nav-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.ranking-nav-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.ranking-nav-buttons {
+    display: flex;
+    padding: 8px;
+    gap: 8px;
+    min-width: max-content;
+}
+
+.ranking-nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 80px;
+    height: 70px;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.ranking-nav-btn:hover {
+    background: #e9ecef;
+    transform: translateY(-1px);
+}
+
+.ranking-nav-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: #667eea;
+    color: white;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.ranking-nav-btn .nav-icon {
+    font-size: 20px;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.ranking-nav-btn .nav-text {
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.2;
+    text-align: center;
+}
+
+.ranking-nav-btn.active .nav-text {
     color: white;
 }
 
@@ -356,6 +435,120 @@
 
 .retry-btn:hover {
     background: #2563eb;
+}
+
+/* 移动版股票项样式 - 优化布局 */
+.stock-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    background: white;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    transition: all 0.2s ease;
+}
+
+.stock-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 左侧：排名和股票信息 */
+.stock-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.stock-rank {
+    background: #f1f5f9;
+    color: #64748b;
+    font-weight: 600;
+    font-size: 14px;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.stock-info {
+    flex: 1;
+    min-width: 0; /* 允许文本截断 */
+}
+
+.stock-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stock-symbol {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+/* 右侧：价格信息 */
+.stock-price {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.current-price {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 2px;
+}
+
+.price-change {
+    font-size: 14px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+.price-change.positive {
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.price-change.negative {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* 重新组织股票项结构 */
+.mobile-app .stock-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.mobile-app .stock-item .stock-rank {
+    order: 1;
+}
+
+.mobile-app .stock-item .stock-info {
+    order: 2;
+    flex: 1;
+    margin-left: 12px;
+}
+
+.mobile-app .stock-item .stock-price {
+    order: 3;
+    text-align: right;
 }
 
 /* 响应式设计 */
