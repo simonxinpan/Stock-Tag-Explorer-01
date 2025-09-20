@@ -176,9 +176,6 @@ function renderStatsCard(stocks) {
     if (!statsCard) return;
     
     const totalStocks = stocks.length;
-    const positiveStocks = stocks.filter(stock => stock.change_percent > 0).length;
-    const negativeStocks = stocks.filter(stock => stock.change_percent < 0).length;
-    const avgChange = stocks.reduce((sum, stock) => sum + stock.change_percent, 0) / totalStocks;
     
     statsCard.innerHTML = `
         <div class="stats-grid">
@@ -187,27 +184,6 @@ function renderStatsCard(stocks) {
                 <div class="stat-content">
                     <div class="stat-label">股票总数</div>
                     <div class="stat-value">${totalStocks}</div>
-                </div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-icon positive">📈</div>
-                <div class="stat-content">
-                    <div class="stat-label">上涨股票</div>
-                    <div class="stat-value positive">${positiveStocks}</div>
-                </div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-icon negative">📉</div>
-                <div class="stat-content">
-                    <div class="stat-label">下跌股票</div>
-                    <div class="stat-value negative">${negativeStocks}</div>
-                </div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-icon ${avgChange >= 0 ? 'positive' : 'negative'}">📊</div>
-                <div class="stat-content">
-                    <div class="stat-label">平均涨跌幅</div>
-                    <div class="stat-value ${avgChange >= 0 ? 'positive' : 'negative'}">${avgChange.toFixed(2)}%</div>
                 </div>
             </div>
         </div>

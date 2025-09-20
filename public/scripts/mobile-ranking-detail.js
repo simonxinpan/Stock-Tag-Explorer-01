@@ -345,16 +345,14 @@ class MobileRankingDetailApp {
             <div class="stock-item" data-symbol="${stock.symbol}">
                 <div class="stock-rank">${index + 1}</div>
                 <div class="stock-info">
-                    <div class="stock-symbol">${stock.symbol}</div>
                     <div class="stock-name">${stock.name}</div>
+                    <div class="stock-symbol">${stock.symbol}</div>
                 </div>
-                <div class="stock-metrics">
+                <div class="stock-price-section">
                     <div class="stock-price">$${stock.price.toFixed(2)}</div>
                     <div class="stock-change ${changeClass}">
                         ${changeSymbol}${stock.changePercent.toFixed(2)}%
                     </div>
-                    <div class="stock-volume">${this.formatNumber(stock.volume)}</div>
-                    <div class="stock-market-cap">${this.formatMarketCap(stock.marketCap)}</div>
                 </div>
             </div>
         `;

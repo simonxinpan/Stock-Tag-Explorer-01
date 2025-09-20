@@ -728,12 +728,6 @@ function updateRankingStats(stocks, listType) {
   const totalCount = stocks.length;
   let statsHTML = `<span class="stat-item">共 ${totalCount} 只股票</span>`;
   
-  // 根据榜单类型添加特定统计
-  if (listType === 'top_gainers' || listType === 'top_losers') {
-    const avgChange = (stocks.reduce((sum, stock) => sum + (stock.change_percent || 0), 0) / totalCount).toFixed(2);
-    statsHTML += `<span class="stat-item">平均涨跌幅: ${avgChange}%</span>`;
-  }
-  
   statsContainer.innerHTML = statsHTML;
 }
 

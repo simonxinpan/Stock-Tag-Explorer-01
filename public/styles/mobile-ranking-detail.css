@@ -120,12 +120,15 @@
     padding-top: 80px;
 }
 
-/* 榜单导航样式 */
+/* 榜单导航样式 - 固定位置 */
 .ranking-nav-container {
-    margin: 20px 0;
+    position: sticky;
+    top: 80px;
+    z-index: 999;
+    margin: 0;
     background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
     overflow: hidden;
 }
 
@@ -260,7 +263,7 @@
 }
 
 .stat-value.positive {
-    color: #10b981;
+    color: #22c55e;
 }
 
 .stat-value.negative {
@@ -348,8 +351,8 @@
 }
 
 .stock-change.positive {
-    color: #10b981;
-    background: rgba(16, 185, 129, 0.1);
+    color: #22c55e;
+    background: rgba(34, 197, 94, 0.1);
 }
 
 .stock-change.negative {
@@ -437,11 +440,10 @@
     background: #2563eb;
 }
 
-/* 移动版股票项样式 - 优化布局 */
+/* 移动版股票项样式 - 优化两列布局 */
 .stock-item {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     padding: 16px;
     background: white;
     border-radius: 12px;
@@ -587,4 +589,61 @@
     .stock-price {
         font-size: 14px;
     }
+}
+
+/* 优化后的股票项目样式 - 两列布局 */
+.stock-item .stock-rank {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.stock-item .stock-info {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+}
+
+.stock-item .stock-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stock-item .stock-symbol {
+    font-size: 12px;
+    color: #64748b;
+    text-transform: uppercase;
+}
+
+.stock-item .stock-price-section {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.stock-item .stock-price {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 2px;
+}
+
+.stock-item .stock-change {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: 6px;
 }
