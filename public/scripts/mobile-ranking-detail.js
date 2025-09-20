@@ -20,7 +20,7 @@ class MobileRankingDetailApp {
 
     parseUrlParams() {
         const urlParams = new URLSearchParams(window.location.search);
-        this.rankingType = urlParams.get('type') || 'gainers';
+        this.rankingType = urlParams.get('type') || 'top_gainers';
         this.currentMarket = urlParams.get('market') || 'sp500';
         
         // 更新页面标题和UI
@@ -30,15 +30,15 @@ class MobileRankingDetailApp {
 
     updatePageTitle() {
         const rankingConfig = {
-            'gainers': { title: '涨幅榜', icon: '📈', subtitle: '实时股票涨幅排行' },
-            'losers': { title: '跌幅榜', icon: '📉', subtitle: '实时股票跌幅排行' },
-            'market-cap': { title: '市值榜', icon: '💰', subtitle: '按市值规模排序' },
-            'volume': { title: '成交量榜', icon: '📊', subtitle: '按成交量排序' },
-            'new-highs': { title: '创新高榜', icon: '🚀', subtitle: '创年内新高股票' },
+            'top_gainers': { title: '涨幅榜', icon: '📈', subtitle: '实时股票涨幅排行' },
+            'top_losers': { title: '跌幅榜', icon: '📉', subtitle: '实时股票跌幅排行' },
+            'top_market_cap': { title: '市值榜', icon: '💰', subtitle: '按市值规模排序' },
+            'top_turnover': { title: '成交额榜', icon: '💰', subtitle: '按成交金额排序' },
+            'new_highs': { title: '创新高榜', icon: '🚀', subtitle: '创年内新高股票' },
             'momentum': { title: '动量榜', icon: '⚡', subtitle: '强势股票排行' }
         };
 
-        const config = rankingConfig[this.rankingType] || rankingConfig['gainers'];
+        const config = rankingConfig[this.rankingType] || rankingConfig['top_gainers'];
         const marketNames = {
             'sp500': '标普500',
             'chinese_stocks': '中概股'
@@ -46,13 +46,15 @@ class MobileRankingDetailApp {
         
         const marketName = marketNames[this.currentMarket] || '全市场';
         
-        document.getElementById('ranking-title').textContent = config.title;
-        document.getElementById('page-title').textContent = `${config.icon} ${marketName}${config.title}`;
-        document.getElementById('page-subtitle').textContent = config.subtitle;
+        document.getElementById('ranking-title').textContent = `${config.icon} ${marketName}${config.title}`;
+        document.getElementById('ranking-subtitle').textContent = config.subtitle;
+        document.getElementById('ranking-name').textContent = config.title;
+        document.getElementById('ranking-description').textContent = config.subtitle;
+        document.getElementById('ranking-icon').textContent = config.icon;
     }
 
     updateMarketTabs() {
-        document.querySelectorAll('.market-tab-btn').forEach(btn => {
+        document.querySelectorAll('.market-toggle-btn').forEach(btn => {
             btn.classList.remove('active');
             if (btn.dataset.market === this.currentMarket) {
                 btn.classList.add('active');
@@ -62,24 +64,24 @@ class MobileRankingDetailApp {
 
     setupEventListeners() {
         // 市场切换
-        document.querySelectorAll('.market-tab-btn').forEach(btn => {
+        document.querySelectorAll('.market-toggle-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const market = e.currentTarget.dataset.market;
                 this.switchMarket(market);
             });
         });
 
-        // 排序选择
-        document.getElementById('sort-select').addEventListener('change', (e) => {
-            this.currentSort = e.target.value;
-            this.applyFiltersAndSort();
-        });
+        // 排序选择 - 暂时注释，因为HTML中没有对应元素
+        // document.getElementById('sort-select').addEventListener('change', (e) => {
+        //     this.currentSort = e.target.value;
+        //     this.applyFiltersAndSort();
+        // });
 
-        // 筛选选择
-        document.getElementById('filter-select').addEventListener('change', (e) => {
-            this.currentFilter = e.target.value;
-            this.applyFiltersAndSort();
-        });
+        // 筛选选择 - 暂时注释，因为HTML中没有对应元素
+        // document.getElementById('filter-select').addEventListener('change', (e) => {
+        //     this.currentFilter = e.target.value;
+        //     this.applyFiltersAndSort();
+        // });
 
         // 股票项点击
         document.addEventListener('click', (e) => {
@@ -90,10 +92,10 @@ class MobileRankingDetailApp {
             }
         });
 
-        // 加载更多按钮
-        document.getElementById('load-more-btn').addEventListener('click', () => {
-            this.loadMoreStocks();
-        });
+        // 加载更多按钮 - 暂时注释，因为HTML中没有对应元素
+        // document.getElementById('load-more-btn').addEventListener('click', () => {
+        //     this.loadMoreStocks();
+        // });
 
         // 下拉刷新
         this.setupPullToRefresh();
@@ -150,17 +152,8 @@ class MobileRankingDetailApp {
 
     async fetchRealRankingData() {
         try {
-            // 榜单类型映射到trending API的type参数
-            const typeMapping = {
-                'gainers': 'top_gainers',
-                'losers': 'top_losers',
-                'market-cap': 'market_cap',
-                'volume': 'volume',
-                'new-highs': 'new_highs',
-                'momentum': 'momentum'
-            };
-            
-            const trendingType = typeMapping[this.rankingType] || 'top_gainers';
+            // 直接使用URL参数中的榜单类型
+            const trendingType = this.rankingType;
             const apiUrl = `/api/trending?type=${trendingType}&market=${this.currentMarket}`;
             
             const response = await fetch(apiUrl);
@@ -298,33 +291,37 @@ class MobileRankingDetailApp {
     }
 
     updateStats() {
-        const totalCount = this.filteredStocks.length;
-        const risingCount = this.filteredStocks.filter(stock => stock.changePercent > 0).length;
-        const fallingCount = this.filteredStocks.filter(stock => stock.changePercent < 0).length;
-        const flatCount = totalCount - risingCount - fallingCount;
+        const stockCountEl = document.getElementById('stock-count');
+        const updateTimeEl = document.getElementById('update-time');
         
-        document.getElementById('total-count').textContent = totalCount;
-        document.getElementById('rising-count').textContent = risingCount;
-        document.getElementById('falling-count').textContent = fallingCount;
-        document.getElementById('flat-count').textContent = flatCount;
+        if (stockCountEl) {
+            stockCountEl.textContent = this.filteredStocks.length;
+        }
+        
+        if (updateTimeEl) {
+            const now = new Date();
+            updateTimeEl.textContent = now.toLocaleTimeString('zh-CN', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+        }
     }
 
     renderStocks() {
-        const container = document.getElementById('stocks-container');
+        const container = document.getElementById('stock-list');
         const displayStocks = this.filteredStocks.slice(0, this.page * this.pageSize);
         
         if (displayStocks.length === 0) {
-            container.innerHTML = '<div class="empty-state"><p>暂无符合条件的股票</p></div>';
-            document.getElementById('load-more-container').classList.add('hidden');
+            this.showError();
             return;
         }
         
         const stocksHtml = displayStocks.map((stock, index) => this.createStockItem(stock, index)).join('');
         container.innerHTML = stocksHtml;
+        container.style.display = 'block';
         
-        // 显示/隐藏加载更多按钮
-        const hasMore = displayStocks.length < this.filteredStocks.length;
-        document.getElementById('load-more-container').classList.toggle('hidden', !hasMore);
+        // 更新统计信息
+        this.updateStats();
     }
 
     createStockItem(stock, index) {
@@ -439,19 +436,40 @@ class MobileRankingDetailApp {
     }
 
     showLoading() {
-        document.getElementById('loading-ranking').classList.remove('hidden');
-        document.getElementById('error-ranking').classList.add('hidden');
-        document.getElementById('ranking-list').classList.add('hidden');
+        try {
+            const loadingState = document.getElementById('loading-state');
+            const stockList = document.getElementById('stock-list');
+            const emptyState = document.getElementById('empty-state');
+            
+            if (loadingState) loadingState.style.display = 'block';
+            if (stockList) stockList.style.display = 'none';
+            if (emptyState) emptyState.style.display = 'none';
+        } catch (error) {
+            console.log('showLoading error:', error);
+        }
     }
 
     hideLoading() {
-        document.getElementById('loading-ranking').classList.add('hidden');
+        try {
+            const loadingState = document.getElementById('loading-state');
+            if (loadingState) loadingState.style.display = 'none';
+        } catch (error) {
+            console.log('hideLoading error:', error);
+        }
     }
 
     showError() {
-        document.getElementById('loading-ranking').classList.add('hidden');
-        document.getElementById('error-ranking').classList.remove('hidden');
-        document.getElementById('ranking-list').classList.add('hidden');
+        try {
+            const loadingState = document.getElementById('loading-state');
+            const stockList = document.getElementById('stock-list');
+            const emptyState = document.getElementById('empty-state');
+            
+            if (loadingState) loadingState.style.display = 'none';
+            if (stockList) stockList.style.display = 'none';
+            if (emptyState) emptyState.style.display = 'block';
+        } catch (error) {
+            console.log('showError error:', error);
+        }
     }
 
     showToast(message) {

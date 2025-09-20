@@ -2,157 +2,140 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <title>榜单详情 - Stock Explorer Mobile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>榜单详情 - Stock Tag Explorer</title>
     <link rel="stylesheet" href="./styles/mobile.css">
     <link rel="stylesheet" href="./styles/mobile-ranking-detail.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <!-- 移动端应用容器 -->
-    <div id="mobile-app" class="mobile-app">
-        <!-- 主内容区域 -->
-        <main class="mobile-main">
-            <!-- 榜单详情页面 -->
-            <div id="ranking-detail-mobile" class="page-content active">
-                <!-- 固定顶部导航条 -->
-                <div class="fixed-top-nav">
-                    <div class="page-header-card">
-                        <div class="header-content-row">
-                            <div class="header-back-section">
-                                <button class="back-btn" onclick="history.back()">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                        <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                    </svg>
-                                </button>
-                                <div class="header-text">
-                                    <h2 id="ranking-title">榜单详情</h2>
-                                    <p id="ranking-description">榜单说明</p>
-                                    <!-- 隐藏的trending.js期望的元素 -->
-                                    <div style="display: none;">
-                                        <div id="page-title"></div>
-                                        <div id="page-subtitle"></div>
-                                        <div id="breadcrumb-current"></div>
-                                        <div id="card-title"></div>
-                                        <div id="card-description"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="market-carousel">
-                                <button class="market-carousel-btn active" data-market-target="sp500">
-                                    标普500 <span id="sp500-count-mobile" class="market-count">502</span>
-                                </button>
-                                <button class="market-carousel-btn" data-market-target="chinese_stocks">
-                                    中概股 <span id="chinese-count-mobile" class="market-count">55</span>
-                                </button>
-                            </div>
-                        </div>
+    <div class="mobile-app">
+        <!-- 状态栏占位 -->
+        <div class="status-bar-placeholder"></div>
+        
+        <!-- 固定顶部导航 -->
+        <div class="fixed-top-nav">
+            <div class="nav-content">
+                <div class="header-back-section">
+                    <button class="back-btn" onclick="history.back()">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div class="nav-title-section">
+                        <h1 class="nav-title" id="ranking-title">榜单详情</h1>
+                        <p class="nav-subtitle" id="ranking-subtitle">数据加载中...</p>
                     </div>
                 </div>
+                <div class="header-actions">
+                    <button class="refresh-btn" onclick="location.reload()">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
 
-                <!-- 榜单导航 -->
-                <div class="ranking-nav-container">
-                    <div class="ranking-nav-scroll">
-                        <div class="ranking-nav-buttons">
-                            <button class="ranking-nav-btn active" data-type="top_gainers">
-                                <span class="nav-icon">📈</span>
-                                <span class="nav-text">涨幅榜</span>
-                            </button>
-                            <button class="ranking-nav-btn" data-type="top_losers">
-                                <span class="nav-icon">📉</span>
-                                <span class="nav-text">跌幅榜</span>
-                            </button>
-                            <button class="ranking-nav-btn" data-type="top_market_cap">
-                                <span class="nav-icon">💰</span>
-                                <span class="nav-text">市值榜</span>
-                            </button>
-                            <button class="ranking-nav-btn" data-type="new_highs">
-                                <span class="nav-icon">🚀</span>
-                                <span class="nav-text">新高榜</span>
-                            </button>
-                            <button class="ranking-nav-btn" data-type="new_lows">
-                                <span class="nav-icon">📊</span>
-                                <span class="nav-text">新低榜</span>
-                            </button>
-                            <button class="ranking-nav-btn" data-type="top_turnover">
-                                <span class="nav-icon">💹</span>
-                                <span class="nav-text">成交额榜</span>
-                            </button>
-                            <button class="ranking-nav-btn" data-type="top_volatility">
-                                <span class="nav-icon">⚡</span>
-                                <span class="nav-text">波动榜</span>
-                            </button>
-                            <button class="ranking-nav-btn" data-type="top_gap_up">
-                                <span class="nav-icon">⬆️</span>
-                                <span class="nav-text">跳空高开榜</span>
-                            </button>
-                            <button class="ranking-nav-btn" data-type="institutional_focus">
-                                <span class="nav-icon">🏛️</span>
-                                <span class="nav-text">机构关注榜</span>
-                            </button>
-                            <button class="ranking-nav-btn" data-type="retail_hot">
-                                <span class="nav-icon">🔥</span>
-                                <span class="nav-text">散户热门榜</span>
-                            </button>
-                            <button class="ranking-nav-btn" data-type="smart_money">
-                                <span class="nav-icon">🧠</span>
-                                <span class="nav-text">聪明钱榜</span>
-                            </button>
-                            <button class="ranking-nav-btn" data-type="high_liquidity">
-                                <span class="nav-icon">💧</span>
-                                <span class="nav-text">高流动性榜</span>
-                            </button>
-                            <button class="ranking-nav-btn" data-type="unusual_activity">
-                                <span class="nav-icon">⚠️</span>
-                                <span class="nav-text">异动榜</span>
-                            </button>
-                            <button class="ranking-nav-btn" data-type="momentum_stocks">
-                                <span class="nav-icon">🎯</span>
-                                <span class="nav-text">动量榜</span>
-                            </button>
-                        </div>
+        <!-- 主内容区域 -->
+        <div class="main-content">
+            <!-- 市场切换区域 -->
+            <div class="market-switch-section">
+                <div class="market-toggle-buttons">
+                    <button class="market-toggle-btn active" data-market="sp500">
+                        <span class="market-flag">🇺🇸</span>
+                        <span class="market-name">标普500</span>
+                    </button>
+                    <button class="market-toggle-btn" data-market="chinese_stocks">
+                        <span class="market-flag">🇨🇳</span>
+                        <span class="market-name">中概股</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 榜单信息卡片 -->
+            <div class="ranking-info-card">
+                <div class="ranking-header">
+                    <div class="ranking-icon" id="ranking-icon">📊</div>
+                    <div class="ranking-details">
+                        <h2 class="ranking-name" id="ranking-name">榜单名称</h2>
+                        <p class="ranking-description" id="ranking-description">榜单描述</p>
                     </div>
                 </div>
-                
-                <!-- 隐藏的trending.js期望的统计元素 -->
-                <div id="ranking-stats" style="display: none;"></div>
-                
-                <!-- 加载状态 -->
-                <div id="loading-ranking" class="loading-state hidden">
-                    <div class="loading-spinner"></div>
-                    <p>正在加载榜单数据...</p>
-                </div>
-                
-                <!-- 错误状态 -->
-                <div id="error-ranking" class="error-state hidden">
-                    <p>加载失败，请下拉刷新重试</p>
-                </div>
-                
-                <!-- 榜单完整列表 -->
-                <div id="ranking-full-list" class="ranking-full-container">
-                    <div class="ranking-list-header">
-                        <h3>完整榜单</h3>
-                        <div class="list-meta">
-                            <span id="update-time">更新时间: --</span>
-                        </div>
+                <div class="ranking-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">更新时间</span>
+                        <span class="stat-value" id="update-time">--</span>
                     </div>
-                    
-                    <!-- 股票列表 -->
-                    <div class="stock-list-container">
-                        <ul id="ranking-list" class="stock-list-full">
-                            <!-- 动态加载股票列表 -->
-                        </ul>
+                    <div class="stat-item">
+                        <span class="stat-label">股票数量</span>
+                        <span class="stat-value" id="stock-count">--</span>
                     </div>
                 </div>
             </div>
-        </main>
+
+            <!-- 股票列表 -->
+            <div class="stock-list-container">
+                <div class="list-header">
+                    <h3>完整榜单</h3>
+                    <div class="sort-options">
+                        <button class="sort-btn active" data-sort="rank">
+                            <i class="fas fa-sort-numeric-down"></i>
+                            排名
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 加载状态 -->
+                <div class="loading-state" id="loading-state">
+                    <div class="loading-spinner"></div>
+                    <p>正在加载榜单数据...</p>
+                </div>
+
+                <!-- 股票列表 -->
+                <div class="stock-list" id="stock-list">
+                    <!-- 动态生成股票项 -->
+                </div>
+
+                <!-- 空状态 -->
+                <div class="empty-state" id="empty-state" style="display: none;">
+                    <div class="empty-icon">📊</div>
+                    <h3>暂无数据</h3>
+                    <p>当前榜单暂无可显示的股票数据</p>
+                    <button class="retry-btn" onclick="location.reload()">重新加载</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部导航 -->
+        <div class="bottom-nav">
+            <div class="nav-item" onclick="location.href='mobile.html'">
+                <i class="fas fa-home"></i>
+                <span>首页</span>
+            </div>
+            <div class="nav-item active">
+                <i class="fas fa-chart-line"></i>
+                <span>榜单</span>
+            </div>
+            <div class="nav-item" onclick="location.href='mobile-market-detail.html'">
+                <i class="fas fa-building"></i>
+                <span>市场</span>
+            </div>
+            <div class="nav-item" onclick="location.href='mobile-tag-detail.html'">
+                <i class="fas fa-tags"></i>
+                <span>标签</span>
+            </div>
+        </div>
+
+        <!-- Toast 通知 -->
+        <div class="toast" id="toast">
+            <div class="toast-content">
+                <i class="toast-icon"></i>
+                <span class="toast-message"></span>
+            </div>
+        </div>
     </div>
 
     <!-- JavaScript -->
-    <script src="./js/trending.js"></script>
+    <script src="./scripts/mobile-ranking-detail.js"></script>
 </body>
 </html>
