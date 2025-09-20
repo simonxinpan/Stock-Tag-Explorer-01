@@ -297,6 +297,60 @@
     box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
+/* 市场切换链接样式 */
+.ranking-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.market-toggle-links {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.market-link {
+    padding: 0.25rem 0.75rem;
+    background: rgba(248,250,252,0.8);
+    color: #64748b;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(226,232,240,0.5);
+}
+
+.market-link:hover {
+    background: rgba(79,70,229,0.08);
+    color: #4f46e5;
+    border-color: rgba(79,70,229,0.2);
+}
+
+.market-link.active {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: white;
+    border-color: transparent;
+}
+
+.more-btn-link {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.more-btn-link:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(79,70,229,0.3);
+}
+
 /* 顶部统计数据 - 横排展示 */
 .top-stats-horizontal {
     margin-bottom: 3rem;
@@ -487,10 +541,20 @@
     padding: 0 1rem;
 }
 
+.rankings-grid-three {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
 /* 响应式：在小屏幕上自动变为单列 */
 @media (max-width: 768px) {
     .rankings-grid,
-    .rankings-grid-two {
+    .rankings-grid-two,
+    .rankings-grid-three {
         grid-template-columns: 1fr;
     }
 }
@@ -1055,9 +1119,9 @@
 .ranking-list-compact .stock-link {
     display: grid;
     grid-template-columns: auto 1fr auto;
-    gap: 0.75rem;
+    gap: 2.5rem;
     align-items: center;
-    padding: 0.75rem;
+    padding: 1rem 1.5rem;
     background: rgba(255, 255, 255, 0.6);
     border-radius: 8px;
     text-decoration: none;
@@ -1115,6 +1179,8 @@
     flex-direction: column;
     align-items: flex-end;
     text-align: right;
+    min-width: 120px;
+    gap: 4px;
 }
 
 .ranking-list-compact .price {
@@ -1130,6 +1196,14 @@
     padding: 0.2rem 0.4rem;
     border-radius: 4px;
     background: rgba(255, 255, 255, 0.8);
+}
+
+.ranking-list-compact .change.positive {
+    color: #10b981; /* 涨幅绿色 */
+}
+
+.ranking-list-compact .change.negative {
+    color: #ef4444; /* 跌幅红色 */
 }
 
 /* 🆕 新榜单辅助指标样式 */
@@ -1626,6 +1700,7 @@
 .stock-item {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     padding: 16px 20px;
     background: linear-gradient(135deg, 
         rgba(255, 255, 255, 0.1) 0%, 
@@ -1635,6 +1710,8 @@
     border-radius: 12px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
+    justify-content: space-between;
+    gap: 20px;
 }
 
 .stock-item:hover {
@@ -1761,6 +1838,11 @@
 .stock-price {
     text-align: right;
     flex-shrink: 0;
+    min-width: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
 }
 
 .current-price {
@@ -1781,13 +1863,13 @@
 
 .stock-change.positive {
     background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(5,150,105,0.1));
-    color: var(--success-color); /* 涨幅绿色 */
+    color: #10b981; /* 涨幅绿色 */
     border: 1px solid rgba(16,185,129,0.2);
 }
 
 .stock-change.negative {
     background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(220,38,38,0.1));
-    color: var(--danger-color); /* 跌幅红色 */
+    color: #ef4444; /* 跌幅红色 */
     border: 1px solid rgba(239,68,68,0.2);
 }
 
@@ -2082,11 +2164,11 @@
 }
 
 .featured-trending-stats .stat-number.positive {
-    color: var(--success-color);
+    color: #10b981; /* 涨幅绿色 */
 }
 
 .featured-trending-stats .stat-number.negative {
-    color: var(--danger-color);
+    color: #ef4444; /* 跌幅红色 */
 }
 
 /* 响应式设计 */
@@ -2151,7 +2233,7 @@
     }
     
     .stock-metrics {
-        text-align: left;
+        text-align: right;
         width: 100%;
     }
     
@@ -2311,6 +2393,91 @@
     font-weight: 500;
     font-family: 'Inter', monospace;
     flex-shrink: 0;
+}
+
+/* 右侧榜单导航样式 */
+.ranking-navigation-sidebar {
+    background: var(--card-background);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border-color);
+    height: fit-content;
+    position: sticky;
+    top: 2rem;
+}
+
+.navigation-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.navigation-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+}
+
+.navigation-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.navigation-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.navigation-button {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.navigation-button:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    transform: translateX(2px);
+}
+
+.navigation-button.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.navigation-button-icon {
+    margin-right: 0.5rem;
+    font-size: 1rem;
+}
+
+.navigation-button-text {
+    flex: 1;
+}
+
+/* 响应式：在小屏幕上隐藏右侧导航 */
+@media (max-width: 1024px) {
+    .rankings-grid-three {
+        grid-template-columns: 1fr;
+    }
+    
+    .ranking-navigation-sidebar {
+        display: none;
+    }
 }
 
 .stock-preview .stock-change {

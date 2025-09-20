@@ -1,141 +1,94 @@
 // 文件: /api/ranking.js
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+// 版本: Final Sentry-Logged Version
+import pg from 'pg';
+const { Pool } = pg;
+import 'dotenv/config';
 
-// 初始化SQLite数据库连接
-const sp500DbPath = path.join(process.cwd(), 'data', 'stock_explorer.db');
-const chineseDbPath = path.join(process.cwd(), 'data', 'chinese_stocks.db');
-
-let sp500Db, chineseDb;
-try {
-  sp500Db = new sqlite3.Database(sp500DbPath);
-  chineseDb = new sqlite3.Database(chineseDbPath);
-  console.log('SQLite databases connected successfully');
-} catch (error) {
-  console.error('Failed to connect to SQLite databases:', error);
-  // 如果数据库文件不存在，使用模拟数据
-  sp500Db = null;
-  chineseDb = null;
+// --- 全局日志函数 ---
+function log(message) {
+  console.log(`[${new Date().toISOString()}] ${message}`);
 }
 
-// 数据库表映射
-const databases = {
-  sp500: 'sp500_stocks',
-  chinese_stocks: 'chinese_stocks'
-};
+// --- 数据库连接池 ---
+let pools = {};
+try {
+    log("Step 1: Initializing database pools...");
+    const sslConfig = { ssl: { rejectUnauthorized: false } };
+    
+    if (process.env.NEON_DATABASE_URL) {
+        pools.sp500 = new Pool({ connectionString: process.env.NEON_DATABASE_URL, ...sslConfig });
+        log("✅ S&P 500 pool configured.");
+    } else {
+        log("⚠️ S&P 500 database URL (NEON_DATABASE_URL) is missing!");
+    }
 
-// 定义不同榜单类型的SQL排序逻辑
+    if (process.env.CHINESE_STOCKS_DB_URL) {
+        pools.chinese_stocks = new Pool({ connectionString: process.env.CHINESE_STOCKS_DB_URL, ...sslConfig });
+        log("✅ Chinese Stocks pool configured.");
+    } else {
+        log("⚠️ Chinese Stocks database URL (CHINESE_STOCKS_DB_URL) is missing!");
+    }
+    log("Step 1 Complete.");
+} catch (e) {
+    log(`❌ CRITICAL ERROR during pool initialization: ${e.message}`);
+    // 如果连接池初始化失败，让所有请求都失败
+    pools = null;
+}
+
+
+// --- SQL排序逻辑 ---
 const ORDER_BY_MAP = {
   top_market_cap: 'ORDER BY market_cap DESC NULLS LAST',
   top_gainers: 'ORDER BY change_percent DESC NULLS LAST',
   top_losers: 'ORDER BY change_percent ASC NULLS LAST',
-  top_volume: 'ORDER BY volume DESC NULLS LAST',
-  top_turnover: 'ORDER BY turnover DESC NULLS LAST',
-  new_highs: 'ORDER BY week_52_high / last_price DESC NULLS LAST',
-  new_lows: 'ORDER BY last_price / week_52_low ASC NULLS LAST',
-  gap_up: 'ORDER BY change_percent DESC NULLS LAST',
-  institutional_focus: 'ORDER BY market_cap DESC NULLS LAST',
-  retail_hot: 'ORDER BY volume DESC NULLS LAST',
-  smart_money: 'ORDER BY market_cap DESC NULLS LAST',
-  high_liquidity: 'ORDER BY volume DESC NULLS LAST',
-  unusual_activity: 'ORDER BY volume DESC NULLS LAST',
-  momentum_stocks: 'ORDER BY change_percent DESC NULLS LAST',
-  momentum: 'ORDER BY change_percent DESC NULLS LAST', // 动量榜单
-  value: 'ORDER BY market_cap DESC NULLS LAST', // 价值榜单
-  growth: 'ORDER BY change_percent DESC NULLS LAST', // 成长榜单
-  dividend: 'ORDER BY market_cap DESC NULLS LAST', // 股息榜单
-  volatility: 'ORDER BY change_percent DESC NULLS LAST', // 波动率榜单
-  insider_trading: 'ORDER BY market_cap DESC NULLS LAST', // 内部交易榜单
   default: 'ORDER BY market_cap DESC NULLS LAST'
 };
 
-// 字段名映射函数 - 将标普500字段名映射到中概股字段名
-function mapFieldsForChineseStocks(orderByClause) {
-  return orderByClause
-    .replace(/last_price/g, 'price')
-    .replace(/week_52_high/g, 'price') // 中概股数据库可能没有52周高点，暂用price替代
-    .replace(/week_52_low/g, 'price'); // 中概股数据库可能没有52周低点，暂用price替代
-}
-
-module.exports = async function handler(req, res) {
-  res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  
+export default async function handler(req, res) {
   const { type = 'default', market = 'sp500' } = req.query;
+  const requestId = Math.random().toString(36).substring(2, 9);
   
-  // 验证市场参数
-  if (!['sp500', 'chinese_stocks'].includes(market)) {
-    return res.status(400).json({ error: 'Invalid market specified' });
-  }
+  log(`[${requestId}] ---> Request received: market=${market}, type=${type}`);
 
   try {
-    console.log(`[API - ranking]: type=${type}, market=${market}`);
-    
-    // 选择对应的数据库连接
-    const dbConnection = market === 'chinese_stocks' ? chineseDb : sp500Db;
-    const tableName = databases[market] || databases.sp500;
-    
-    // 如果数据库连接不可用，返回空数组
-    if (!dbConnection) {
-      console.log(`[API - ranking] Database not available for ${market}, returning empty array`);
-      return res.status(200).json([]);
+    log(`[${requestId}] Step 2: Selecting database pool for market: ${market}`);
+    if (!pools) {
+        throw new Error("Database pools were not initialized.");
     }
-    
-    let orderByClause = ORDER_BY_MAP[type] || ORDER_BY_MAP.default;
-    
-    // 如果是中概股，需要映射字段名
-    if (market === 'chinese_stocks') {
-      orderByClause = mapFieldsForChineseStocks(orderByClause);
+
+    const pool = pools[market];
+    if (!pool) {
+      throw new Error(`No database pool configured for market: '${market}'. Check environment variables.`);
     }
-    
-    // 构建SQL查询
+    log(`[${requestId}] Step 2 Complete. Pool selected.`);
+
+    const orderByClause = ORDER_BY_MAP[type] || ORDER_BY_MAP.default;
+    log(`[${requestId}] Step 3: Determined SQL ORDER BY clause: ${orderByClause}`);
+
     const query = `
-      SELECT 
-        ${market === 'chinese_stocks' ? 'ticker, company_name as name, price, change_percent, market_cap, volume' : 'ticker, name_zh as name, last_price as price, change_percent, market_cap, volume'}
-      FROM ${tableName} 
-      WHERE ${market === 'chinese_stocks' ? 'price' : 'last_price'} IS NOT NULL 
-        AND ${market === 'chinese_stocks' ? 'price' : 'last_price'} > 0
+      SELECT ticker, name_zh, last_price, change_percent, market_cap
+      FROM stocks 
+      WHERE last_price IS NOT NULL AND market_cap IS NOT NULL
       ${orderByClause}
-      LIMIT 20
+      LIMIT 50; 
     `;
+    log(`[${requestId}] Step 4: Ready to execute query.`);
     
-    console.log(`[API - ranking] Executing query: ${query}`);
-    
-    // 执行SQLite查询（使用Promise包装sqlite3的异步调用）
-    const rows = await new Promise((resolve, reject) => {
-      dbConnection.all(query, [], (err, rows) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(rows || []);
-        }
-      });
-    });
-    
-    // 格式化数据，确保数值类型正确并统一字段名
-    const formattedRows = rows.map(row => {
-      const price = parseFloat(row.price) || 0;
-      const changePercent = parseFloat(row.change_percent) || 0;
-      return {
-        symbol: row.ticker,
-        name: row.name,
-        price: price,
-        change: price * changePercent / 100,
-        change_percent: changePercent,
-        market_cap: parseFloat(row.market_cap) || 0,
-        volume: parseFloat(row.volume) || 0
-      };
-    });
-    
-    res.status(200).json(formattedRows);
+    const { rows } = await pool.query(query);
+    log(`[${requestId}] Step 5: Query executed successfully. Found ${rows.length} rows.`);
+
+    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate');
+    log(`[${requestId}] <--- Sending 200 OK response with ${rows.length} stocks.`);
+    res.status(200).json(rows);
+
   } catch (error) {
-    console.error(`[API Error - ranking]: type=${type}, market=${market}`, error);
-    res.status(500).json({ error: 'Internal Server Error', details: error.message });
+    log(`[${requestId}] ❌ CRITICAL ERROR in handler: ${error.message}`);
+    log(`[${requestId}] Full error stack: ${error.stack}`);
+    // 返回一个包含详细错误信息的500响应
+    res.status(500).json({ 
+        error: 'Internal Server Error',
+        details: error.message,
+        requestId: requestId
+    });
   }
 }

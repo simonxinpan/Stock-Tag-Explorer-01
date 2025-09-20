@@ -753,11 +753,11 @@ body {
 }
 
 .price-change.positive {
-    color: var(--success-color);
+    color: #10b981; /* 涨幅绿色 */
 }
 
 .price-change.negative {
-    color: var(--danger-color);
+    color: #ef4444; /* 跌幅红色 */
 }
 
 .price-change.neutral {
