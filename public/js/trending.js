@@ -242,16 +242,14 @@ function createStockListItemHTML(stock, type, rank, marketType = 'sp500') {
   return `
     <li class="stock-item">
       <a href="${detailsPageUrl}" target="_blank" class="stock-link">
-        <div class="stock-header">
-          <div class="rank-circle">${rank}</div>
-          <div class="stock-basic">
-            <div class="name">${stock.name_zh || stock.name || 'N/A'}</div>
-            <div class="ticker">${stock.ticker}</div>
-          </div>
+        <div class="stock-rank">${rank}</div>
+        <div class="stock-info">
+          <div class="stock-name">${stock.name_zh || stock.name || 'N/A'}</div>
+          <div class="stock-symbol">${stock.ticker}</div>
         </div>
-        <div class="stock-metrics">
-          ${mainMetricHTML}
-          <div class="change ${colorClass}">${sign}${changePercent.toFixed(2)}%</div>
+        <div class="stock-price-section">
+          <div class="stock-price">$${price.toFixed(2)}</div>
+          <div class="stock-change ${colorClass}">${sign}${changePercent.toFixed(2)}%</div>
         </div>
       </a>
     </li>
