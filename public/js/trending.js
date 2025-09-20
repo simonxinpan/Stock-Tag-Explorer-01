@@ -16,7 +16,11 @@ function getCurrentListType() {
 // 检测当前页面类型
 function getCurrentPageType() {
   const pathname = window.location.pathname;
-  if (pathname.includes('list-detail.html')) {
+  const urlParams = new URLSearchParams(window.location.search);
+  const listType = urlParams.get('list');
+  
+  // 如果是list-detail.html或者mobile.html且有list参数，则为榜单详情页
+  if (pathname.includes('list-detail.html') || (pathname.includes('mobile.html') && listType)) {
     return 'list-detail';
   }
   return 'overview';
@@ -290,26 +294,28 @@ function formatMarketCap(marketCapInUSD) {
 
 /**
  * 【标普500专用函数】
- * 将一个以【百万美元】为单位的数字，格式化为"X.XX万亿美元"的格式。
+ * 将一个以【百万美元】为单位的数字，格式化为"X.XX亿美元"的格式。
+ * 数据库单位：百万美元，显示为亿美元时除以100
  */
 function formatSP500MarketCap(marketCapInMillions) {
   const numericMarketCap = parseFloat(marketCapInMillions);
   if (isNaN(numericMarketCap) || numericMarketCap === 0) return 'N/A';
   
-  const TRILLION = 1_000_000; // 1万亿 = 1,000,000个百万
+  const HUNDRED = 100; // 1亿 = 100个百万
   
-  const marketCapInTrillions = numericMarketCap / TRILLION;
+  const marketCapInBillions = numericMarketCap / HUNDRED;
   
-  const formattedValue = marketCapInTrillions.toLocaleString('en-US', {
+  const formattedValue = marketCapInBillions.toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  return `$${formattedValue}万亿`;
+  return `$${formattedValue}亿美元`;
 }
 
 /**
  * 【中概股专用函数】
  * 将一个以【美元】为单位的数字，格式化为"X,XXX.X亿美元"的格式。
+ * 数据库单位：1（真实数值），显示为亿美元时除以1亿
  */
 function formatChineseStockMarketCap(marketCapInUSD) {
   const numericMarketCap = parseFloat(marketCapInUSD);
@@ -317,13 +323,13 @@ function formatChineseStockMarketCap(marketCapInUSD) {
   
   const BILLION = 100_000_000; // 1亿 = 100,000,000
   
-  const marketCapInHundredMillions = numericMarketCap / BILLION;
+  const marketCapInBillions = numericMarketCap / BILLION;
   
-  const formattedValue = marketCapInHundredMillions.toLocaleString('en-US', {
+  const formattedValue = marketCapInBillions.toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  return `$${formattedValue}亿`;
+  return `$${formattedValue}亿美元`;
 }
 
 /**
