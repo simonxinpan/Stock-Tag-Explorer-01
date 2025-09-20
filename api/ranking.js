@@ -1,22 +1,68 @@
 // 文件: /api/ranking.js
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+import pg from 'pg';
+const { Pool } = pg;
+import 'dotenv/config';
 
-// 初始化SQLite数据库连接
-const sp500DbPath = path.join(process.cwd(), 'data', 'stock_explorer.db');
-const chineseDbPath = path.join(process.cwd(), 'data', 'chinese_stocks.db');
+// ================================================================
+// == 关键修正：为两个连接池明确添加SSL配置 ==
+// ================================================================
 
-let sp500Db, chineseDb;
-try {
-  sp500Db = new sqlite3.Database(sp500DbPath);
-  chineseDb = new sqlite3.Database(chineseDbPath);
-  console.log('SQLite databases connected successfully');
-} catch (error) {
-  console.error('Failed to connect to SQLite databases:', error);
-  // 如果数据库文件不存在，使用模拟数据
-  sp500Db = null;
-  chineseDb = null;
+// 根据market参数选择数据库连接池
+const pools = {
+  sp500: process.env.NEON_DATABASE_URL ? new Pool({
+    connectionString: process.env.NEON_DATABASE_URL,
+    ssl: false  // 先尝试不使用SSL
+  }) : null,
+  chinese_stocks: process.env.CHINESE_STOCKS_DB_URL ? new Pool({
+    connectionString: process.env.CHINESE_STOCKS_DB_URL,
+    ssl: false  // 先尝试不使用SSL
+  }) : null
+};
+
+// 动态创建带SSL的连接池（如果需要的话）
+const sslPools = {
+  sp500: process.env.NEON_DATABASE_URL ? new Pool({
+    connectionString: process.env.NEON_DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false
+    }
+  }) : null,
+  chinese_stocks: process.env.CHINESE_STOCKS_DB_URL ? new Pool({
+    connectionString: process.env.CHINESE_STOCKS_DB_URL,
+    ssl: {
+      rejectUnauthorized: false
+    }
+  }) : null
+};
+
+// 尝试连接的函数，先尝试SSL，失败则使用非SSL
+async function executeQuery(market, query) {
+  // 首先尝试SSL连接
+  if (sslPools[market]) {
+    try {
+      const result = await sslPools[market].query(query);
+      console.log(`[Success] SSL connection worked for ${market}`);
+      return result;
+    } catch (sslError) {
+      console.warn(`[Warning] SSL connection failed for ${market}, trying without SSL:`, sslError.message);
+    }
+  }
+  
+  // 如果SSL失败或不可用，尝试非SSL连接
+  if (pools[market]) {
+    try {
+      const result = await pools[market].query(query);
+      console.log(`[Success] Non-SSL connection worked for ${market}`);
+      return result;
+    } catch (nonSslError) {
+      console.error(`[Error] Both SSL and non-SSL connections failed for ${market}:`, nonSslError.message);
+      throw nonSslError;
+    }
+  }
+  
+  throw new Error(`No database pool available for ${market}`);
 }
+// ================================================================
 
 // 数据库表映射
 const databases = {
@@ -77,7 +123,7 @@ function mapFieldsForChineseStocks(orderByClause) {
     .replace(/\(last_price \/ week_52_low\)/g, '(price / week_52_low)'); // 新低比例
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -97,13 +143,11 @@ module.exports = async function handler(req, res) {
   try {
     console.log(`[API - ranking]: type=${type}, market=${market}`);
     
-    // 选择对应的数据库连接
-    const dbConnection = market === 'chinese_stocks' ? chineseDb : sp500Db;
     const tableName = databases[market] || databases.sp500;
     
-    // 如果数据库连接不可用，返回空数组
-    if (!dbConnection) {
-      console.log(`[API - ranking] Database not available for ${market}, returning empty array`);
+    // 检查是否有可用的连接池
+    if (!pools[market] && !sslPools[market]) {
+      console.log(`[API - ranking] No database pool available for ${market}, returning empty array`);
       return res.status(200).json([]);
     }
     
@@ -127,16 +171,9 @@ module.exports = async function handler(req, res) {
     
     console.log(`[API - ranking] Executing query: ${query}`);
     
-    // 执行SQLite查询（使用Promise包装sqlite3的异步调用）
-    const rows = await new Promise((resolve, reject) => {
-      dbConnection.all(query, [], (err, rows) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(rows || []);
-        }
-      });
-    });
+    // 使用新的executeQuery函数执行查询
+    const result = await executeQuery(market, query);
+    const rows = result.rows || [];
     
     // 格式化数据，确保数值类型正确并统一字段名
     const formattedRows = rows.map(row => {
