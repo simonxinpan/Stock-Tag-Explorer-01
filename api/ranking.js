@@ -1,10 +1,8 @@
-// 文件: /api/ranking.js
-// 版本: Final Dynamic SQL Version
+// 文件: /api/ranking.js (最终全功能版)
 import pg from 'pg';
 const { Pool } = pg;
 import 'dotenv/config';
 
-// --- 数据库连接池 ---
 const sslConfig = { ssl: { rejectUnauthorized: false } };
 const pools = {
   sp500: new Pool({ connectionString: process.env.NEON_DATABASE_URL, ...sslConfig }),
@@ -12,28 +10,34 @@ const pools = {
 };
 
 // ================================================================
-// == 关键的、完整的SQL排序逻辑映射 ==
+// == 关键的、包含了所有14个榜单真实排序逻辑的映射 ==
 // ================================================================
 const ORDER_BY_MAP = {
-  // 核心榜单 (已验证字段存在)
+  // === 核心榜单 (已验证) ===
   top_market_cap: 'ORDER BY market_cap DESC NULLS LAST',
   top_gainers: 'ORDER BY change_percent DESC NULLS LAST',
   top_losers: 'ORDER BY change_percent ASC NULLS LAST',
   
-  // 交易活跃度榜单 (需要 volume 和 turnover 字段)
+  // === 交易活跃度榜单 (需要 volume, turnover 字段) ===
   top_volume: 'ORDER BY volume DESC NULLS LAST',
   top_turnover: 'ORDER BY turnover DESC NULLS LAST',
   
-  // 价格趋势榜单 (需要 week_52_high 和 week_52_low 字段)
-  new_highs: 'ORDER BY (last_price / week_52_high) DESC NULLS LAST', // 越接近1越高
-  new_lows: 'ORDER BY (last_price / week_52_low) ASC NULLS LAST',   // 越接近1越低
+  // === 价格趋势榜单 (需要 52周高/低价字段) ===
+  new_highs: 'ORDER BY (last_price / week_52_high) DESC NULLS LAST',
+  new_lows: 'ORDER BY (last_price / week_52_low) ASC NULLS LAST',
+  
+  // === 技术指标榜单 (基于现有数据计算) ===
+  top_volatility: 'ORDER BY ((high_price - low_price) / previous_close) DESC NULLS LAST', // 振幅榜
+  top_gap_up: 'ORDER BY ((open_price - previous_close) / previous_close) DESC NULLS LAST', // 高开缺口榜
+  unusual_activity: 'ORDER BY ABS(change_percent) DESC NULLS LAST', // 异动榜 (按绝对涨跌幅排序)
+  momentum_stocks: 'ORDER BY change_percent DESC NULLS LAST', // 动量榜 (等同于涨幅榜)
 
-  // 估值榜单 (需要 pe_ttm 字段)
-  // pe_ratio: 'ORDER BY pe_ttm ASC NULLS LAST', // 市盈率通常看低的
-
-  // 其他榜单的示例逻辑 (可以根据您的数据进行扩展)
-  // top_volatility: 'ORDER BY ((high_price - low_price) / open_price) DESC NULLS LAST', // 振幅
-  // top_gap_up: 'ORDER BY (open_price - previous_close) DESC NULLS LAST', // 高开缺口
+  // === 情绪/关注度榜单 (使用合理替代逻辑) ===
+  // 解释: 真实的机构/散户数据需要专门的数据源。在这里，我们使用最能反映“关注度”的指标作为替代。
+  institutional_focus: 'ORDER BY market_cap DESC NULLS LAST', // 机构关注榜 (用“市值”替代，大公司通常机构关注度高)
+  retail_hot: 'ORDER BY turnover DESC NULLS LAST', // 散户热门榜 (用“成交额”替代，成交额高通常散户参与多)
+  smart_money: 'ORDER BY turnover DESC NULLS LAST', // 主力动向榜 (用“成交额”替代)
+  high_liquidity: 'ORDER BY volume DESC NULLS LAST', // 高流动性榜 (用“成交量”替代)
 
   // 默认排序
   default: 'ORDER BY market_cap DESC NULLS LAST'
@@ -41,37 +45,25 @@ const ORDER_BY_MAP = {
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate');
-  
   const { type = 'default', market = 'sp500' } = req.query;
-  
   const pool = pools[market];
-  // 关键：从映射中获取SQL排序子句
   const orderByClause = ORDER_BY_MAP[type] || ORDER_BY_MAP.default;
 
-  if (!pool) {
-    return res.status(400).json({ error: `Invalid market specified: ${market}` });
-  }
+  if (!pool) return res.status(400).json({ error: `Invalid market: ${market}` });
 
   try {
     const query = `
       SELECT 
         ticker, name_zh, name_en, last_price, change_amount, 
-        change_percent, market_cap, logo, sector_zh
+        change_percent, market_cap
       FROM stocks 
       WHERE last_price IS NOT NULL AND market_cap IS NOT NULL AND change_percent IS NOT NULL
       ${orderByClause}
-      LIMIT 100; 
-    `;
-    
+      LIMIT 100;`;
     const { rows } = await pool.query(query);
     res.status(200).json(rows);
-
   } catch (error) {
     console.error(`[API Error - ranking]: type=${type}, market=${market}`, error);
-    // 返回详细的SQL错误信息，方便调试
-    res.status(500).json({ 
-        error: 'Internal Server Error',
-        details: error.message 
-    });
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 }
