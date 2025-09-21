@@ -1,6 +1,6 @@
-// public/js/mobile-ranking-detail.js
-// 专门为移动版二级页面 (mobile-ranking-detail.html) 服务的独立JavaScript文件
-// 版本: Dedicated Mobile Ranking Detail Handler
+// public/js/list-detail.js
+// 专门为桌面版二级页面 (list-detail.html) 服务的独立JavaScript文件
+// 版本: Dedicated List Detail Handler
 
 // 获取当前市场类型
 function getCurrentMarket() {
@@ -8,11 +8,10 @@ function getCurrentMarket() {
   return urlParams.get('market') || 'sp500'; // 默认为标普500
 }
 
-// 获取当前榜单类型（支持桌面版list参数和移动版type参数）
+// 获取当前榜单类型
 function getCurrentListType() {
   const urlParams = new URLSearchParams(window.location.search);
-  // 优先使用type参数（移动版），其次使用list参数（桌面版）
-  return urlParams.get('type') || urlParams.get('list') || null;
+  return urlParams.get('list') || null;
 }
 
 // 榜单类型映射配置
@@ -146,7 +145,7 @@ function formatTurnover(value) {
   return formatLargeNumber(value, true);
 }
 
-// 创建股票列表项HTML（移动版样式）
+// 创建股票列表项HTML
 function createStockListItemHTML(stock, type, rank, marketType = 'sp500') {
   const changePercent = parseFloat(stock.change_percent || 0);
   const changeClass = changePercent >= 0 ? 'positive' : 'negative';
@@ -249,7 +248,7 @@ async function loadAndRenderSingleList(market, listType) {
 
 // 渲染单个榜单列表
 function renderSingleRankingList(stocks, listType, market) {
-  const container = document.getElementById('ranking-list') || document.querySelector('.ranking-list');
+  const container = document.getElementById('ranking-list');
   if (!container) return;
 
   const stocksHTML = stocks.map((stock, index) => 
@@ -261,7 +260,7 @@ function renderSingleRankingList(stocks, listType, market) {
 
 // 更新榜单统计信息
 function updateRankingStats(stocks, listType) {
-  const statsContainer = document.querySelector('.ranking-stats') || document.querySelector('.stats-container');
+  const statsContainer = document.querySelector('.ranking-stats');
   if (!statsContainer || !stocks.length) return;
 
   const totalStocks = stocks.length;
@@ -287,20 +286,20 @@ function updateSingleListPageUI(listType, market) {
   if (!config) return;
 
   // 更新页面标题
-  const titleElement = document.querySelector('.ranking-title') || document.querySelector('.page-title');
+  const titleElement = document.querySelector('.ranking-title');
   if (titleElement) {
     titleElement.textContent = config.title;
   }
 
   // 更新页面描述
-  const descElement = document.querySelector('.ranking-description') || document.querySelector('.page-description');
+  const descElement = document.querySelector('.ranking-description');
   if (descElement) {
     descElement.textContent = config.description;
   }
 
   // 更新市场标签
   const marketLabel = market === 'chinese_stocks' ? '中概股' : '标普500';
-  const marketElement = document.querySelector('.market-label') || document.querySelector('.market-info');
+  const marketElement = document.querySelector('.market-label');
   if (marketElement) {
     marketElement.textContent = marketLabel;
   }
@@ -311,7 +310,7 @@ function updateSingleListPageUI(listType, market) {
 
 // 更新市场切换按钮
 function updateMarketButtons(currentMarket) {
-  const marketButtons = document.querySelectorAll('.market-btn') || document.querySelectorAll('.market-tab');
+  const marketButtons = document.querySelectorAll('.market-btn');
   marketButtons.forEach(btn => {
     const btnMarket = btn.getAttribute('data-market');
     if (btnMarket === currentMarket) {
@@ -324,11 +323,11 @@ function updateMarketButtons(currentMarket) {
 
 // 绑定市场切换事件
 function bindMarketSwitchEvents(currentListType) {
-  const marketButtons = document.querySelectorAll('.market-btn') || document.querySelectorAll('.market-tab');
+  const marketButtons = document.querySelectorAll('.market-btn');
   marketButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       const newMarket = btn.getAttribute('data-market');
-      const newUrl = `mobile-ranking-detail.html?type=${currentListType}&market=${newMarket}`;
+      const newUrl = `list-detail.html?list=${currentListType}&market=${newMarket}`;
       window.location.href = newUrl;
     });
   });
@@ -336,7 +335,7 @@ function bindMarketSwitchEvents(currentListType) {
 
 // 显示加载动画
 function showLoadingSpinner() {
-  const spinner = document.querySelector('.loading-spinner') || document.querySelector('.loading');
+  const spinner = document.querySelector('.loading-spinner');
   if (spinner) {
     spinner.style.display = 'block';
   }
@@ -344,7 +343,7 @@ function showLoadingSpinner() {
 
 // 隐藏加载动画
 function hideLoadingSpinner() {
-  const spinner = document.querySelector('.loading-spinner') || document.querySelector('.loading');
+  const spinner = document.querySelector('.loading-spinner');
   if (spinner) {
     spinner.style.display = 'none';
   }
@@ -352,7 +351,7 @@ function hideLoadingSpinner() {
 
 // 显示错误信息
 function showErrorMessage(message) {
-  const container = document.getElementById('ranking-list') || document.querySelector('.ranking-list');
+  const container = document.getElementById('ranking-list');
   if (container) {
     container.innerHTML = `
       <div class="error-message">
