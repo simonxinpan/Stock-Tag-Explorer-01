@@ -4,44 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>榜单详情</title>
+    
+    <!-- 1. 只加载移动版专属的CSS样式 -->
     <link rel="stylesheet" href="./styles/mobile.css">
     <link rel="stylesheet" href="./styles/mobile-ranking-detail.css">
 </head>
 <body>
     <div id="mobile-app" class="mobile-app">
-        <main class="mobile-main">
-            <div id="ranking-detail-mobile" class="page-content active">
-                <div class="fixed-top-nav">
-                    <!-- ... (您提供的所有顶部导航HTML代码保持不变) ... -->
-                </div>
-                <div class="ranking-nav-container">
-                    <!-- ... (您提供的所有榜单导航按钮HTML代码保持不变) ... -->
-                </div>
-                <div id="loading-ranking" class="loading-state">
-                    <div class="loading-spinner"></div>
-                    <p>正在加载榜单数据...</p>
-                </div>
-                <div id="error-ranking" class="error-state hidden">
-                    <p>加载失败，请下拉刷新重试</p>
-                </div>
-                <div id="ranking-full-list" class="ranking-full-container hidden">
-                    <div class="ranking-list-header">
-                        <h3>完整榜单</h3>
-                        <div class="list-meta">
-                            <span id="update-time">--</span>
-                        </div>
-                    </div>
-                    <div class="stock-list-container">
-                        <div id="ranking-list" class="stock-list">
-                            <!-- JS将在这里填充内容 -->
-                        </div>
-                    </div>
-                </div>
+        <header class="mobile-header">
+            <button onclick="history.back()">返回</button>
+            <h1 id="page-title">榜单加载中...</h1>
+            <!-- 市场切换按钮 -->
+            <div class="market-selector">
+                <a id="sp500-link" href="#">标普500</a>
+                <a id="chinese-stocks-link" href="#">中概股</a>
             </div>
+        </header>
+
+        <main class="mobile-main">
+            <!-- ================================================================ -->
+            <!-- == 关键的、必需的HTML结构“舞台” == -->
+            <!-- ================================================================ -->
+            <!-- 这个外层容器的名字可以自定义，但JS里也要对应修改 -->
+            <div id="ranking-list-container">
+                <!-- JS脚本会寻找下面这个UL元素，并把股票列表填充进去 -->
+                <ul id="ranking-list" class="stock-list-full">
+                    <li class="loading-item">正在初始化脚本...</li>
+                </ul>
+            </div>
+            <!-- ================================================================ -->
         </main>
     </div>
 
-    <!-- 关键变更：引用全新的、专为本页面设计的JS文件 -->
-    <script src="./js/mobile-ranking-detail.js"></script>
+    <!-- 2. 引用桌面版那个成功的JS“大脑” -->
+    <script src="./js/trending.js"></script>
 </body>
 </html>
