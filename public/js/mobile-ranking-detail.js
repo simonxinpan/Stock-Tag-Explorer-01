@@ -116,7 +116,7 @@ async function loadRankingData(type, market) {
     showLoading();
     
     try {
-        const response = await fetch(`/api/trending?type=${type}&market=${market}`);
+        const response = await fetch(`/api/ranking?type=${type}&market=${market}`);
         if (!response.ok) {
             throw new Error(`API请求失败: ${response.status}`);
         }

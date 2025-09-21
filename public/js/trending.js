@@ -362,7 +362,7 @@ async function loadAndRenderList(listConfig) {
 
   try {
     const currentMarket = getCurrentMarket();
-    const response = await fetch(`/api/trending?type=${listConfig.type}&market=${currentMarket}`);
+    const response = await fetch(`/api/ranking?type=${listConfig.type}&market=${currentMarket}`);
     if (!response.ok) throw new Error(`API 请求失败，状态码: ${response.status}`);
     let data = await response.json();
 
