@@ -54,6 +54,69 @@
                     </div>
                 </div>
 
+                <!-- 榜单导航 -->
+                <div class="ranking-nav-container">
+                    <div class="ranking-nav-scroll">
+                        <div class="ranking-nav-buttons">
+                            <button class="ranking-nav-btn active" data-type="top_gainers">
+                                <span class="nav-icon">📈</span>
+                                <span class="nav-text">涨幅榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="top_losers">
+                                <span class="nav-icon">📉</span>
+                                <span class="nav-text">跌幅榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="top_market_cap">
+                                <span class="nav-icon">💰</span>
+                                <span class="nav-text">市值榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="new_highs">
+                                <span class="nav-icon">🚀</span>
+                                <span class="nav-text">新高榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="new_lows">
+                                <span class="nav-icon">📊</span>
+                                <span class="nav-text">新低榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="top_turnover">
+                                <span class="nav-icon">💹</span>
+                                <span class="nav-text">成交额榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="top_volatility">
+                                <span class="nav-icon">⚡</span>
+                                <span class="nav-text">波动榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="top_gap_up">
+                                <span class="nav-icon">⬆️</span>
+                                <span class="nav-text">跳空高开榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="institutional_focus">
+                                <span class="nav-icon">🏛️</span>
+                                <span class="nav-text">机构关注榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="retail_hot">
+                                <span class="nav-icon">🔥</span>
+                                <span class="nav-text">散户热门榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="smart_money">
+                                <span class="nav-icon">🧠</span>
+                                <span class="nav-text">聪明钱榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="high_liquidity">
+                                <span class="nav-icon">💧</span>
+                                <span class="nav-text">高流动性榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="unusual_activity">
+                                <span class="nav-icon">⚠️</span>
+                                <span class="nav-text">异动榜</span>
+                            </button>
+                            <button class="ranking-nav-btn" data-type="momentum_stocks">
+                                <span class="nav-icon">🎯</span>
+                                <span class="nav-text">动量榜</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
                 
                 <!-- 隐藏的trending.js期望的统计元素 -->
                 <div id="ranking-stats" style="display: none;"></div>
@@ -91,133 +154,5 @@
 
     <!-- JavaScript -->
     <script src="./js/trending.js"></script>
-</body>
-</html>
-                            <span class="stat-label">平均涨跌幅</span>
-                        </div>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-icon">💰</span>
-                        <div class="stat-info">
-                            <span class="stat-number" id="total-value">--</span>
-                            <span class="stat-label">总市值</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 排序筛选卡片 -->
-            <div class="filter-card">
-                <div class="filter-line"></div>
-                <div class="filter-content">
-                    <div class="filter-group">
-                        <label class="filter-label">排序方式</label>
-                        <select class="filter-select" id="sort-select">
-                            <option value="change_desc">涨跌幅 ↓</option>
-                            <option value="change_asc">涨跌幅 ↑</option>
-                            <option value="market_cap_desc">市值 ↓</option>
-                            <option value="market_cap_asc">市值 ↑</option>
-                            <option value="volume_desc">成交量 ↓</option>
-                            <option value="volume_asc">成交量 ↑</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label class="filter-label">市场</label>
-                        <select class="filter-select" id="market-select">
-                            <option value="all">全部市场</option>
-                            <option value="sp500">标普500</option>
-                            <option value="chinese">中概股</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 股票列表卡片 -->
-            <div class="stock-list-card">
-                <div class="stock-list-line"></div>
-                <div class="stock-list-content">
-                    <!-- 加载状态 -->
-                    <div id="loading-state" class="loading-container">
-                        <div class="loading-spinner"></div>
-                        <p>加载中...</p>
-                    </div>
-
-                    <!-- 错误状态 -->
-                    <div id="error-state" class="error-container hidden">
-                        <div class="error-icon">⚠️</div>
-                        <p class="error-message">加载失败，请重试</p>
-                        <button class="retry-btn" onclick="loadRankingData()">重新加载</button>
-                    </div>
-
-                    <!-- 股票列表 -->
-                    <div id="stock-list" class="stock-list hidden"></div>
-
-                    <!-- 空状态 -->
-                    <div id="empty-state" class="empty-container hidden">
-                        <div class="empty-icon">📊</div>
-                        <p class="empty-message">暂无数据</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast 通知 -->
-    <div id="toast" class="toast"></div>
-
-    <!-- 移动版页面现在使用 trending.js 处理数据加载 -->
-    <script src="scripts/trending.js"></script>
-    <script>
-        // 生成模拟股票数据（保留用于兼容性）
-        function generateMockStocks(type, market, count) {
-            const sp500Stocks = {
-                symbols: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA', 'NFLX', 'AMD', 'CRM', 'ORCL', 'ADBE'],
-                names: ['苹果', '微软', '谷歌', '亚马逊', '特斯拉', 'Meta', '英伟达', '奈飞', 'AMD', 'Salesforce', '甲骨文', 'Adobe']
-            };
-            
-            const chineseStocks = {
-                symbols: ['BABA', 'JD', 'PDD', 'BIDU', 'NIO', 'XPEV', 'LI', 'BILI', 'TME', 'NTES', 'WB', 'DIDI'],
-                names: ['阿里巴巴', '京东', '拼多多', '百度', '蔚来', '小鹏', '理想', '哔哩哔哩', '腾讯音乐', '网易', '微博', '滴滴']
-            };
-            
-            const stockData = market === 'chinese_stocks' ? chineseStocks : sp500Stocks;
-            const { symbols, names } = stockData;
-            
-            const stocks = [];
-            for (let i = 0; i < count; i++) {
-                const symbolIndex = i % symbols.length;
-                const baseChange = type === 'gainers' ? Math.random() * 15 : 
-                                 type === 'losers' ? -Math.random() * 15 : 
-                                 (Math.random() - 0.5) * 20;
-                
-                stocks.push({
-                    symbol: symbols[symbolIndex] + (i > symbols.length - 1 ? i : ''),
-                    name: names[symbolIndex] + (i > names.length - 1 ? i : ''),
-                    price: 100 + Math.random() * 400,
-                    change: baseChange,
-                    marketCap: (Math.random() * 2000 + 100) * 1e9
-                });
-            }
-            
-            // 根据类型排序
-            if (type === 'gainers') {
-                stocks.sort((a, b) => b.change - a.change);
-            } else if (type === 'losers') {
-                stocks.sort((a, b) => a.change - b.change);
-            } else if (type === 'marketcap') {
-                stocks.sort((a, b) => b.marketCap - a.marketCap);
-            }
-            
-            return stocks;
-        }
-
-        // 查看股票详情
-        function viewStockDetail(symbol) {
-            showToast(`查看 ${symbol} 详情`, 'info');
-            // 这里可以跳转到股票详情页面
-        }
-
-        // 移动版页面现在使用trending.js处理数据加载
-    </script>
 </body>
 </html>
