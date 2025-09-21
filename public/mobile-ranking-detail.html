@@ -2,46 +2,199 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>榜单详情</title>
-    <link rel="stylesheet" href="./styles/mobile.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>榜单详情 - 移动版</title>
+    <link rel="stylesheet" href="./styles/main.css">
     <link rel="stylesheet" href="./styles/mobile-ranking-detail.css">
+    <style>
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* 二级页面特定样式 */
+        .single-ranking-view .rankings-grid-two {
+            grid-template-columns: 1fr;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .single-ranking-view .ranking-card {
+            min-height: auto;
+        }
+        
+        .single-ranking-view .ranking-list-compact {
+            min-height: 400px;
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- 图标库 -->
+    <script>
+        // 加载图标库
+        fetch('./assets/icons.svg')
+            .then(response => response.text())
+            .then(data => {
+                const div = document.createElement('div');
+                div.innerHTML = data;
+                document.body.insertBefore(div, document.body.firstChild);
+            });
+    </script>
 </head>
 <body>
-    <div id="mobile-app" class="mobile-app">
-        <main class="mobile-main">
-            <div id="ranking-detail-mobile" class="page-content active">
-                <div class="fixed-top-nav">
-                    <!-- ... (您提供的所有顶部导航HTML代码保持不变) ... -->
-                </div>
-                <div class="ranking-nav-container">
-                    <!-- ... (您提供的所有榜单导航按钮HTML代码保持不变) ... -->
-                </div>
-                <div id="loading-ranking" class="loading-state">
-                    <div class="loading-spinner"></div>
-                    <p>正在加载榜单数据...</p>
-                </div>
-                <div id="error-ranking" class="error-state hidden">
-                    <p>加载失败，请下拉刷新重试</p>
-                </div>
-                <div id="ranking-full-list" class="ranking-full-container hidden">
-                    <div class="ranking-list-header">
-                        <h3>完整榜单</h3>
-                        <div class="list-meta">
-                            <span id="update-time">--</span>
-                        </div>
+    <!-- 全局导航栏 -->
+    <nav class="global-navbar">
+        <div class="navbar-container">
+            <a href="index.html" class="navbar-brand">
+                <span class="navbar-logo">📊</span>
+                <span class="navbar-title">Stock Explorer</span>
+            </a>
+            <ul class="navbar-links">
+                <li>
+                    <a href="index.html" class="global-nav-link">
+                        <svg class="nav-icon tag-icon">
+                            <use href="#icon-tag"></use>
+                        </svg>
+                        标签云广场
+                    </a>
+                </li>
+                <li>
+                    <a href="trending.html" class="global-nav-link active">
+                        <svg class="nav-icon trending-icon">
+                            <use href="#icon-trending"></use>
+                        </svg>
+                        趋势风云榜
+                    </a>
+                </li>
+                <li class="dropdown">
+                    <a href="https://heatmap-pro.vercel.app/sector-aggregation.html" class="global-nav-link dropdown-toggle">
+                        <svg class="nav-icon heatmap-icon">
+                            <use href="#icon-heatmap"></use>
+                        </svg>
+                        股票热力图
+                        <svg class="dropdown-arrow">
+                            <use href="#icon-chevron-down"></use>
+                        </svg>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a href="https://heatmap-pro.vercel.app/">全景热力图</a></li>
+                        <li><a href="https://heatmap-pro.vercel.app/sector-aggregation.html">行业热力图 <span class="hot-badge">HOT</span></a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    
+
+    
+    <div id="app">
+        <!-- 头部 -->
+        <header class="header">
+            <div class="container">
+                <div class="header-content">
+                    <div class="header-left">
+                        <h1 class="logo" id="page-title">📈 榜单详情</h1>
+                        <p class="subtitle" id="page-subtitle">实时追踪市场热点 - 发现投资机会</p>
                     </div>
-                    <div class="stock-list-container">
-                        <div id="ranking-list" class="stock-list">
-                            <!-- JS将在这里填充内容 -->
+                    <div class="header-right">
+                        <div class="market-tabs">
+                            <a href="?market=sp500" class="market-tab active" data-market="sp500">
+                                <span class="market-flag">🇺🇸</span>
+                                <span class="market-name">标普500</span>
+                                <span class="market-count" id="sp500-count">502</span>
+                            </a>
+                            <a href="?market=chinese_stocks" class="market-tab" data-market="chinese_stocks">
+                                <span class="market-flag">🇨🇳</span>
+                                <span class="market-name">中概股</span>
+                                <span class="market-count" id="chinese-stocks-count">193</span>
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
-        </main>
-    </div>
+        </header>
+        
+        <!-- 主内容区 -->
+        <main class="main">
+            <div class="container">
+                <!-- 面包屑导航 -->
+                <nav class="breadcrumb" style="margin-bottom: 20px;">
+                    <a href="trending.html" class="breadcrumb-link">趋势榜单</a>
+                    <span class="breadcrumb-separator"> > </span>
+                    <span class="breadcrumb-current" id="breadcrumb-current">榜单详情</span>
+                </nav>
 
-    <!-- 关键变更：引用全新的、专为本页面设计的JS文件 -->
-    <script src="./js/mobile-ranking-detail.js"></script>
+
+
+                <!-- 单个榜单展示区 -->
+                <section class="trending-rankings single-ranking-view">
+                    <div class="section-header-main">
+                        <h2 class="section-title-main" id="ranking-title">📊 榜单详情</h2>
+                        <div class="section-controls-main">
+                            <span class="update-time">已更新至最新数据</span>
+                            <a href="https://heatmap-pro.vercel.app/sector-aggregation.html" class="heatmap-link-btn" title="查看热力图">
+                                <span class="heatmap-icon">🔥</span>
+                                <span class="heatmap-text">热力图</span>
+                            </a>
+                            <button class="refresh-btn" id="refresh-btn">🔄 刷新</button>
+                        </div>
+                    </div>
+                    
+                    <div class="rankings-grid-three">
+                        <!-- 单个榜单卡片 -->
+                        <div class="ranking-card" id="main-ranking-card">
+                            <div class="ranking-header">
+                                <div class="ranking-title-row">
+                                    <h3 class="ranking-title" id="card-title">榜单加载中...</h3>
+                                    <div class="market-toggle-links" id="market-toggle-links">
+                                        <!-- 动态生成市场切换链接 -->
+                                    </div>
+                                </div>
+                                <div class="ranking-description" id="card-description">
+                                    正在加载榜单数据...
+                                </div>
+                            </div>
+                            <ul class="ranking-list-compact" id="ranking-list">
+                                <!-- 动态加载榜单数据 -->
+                                <li class="loading-item">📊 正在加载数据...</li>
+                            </ul>
+                            <div class="ranking-footer">
+                                <div class="ranking-stats" id="ranking-stats">
+                                    <!-- 榜单统计信息 -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 右侧榜单导航 -->
+                        <div class="ranking-navigation-sidebar">
+                            <div class="navigation-header">
+                                <h3 class="navigation-title">📊 全部榜单</h3>
+                                <p class="navigation-subtitle">快速切换查看其他榜单</p>
+                            </div>
+                            <div class="navigation-buttons" id="navigation-buttons">
+                                <!-- 动态生成导航按钮 -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+        
+        <!-- 页脚 -->
+        <footer class="footer">
+            <div class="container">
+                <p>&copy; 2024 Stock Tag Explorer. 数据来源: Polygon.io & Finnhub</p>
+            </div>
+        </footer>
+        
+        <!-- Toast 通知 -->
+        <div id="toast" class="toast hidden"></div>
+    </div>
+    
+    <script src="./js/trending.js"></script>
 </body>
 </html>
