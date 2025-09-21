@@ -1,7 +1,7 @@
 // 文件: /public/js/mobile-ranking-detail.js
 // 专为 mobile-ranking-detail.html 页面设计
 
-// --- 格式化函数 (我们只需要标普500的) ---
+// --- 格式化函数 ---
 function formatSP500MarketCap(marketCapInMillions) {
   const numericMarketCap = parseFloat(marketCapInMillions);
   if (isNaN(numericMarketCap) || numericMarketCap === 0) return 'N/A';
@@ -19,7 +19,14 @@ function formatSP500MarketCap(marketCapInMillions) {
   return `$${formattedValue}${unit}美元`;
 }
 
-// --- 渲染函数 ---
+function formatChineseMarketCap(marketCapInYi) {
+  const numericMarketCap = parseFloat(marketCapInYi);
+  if (isNaN(numericMarketCap) || numericMarketCap === 0) return 'N/A';
+  const formattedValue = numericMarketCap.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `${formattedValue}亿美元`;
+}
+
+// --- 渲染函数 - 与首页保持一致的HTML结构 ---
 function renderList(stocks, marketType) {
   const listContainer = document.getElementById('ranking-list');
   if (!listContainer) return;
@@ -27,23 +34,40 @@ function renderList(stocks, marketType) {
 
   stocks.forEach((stock, index) => {
     const changePercent = parseFloat(stock.change_percent);
-    const colorClass = !isNaN(changePercent) && changePercent < 0 ? 'text-red' : 'text-green';
+    let changeClass = 'neutral';
+    if (!isNaN(changePercent)) {
+      changeClass = changePercent > 0 ? 'positive' : changePercent < 0 ? 'negative' : 'neutral';
+    }
     
-    const listItem = document.createElement('li');
-    listItem.className = 'stock-item'; // 假设的class
+    // 格式化市值
+    let marketCapDisplay = 'N/A';
+    if (marketType === 'sp500') {
+      marketCapDisplay = formatSP500MarketCap(stock.market_cap);
+    } else if (marketType === 'chinese_stocks') {
+      marketCapDisplay = formatChineseMarketCap(stock.market_cap);
+    }
+    
+    const listItem = document.createElement('div');
+    listItem.className = 'stock-item';
     listItem.innerHTML = `
-        <a href="https://stock-details-final.vercel.app/mobile.html?symbol=${stock.ticker}" class="stock-link">
-            <div class="rank">${index + 1}</div>
-            <div class="name-info">
-                <div class="name-zh">${stock.name_zh || stock.name_en}</div>
-                <div class="ticker">${stock.ticker}</div>
+        <div class="stock-rank">${index + 1}</div>
+        <div class="stock-info">
+            <div class="stock-name">${stock.name_zh || stock.name_en}</div>
+            <div class="stock-symbol">${stock.ticker}</div>
+        </div>
+        <div class="stock-price">
+            <div class="stock-current-price">${stock.current_price ? '$' + parseFloat(stock.current_price).toFixed(2) : 'N/A'}</div>
+            <div class="stock-change ${changeClass}">
+                ${!isNaN(changePercent) ? (changePercent > 0 ? '+' : '') + changePercent.toFixed(2) + '%' : 'N/A'}
             </div>
-            <div class="value-info">
-                <div class="market-cap">${formatSP500MarketCap(stock.market_cap)}</div>
-                <div class="change-percent ${colorClass}">${changePercent.toFixed(2)}%</div>
-            </div>
-        </a>
+        </div>
     `;
+    
+    // 添加点击事件
+    listItem.addEventListener('click', () => {
+        window.open(`https://stock-details-final.vercel.app/mobile.html?symbol=${stock.ticker}`, '_blank');
+    });
+    
     listContainer.appendChild(listItem);
   });
 }
