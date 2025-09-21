@@ -99,7 +99,7 @@ const getMockStocksByTag = (tagName) => {
 };
 
 // 获取相关标签
-const getRelatedTags = async (currentTag) => {
+const getRelatedTags = async (currentTag, pool) => {
     try {
         const query = `
             SELECT 
@@ -256,7 +256,7 @@ module.exports = async (req, res) => {
             totalCount = parseInt(countResult.rows[0]?.total || 0);
             
             // 获取相关标签
-            relatedTags = await getRelatedTags(tagName);
+            relatedTags = await getRelatedTags(tagName, pool);
             
             console.log(`从数据库获取到 ${stockData.length} 只股票，总计 ${totalCount} 只`);
             
@@ -268,7 +268,7 @@ module.exports = async (req, res) => {
             const mockStocks = getMockStocksByTag(tagName);
             totalCount = mockStocks.length;
             stockData = mockStocks.slice(offset, offset + limitNum);
-            relatedTags = await getRelatedTags(tagName);
+            relatedTags = await getRelatedTags(tagName, pool);
         }
         
         // 格式化股票数据

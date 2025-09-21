@@ -173,11 +173,11 @@
 
          // 创建股票项目HTML
          function createStockItem(stock) {
-             const changeClass = stock.change > 0 ? 'positive' : stock.change < 0 ? 'negative' : 'neutral';
+             const changeClass = stock.changePercent > 0 ? 'positive' : stock.changePercent < 0 ? 'negative' : 'neutral';
              return `
-                 <div class="stock-item" onclick="viewStockDetail('${stock.symbol}')">
+                 <div class="stock-item" onclick="viewStockDetail('${stock.code}')">
                      <div class="stock-info">
-                         <div class="stock-symbol">${stock.symbol}</div>
+                         <div class="stock-symbol">${stock.code}</div>
                          <div class="stock-name">${stock.name}</div>
                          <div class="stock-meta">
                              <span class="market-cap">市值: ${formatNumber(stock.marketCap)}</span>
@@ -185,8 +185,8 @@
                          </div>
                      </div>
                      <div class="stock-price">
-                         <div class="price">$${stock.price.toFixed(2)}</div>
-                         <div class="change ${changeClass}">${formatPercentage(stock.change)}</div>
+                         <div class="price">¥${stock.price.toFixed(2)}</div>
+                         <div class="change ${changeClass}">${formatPercentage(stock.changePercent)}</div>
                      </div>
                  </div>
              `;
@@ -197,7 +197,7 @@
              return `
                  <div class="related-tag" onclick="navigateToTag('${tag.id}')">
                      <span class="tag-name">${tag.name}</span>
-                     <span class="tag-count">${tag.count}</span>
+                     <span class="tag-count">${tag.stockCount || tag.count || 0}</span>
                  </div>
              `;
          }
@@ -217,26 +217,37 @@
                  document.getElementById('stock-list').style.display = 'none';
                  document.getElementById('empty-state').style.display = 'none';
 
-                 // 模拟API调用
-                 await new Promise(resolve => setTimeout(resolve, 1000));
+                 // 获取标签信息
+                 const tagsResponse = await fetch('/api/tags');
+                 const tagsResult = await tagsResponse.json();
+                 
+                 // 从分组数据中查找当前标签
+                 let currentTag = null;
+                 if (tagsResult.success && tagsResult.data) {
+                     // 遍历所有分类查找标签
+                     for (const category in tagsResult.data) {
+                         const tags = tagsResult.data[category];
+                         if (Array.isArray(tags)) {
+                             currentTag = tags.find(tag => tag.id === tagId);
+                             if (currentTag) break;
+                         }
+                     }
+                 }
+                 
+                 if (!currentTag) {
+                     throw new Error('标签不存在');
+                 }
 
-                 // 模拟数据
+                 // 获取标签下的股票数据（包含相关标签）
+                 const stocksResponse = await fetch(`/api/tag-stocks?tag=${encodeURIComponent(currentTag.name)}`);
+                 const stocksData = await stocksResponse.json();
+
                  const tagData = {
-                     id: tagId,
-                     name: tagId.includes('小盘股') ? '小盘股' : '科技股',
-                     description: '市值较小但具有成长潜力的股票',
-                     stocks: [
-                         { symbol: 'AAPL', name: '苹果公司', price: 150.25, change: 2.5, marketCap: 2500000000000, volume: 50000000 },
-                         { symbol: 'GOOGL', name: '谷歌', price: 2800.50, change: -1.2, marketCap: 1800000000000, volume: 30000000 },
-                         { symbol: 'MSFT', name: '微软', price: 300.75, change: 1.8, marketCap: 2200000000000, volume: 40000000 },
-                         { symbol: 'TSLA', name: '特斯拉', price: 800.25, change: 3.2, marketCap: 800000000000, volume: 60000000 },
-                         { symbol: 'AMZN', name: '亚马逊', price: 3200.00, change: -0.5, marketCap: 1600000000000, volume: 25000000 }
-                     ],
-                     relatedTags: [
-                         { id: 'tech', name: '科技股', count: 150 },
-                         { id: 'growth', name: '成长股', count: 120 },
-                         { id: 'nasdaq', name: '纳斯达克', count: 200 }
-                     ]
+                     id: currentTag.id,
+                     name: currentTag.name,
+                     description: currentTag.description,
+                     stocks: stocksData.data?.stocks || [],
+                     relatedTags: stocksData.data?.relatedTags || []
                  };
 
                  // 更新页面内容
@@ -246,9 +257,9 @@
 
                  // 更新统计信息
                  const totalStocks = tagData.stocks.length;
-                 const risingStocks = tagData.stocks.filter(s => s.change > 0).length;
-                 const fallingStocks = tagData.stocks.filter(s => s.change < 0).length;
-                 const flatStocks = tagData.stocks.filter(s => s.change === 0).length;
+                 const risingStocks = tagData.stocks.filter(s => s.changePercent > 0).length;
+                 const fallingStocks = tagData.stocks.filter(s => s.changePercent < 0).length;
+                 const flatStocks = tagData.stocks.filter(s => s.changePercent === 0).length;
 
                  document.getElementById('total-stocks').textContent = totalStocks;
                  document.getElementById('rising-stocks').textContent = risingStocks;
@@ -280,8 +291,8 @@
          }
 
          // 查看股票详情
-         function viewStockDetail(symbol) {
-             showToast(`查看 ${symbol} 详情`, 'info');
+         function viewStockDetail(code) {
+             showToast(`查看 ${code} 详情`, 'info');
              // 这里可以跳转到股票详情页面
          }
 

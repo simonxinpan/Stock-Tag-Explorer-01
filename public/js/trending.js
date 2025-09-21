@@ -820,6 +820,199 @@ function generateNavigationButtons(currentListType, currentMarket) {
 }
 
 // ================================================================
+// == 移动版标签广场功能 ==
+// ================================================================
+
+// 标签分类配置
+const TAG_CATEGORIES = {
+  'all': '全部',
+  'sector': '行业板块',
+  'theme': '主题概念',
+  'marketcap': '市值规模',
+  'style': '投资风格',
+  'region': '地区分布'
+};
+
+// 移动版应用对象
+const mobileApp = {
+  currentCategory: 'all',
+  allTags: [],
+  filteredTags: [],
+
+  // 初始化标签广场
+  async initTagPlaza() {
+    console.log('🏷️ 初始化移动版标签广场...');
+    await this.loadTagsData();
+    this.bindTagEvents();
+    this.renderTags();
+  },
+
+  // 加载标签数据
+  async loadTagsData() {
+    const loadingElement = document.getElementById('tags-loading');
+    const errorElement = document.getElementById('tags-error');
+    
+    try {
+      if (loadingElement) {
+        loadingElement.classList.remove('hidden');
+      }
+
+      const response = await fetch('/api/tags');
+      if (!response.ok) throw new Error(`API请求失败，状态码: ${response.status}`);
+      
+      const data = await response.json();
+      this.allTags = data || [];
+      this.filteredTags = [...this.allTags];
+      
+      console.log(`✅ 成功加载 ${this.allTags.length} 个标签`);
+      
+    } catch (error) {
+      console.error('❌ 加载标签数据失败:', error);
+      if (errorElement) {
+        errorElement.classList.remove('hidden');
+      }
+    } finally {
+      if (loadingElement) {
+        loadingElement.classList.add('hidden');
+      }
+    }
+  },
+
+  // 绑定标签相关事件
+  bindTagEvents() {
+    // 分类导航按钮事件
+    const categoryBtns = document.querySelectorAll('.category-btn');
+    categoryBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const category = e.target.getAttribute('data-category');
+        this.switchCategory(category);
+      });
+    });
+
+    // 搜索功能
+    const searchInput = document.getElementById('tag-search');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        this.searchTags(e.target.value);
+      });
+    }
+
+    // 搜索按钮
+    const searchBtn = document.querySelector('.search-btn');
+    if (searchBtn) {
+      searchBtn.addEventListener('click', () => {
+        const searchInput = document.getElementById('tag-search');
+        if (searchInput) {
+          this.searchTags(searchInput.value);
+        }
+      });
+    }
+  },
+
+  // 切换分类
+  switchCategory(category) {
+    this.currentCategory = category;
+    
+    // 更新按钮状态
+    document.querySelectorAll('.category-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-category') === category);
+    });
+
+    // 过滤标签
+    this.filterTagsByCategory();
+    this.renderTags();
+  },
+
+  // 按分类过滤标签
+  filterTagsByCategory() {
+    if (this.currentCategory === 'all') {
+      this.filteredTags = [...this.allTags];
+    } else {
+      this.filteredTags = this.allTags.filter(tag => tag.category === this.currentCategory);
+    }
+  },
+
+  // 搜索标签
+  searchTags(query) {
+    const searchQuery = query.toLowerCase().trim();
+    
+    if (!searchQuery) {
+      this.filterTagsByCategory();
+    } else {
+      this.filteredTags = this.allTags.filter(tag => 
+        tag.name.toLowerCase().includes(searchQuery) ||
+        tag.description.toLowerCase().includes(searchQuery)
+      );
+    }
+    
+    this.renderTags();
+  },
+
+  // 渲染标签
+  renderTags() {
+    const tagButtonsContainer = document.getElementById('tag-buttons-container');
+    const tagGroupsContainer = document.getElementById('tag-groups-mobile');
+    
+    if (!tagButtonsContainer) return;
+
+    // 如果没有标签数据，显示简单的静态标签
+    if (this.filteredTags.length === 0) {
+      this.renderStaticTags();
+      return;
+    }
+
+    // 渲染动态标签
+    const tagsHTML = this.filteredTags.map(tag => {
+      const stockCount = tag.stock_count || tag.stocks?.length || 0;
+      return `
+        <div class="tag-item" onclick="navigateToTagDetail('${tag.id}')">
+          <span class="tag-name">${tag.name}</span>
+          <span class="tag-count">${stockCount}</span>
+        </div>
+      `;
+    }).join('');
+
+    tagButtonsContainer.innerHTML = tagsHTML;
+
+    // 隐藏分组视图，显示按钮视图
+    if (tagGroupsContainer) {
+      tagGroupsContainer.classList.add('hidden');
+    }
+    tagButtonsContainer.classList.remove('hidden');
+  },
+
+  // 渲染静态标签（备用方案）
+  renderStaticTags() {
+    const tagButtonsContainer = document.getElementById('tag-buttons-container');
+    if (!tagButtonsContainer) return;
+
+    const staticTags = [
+      { id: 'tech', name: '科技股', count: 150 },
+      { id: 'finance', name: '金融股', count: 89 },
+      { id: 'healthcare', name: '医疗股', count: 76 },
+      { id: 'energy', name: '能源股', count: 45 },
+      { id: 'consumer', name: '消费股', count: 123 },
+      { id: 'marketcap_小盘股', name: '小盘股', count: 67 }
+    ];
+
+    const tagsHTML = staticTags.map(tag => `
+      <div class="tag-item" onclick="navigateToTagDetail('${tag.id}')">
+        <span class="tag-name">${tag.name}</span>
+        <span class="tag-count">${tag.count}</span>
+      </div>
+    `).join('');
+
+    tagButtonsContainer.innerHTML = tagsHTML;
+  }
+};
+
+// 导航到标签详情页
+function navigateToTagDetail(tagId) {
+  const detailUrl = `mobile-tag-detail.html?tagId=${encodeURIComponent(tagId)}`;
+  window.location.href = detailUrl;
+}
+
+// ================================================================
 // == 最终执行模式：将主逻辑封装为独立的、自执行的异步函数 ==
 // ================================================================
 
@@ -852,6 +1045,13 @@ async function main() {
            // 并发地加载所有榜单和汇总数据
            loadAndRenderSummaryData(); // <-- 新增的调用
            TRENDING_LISTS_CONFIG.forEach(loadAndRenderList);
+           
+           // 初始化移动版标签广场（如果存在标签页面元素）
+           const tagPlazaElement = document.getElementById('tag-plaza-mobile');
+           if (tagPlazaElement) {
+             console.log('🏷️ 检测到标签广场页面，初始化标签功能...');
+             await mobileApp.initTagPlaza();
+           }
            
            // 为榜单导航按钮添加点击事件
            const rankingNavBtns = document.querySelectorAll('.ranking-nav-btn');
@@ -930,3 +1130,5 @@ main();
 
 // 将函数暴露到全局作用域，供HTML中的onclick使用
 window.navigateToRankingDetail = navigateToRankingDetail;
+window.navigateToTagDetail = navigateToTagDetail;
+window.mobileApp = mobileApp;
