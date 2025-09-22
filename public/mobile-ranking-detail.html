@@ -2,41 +2,24 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>榜单详情</title>
-    
-    <!-- 1. 只加载移动版专属的CSS样式 -->
-    <link rel="stylesheet" href="./styles/mobile.css">
-    <link rel="stylesheet" href="./styles/mobile-ranking-detail.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>榜单详情 - 移动版</title>
+    <!-- 关键：只引用移动版自己需要的CSS -->
+    <link rel="stylesheet" href="/styles/mobile.css">
+    <link rel="stylesheet" href="/styles/mobile-ranking-detail.css">
 </head>
 <body>
-    <div id="mobile-app" class="mobile-app">
-        <header class="mobile-header">
-            <button onclick="history.back()">返回</button>
-            <h1 id="page-title">榜单加载中...</h1>
-            <!-- 市场切换按钮 -->
-            <div class="market-selector">
-                <a id="sp500-link" href="#">标普500</a>
-                <a id="chinese-stocks-link" href="#">中概股</a>
-            </div>
-        </header>
-
-        <main class="mobile-main">
-            <!-- ================================================================ -->
-            <!-- == 关键的、必需的HTML结构“舞台” == -->
-            <!-- ================================================================ -->
-            <!-- 这个外层容器的名字可以自定义，但JS里也要对应修改 -->
-            <div id="ranking-list-container">
-                <!-- JS脚本会寻找下面这个UL元素，并把股票列表填充进去 -->
-                <ul id="ranking-list" class="stock-list-full">
-                    <li class="loading-item">正在初始化脚本...</li>
-                </ul>
-            </div>
-            <!-- ================================================================ -->
-        </main>
-    </div>
-
-    <!-- 2. 引用桌面版那个成功的JS“大脑” -->
-    <script src="./js/trending.js"></script>
+    <header class="mobile-header">
+        <a href="/mobile.html" class="back-button">返回</a>
+        <h1 id="list-title">榜单加载中...</h1>
+    </header>
+    <main>
+        <!-- 唯一的、用于渲染数据的容器 -->
+        <div id="ranking-list-container">
+            <p class="loading-text">正在加载数据...</p>
+        </div>
+    </main>
+    <!-- 关键：引用一个全新的、独立的JS文件 -->
+    <script src="/js/mobile-detail-app.js"></script>
 </body>
 </html>
