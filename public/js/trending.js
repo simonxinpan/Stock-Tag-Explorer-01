@@ -769,7 +769,7 @@ function renderSingleRankingList(stocks, listType, market) {
     if (!isMobile) {
       // 桌面版：使用新的表格渲染函数
       console.log(`🎨 [DESKTOP] 使用表格渲染模式`);
-      renderStockList(listContainer, stocks, market);
+      renderStockList(listContainer, stocks, market, listType);
     } else {
       // 移动版：保持原有的列表渲染
       console.log(`🎨 [MOBILE] 使用列表渲染模式`);
@@ -825,28 +825,34 @@ function updateRankingStats(stocks, listType) {
 }
 
 /**
- * 【Project Golden Display】桌面版表格渲染函数
- * 渲染股票列表为表格格式，显示股价等关键指标
+ * 【Project Golden Polish V27.2】桌面版表格渲染函数
+ * 渲染股票列表为表格格式，实现动态列渲染和涨绿跌红颜色逻辑
  * @param {HTMLElement} container - 容器元素
  * @param {Array} stocks - 股票数据数组
  * @param {string} marketType - 市场类型 ('chinese_stocks' 或 'sp500')
+ * @param {string} listType - 榜单类型，用于决定显示哪些列
  */
-function renderStockList(container, stocks, marketType) {
+function renderStockList(container, stocks, marketType, listType = '') {
   if (!container) return;
+  
+  // 判断是否为市值榜
+  const isMarketCapList = listType === 'top_market_cap';
   
   // 创建表格结构 (如果尚不存在)
   let tableBody = container.querySelector('tbody');
   if (!tableBody) {
     const table = document.createElement('table');
     table.className = 'stock-table'; // 确保CSS可以选中
+    
+    // 动态生成表头 - 市值榜显示市值列，其他榜单显示股价列
+    const headerColumns = isMarketCapList 
+      ? `<th>#</th><th>名称</th><th>市值</th><th>涨跌幅</th>`
+      : `<th>#</th><th>名称</th><th>股价</th><th>涨跌幅</th>`;
+    
     table.innerHTML = `
         <thead>
             <tr>
-                <th>#</th>
-                <th>名称</th>
-                <th>市值</th>
-                <th>股价</th>
-                <th>涨跌幅</th>
+                ${headerColumns}
             </tr>
         </thead>
         <tbody></tbody>`;
@@ -860,35 +866,44 @@ function renderStockList(container, stocks, marketType) {
   stocks.forEach((stock, index) => {
     const row = tableBody.insertRow();
     
-    const last_price = parseFloat(stock.last_price);
+    // 兼容不同API返回的字段名：price 或 last_price
+    const last_price = parseFloat(stock.price || stock.last_price);
     const change_percent = parseFloat(stock.change_percent);
     
     // 排名
     row.insertCell().textContent = index + 1;
     
-    // 名称
+    // 名称 - 兼容不同API返回的字段名
     const nameCell = row.insertCell();
-    nameCell.innerHTML = `<div>${stock.name_zh || stock.name_en}</div><div class="ticker">${stock.ticker}</div>`;
+    const stockName = stock.name_zh || stock.name_en || stock.name || stock.symbol;
+    const stockTicker = stock.ticker || stock.symbol;
+    nameCell.innerHTML = `<div>${stockName}</div><div class="ticker">${stockTicker}</div>`;
     
-    // 市值 (使用我们已有的、完美的分支逻辑)
-    const marketCapCell = row.insertCell();
-    if (marketType === 'chinese_stocks') {
-      marketCapCell.textContent = formatChineseStockMarketCap(stock.market_cap);
+    // 动态列渲染：市值榜显示市值，其他榜单显示股价
+    if (isMarketCapList) {
+      // 市值列
+      const marketCapCell = row.insertCell();
+      if (marketType === 'chinese_stocks') {
+        marketCapCell.textContent = formatChineseStockMarketCap(stock.market_cap);
+      } else {
+        marketCapCell.textContent = formatSP500MarketCap(stock.market_cap);
+      }
     } else {
-      marketCapCell.textContent = formatSP500MarketCap(stock.market_cap);
+      // 股价列
+      const priceCell = row.insertCell();
+      priceCell.textContent = !isNaN(last_price) ? `$${last_price.toFixed(2)}` : 'N/A';
     }
-    
-    // 股价 (新增的关键部分)
-    const priceCell = row.insertCell();
-    priceCell.textContent = !isNaN(last_price) ? `$${last_price.toFixed(2)}` : 'N/A';
 
-    // 涨跌幅 (保持健壮)
+    // 涨跌幅 - 实现涨绿跌红颜色逻辑
     const changeCell = row.insertCell();
     if (!isNaN(change_percent)) {
-      changeCell.textContent = `${change_percent.toFixed(2)}%`;
-      changeCell.className = change_percent < 0 ? 'text-red' : 'text-green';
+      const changeText = `${change_percent >= 0 ? '+' : ''}${change_percent.toFixed(2)}%`;
+      changeCell.textContent = changeText;
+      // 涨绿跌红：涨幅为绿色，跌幅为红色
+      changeCell.className = change_percent >= 0 ? 'text-green' : 'text-red';
     } else {
       changeCell.textContent = 'N/A';
+      changeCell.className = '';
     }
   });
 }
