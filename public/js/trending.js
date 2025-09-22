@@ -1037,8 +1037,8 @@ async function main() {
     // 确保事件监听器只绑定一次
     bindEventListenersIfNeeded();
 
-    // 关键的、健壮的分支判断
-    if (pageName.includes('list-detail.html') || pageName.includes('mobile-ranking-detail.html')) {
+    // 关键的、健壮的分支判断 - 修复：trending.html始终作为概览页处理
+    if ((pageName.includes('list-detail.html') || pageName.includes('mobile-ranking-detail.html')) && !pageName.includes('trending.html')) {
       // --- 这是二级详情页的专属逻辑 ---
       if (listType) {
         console.log(`📋 加载二级榜单页面...`);
