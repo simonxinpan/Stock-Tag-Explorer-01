@@ -41,6 +41,26 @@ function updateMarketNavigation() {
   }
 }
 
+// 更新市场导航按钮的激活状态
+function updateMarketNavButtons() {
+  const currentMarket = getCurrentMarket();
+  const sp500Btn = document.getElementById('sp500-nav-btn');
+  const chineseStocksBtn = document.getElementById('chinese-stocks-nav-btn');
+  
+  if (sp500Btn && chineseStocksBtn) {
+    // 移除所有激活状态
+    sp500Btn.classList.remove('active');
+    chineseStocksBtn.classList.remove('active');
+    
+    // 根据当前市场添加激活状态
+    if (currentMarket === 'chinese_stocks') {
+      chineseStocksBtn.classList.add('active');
+    } else {
+      sp500Btn.classList.add('active');
+    }
+  }
+}
+
 // 定义我们需要加载的所有榜单
 const TRENDING_LISTS_CONFIG = [
   { id: 'top-gainers-list', type: 'top_gainers' },
@@ -905,6 +925,9 @@ function initializeApp() {
     
     // 更新市场导航状态
     updateMarketNavigation();
+    
+    // 更新市场导航按钮状态
+    updateMarketNavButtons();
     
     // 并发地加载所有榜单和汇总数据
     loadAndRenderSummaryData();

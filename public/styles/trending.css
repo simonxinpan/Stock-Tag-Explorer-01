@@ -297,6 +297,52 @@
     box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
+/* 市场导航按钮样式 */
+.market-nav-buttons {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.market-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.market-nav-btn:hover {
+    background: linear-gradient(135deg, #5a67d8, #6b46c1);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+    color: white;
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.market-nav-btn.active {
+    background: linear-gradient(135deg, #4c51bf, #553c9a);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.market-icon {
+    font-size: 1rem;
+}
+
+.market-text {
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
 /* 市场切换链接样式 */
 .ranking-title-row {
     display: flex;
