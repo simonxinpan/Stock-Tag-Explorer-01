@@ -163,87 +163,108 @@ const RANKING_CONFIG = {
  * @returns {string} - 代表一个 <li> 元素的 HTML 字符串
  */
 function createStockListItemHTML(stock, type, rank, marketType = 'sp500') {
-  const changePercent = parseFloat(stock.change_percent) || 0;
-  const price = parseFloat(stock.last_price) || 0;
+  // 🚀 Project Golden Render - 最终健壮版渲染逻辑
+  // 使用空值合并操作符 (??) 和 || 确保所有字段都有安全回退
+  
+  const ticker = stock.ticker ?? 'N/A';
+  const name = stock.name_zh || stock.name_en || stock.name || '未知名称';
+  const last_price = parseFloat(stock.last_price);
+  const change_percent = parseFloat(stock.change_percent);
+  
+  // 健壮的价格和涨跌幅处理
+  const price = !isNaN(last_price) ? last_price : 0;
+  const changePercent = !isNaN(change_percent) ? change_percent : 0;
   const colorClass = changePercent >= 0 ? 'positive' : 'negative';
   const sign = changePercent >= 0 ? '+' : '';
    
   // 构建指向正确详情页的链接
-  const detailsPageUrl = `https://stock-details-final.vercel.app/?symbol=${stock.ticker}`;
+  const detailsPageUrl = `https://stock-details-final.vercel.app/?symbol=${ticker}`;
 
   // 根据榜单类型决定显示哪个核心数据
   let mainMetricHTML = '';
   switch (type) {
     case 'top_turnover':
       // 成交额榜显示成交额
-      const turnover = stock.turnover ? formatLargeNumber(stock.turnover) : 'N/A';
+      const turnover = stock.turnover && !isNaN(parseFloat(stock.turnover)) ? formatLargeNumber(stock.turnover) : 'N/A';
       mainMetricHTML = `<div class="price">${turnover}</div>`;
       break;
     case 'top_volatility':
       // 振幅榜显示振幅百分比
-      const amplitude = stock.amplitude_percent ? `${Number(stock.amplitude_percent).toFixed(2)}%` : 'N/A';
+      const amplitude_val = parseFloat(stock.amplitude_percent);
+      const amplitude = !isNaN(amplitude_val) ? `${amplitude_val.toFixed(2)}%` : 'N/A';
       mainMetricHTML = `<div class="price">${amplitude}</div>`;
       break;
     case 'top_gap_up':
       // 高开缺口榜显示缺口百分比
-      const gapPercent = stock.gap_percent ? `${Number(stock.gap_percent).toFixed(2)}%` : 'N/A';
+      const gap_val = parseFloat(stock.gap_percent);
+      const gapPercent = !isNaN(gap_val) ? `${gap_val.toFixed(2)}%` : 'N/A';
       mainMetricHTML = `<div class="price">${gapPercent}</div>`;
       break;
     case 'top_losers':
       // 跌幅榜显示价格和跌幅
-      mainMetricHTML = `<div class="price">$${price.toFixed(2)}</div>`;
+      const losersPrice = !isNaN(price) ? `$${price.toFixed(2)}` : 'N/A';
+      mainMetricHTML = `<div class="price">${losersPrice}</div>`;
       break;
     case 'new_lows':
       // 新低榜显示52周最低价
-      const weekLow = stock.week_52_low ? `$${Number(stock.week_52_low).toFixed(2)}` : 'N/A';
+      const week_low_val = parseFloat(stock.week_52_low);
+      const weekLow = !isNaN(week_low_val) ? `$${week_low_val.toFixed(2)}` : 'N/A';
       mainMetricHTML = `<div class="price">${weekLow}</div>`;
       break;
     case 'new_highs':
       // 新高榜显示52周最高价
-      const weekHigh = stock.week_52_high ? `$${Number(stock.week_52_high).toFixed(2)}` : 'N/A';
+      const week_high_val = parseFloat(stock.week_52_high);
+      const weekHigh = !isNaN(week_high_val) ? `$${week_high_val.toFixed(2)}` : 'N/A';
       mainMetricHTML = `<div class="price">${weekHigh}</div>`;
       break;
     // 🆕 基于Polygon API数据的新榜单
     case 'institutional_focus':
       // 机构关注榜显示成交额和VWAP偏离度
-      const instTurnover = stock.turnover ? formatLargeNumber(stock.turnover) : 'N/A';
-      const vwapPercent = stock.price_vs_vwap_percent ? `${Number(stock.price_vs_vwap_percent).toFixed(2)}%` : 'N/A';
+      const instTurnover = stock.turnover && !isNaN(parseFloat(stock.turnover)) ? formatLargeNumber(stock.turnover) : 'N/A';
+      const vwap_val = parseFloat(stock.price_vs_vwap_percent);
+      const vwapPercent = !isNaN(vwap_val) ? `${vwap_val.toFixed(2)}%` : 'N/A';
       mainMetricHTML = `<div class="price">${instTurnover}</div><div class="metric-small">vs VWAP: ${vwapPercent}</div>`;
       break;
     case 'retail_hot':
       // 散户热门榜显示交易笔数和每百万股交易笔数
-      const tradeCount = stock.trade_count ? formatLargeNumber(stock.trade_count) : 'N/A';
-      const tradesPerMillion = stock.trades_per_million_shares ? Number(stock.trades_per_million_shares).toFixed(1) : 'N/A';
+      const tradeCount = stock.trade_count && !isNaN(parseFloat(stock.trade_count)) ? formatLargeNumber(stock.trade_count) : 'N/A';
+      const trades_per_mil_val = parseFloat(stock.trades_per_million_shares);
+      const tradesPerMillion = !isNaN(trades_per_mil_val) ? trades_per_mil_val.toFixed(1) : 'N/A';
       mainMetricHTML = `<div class="price">${tradeCount}笔</div><div class="metric-small">${tradesPerMillion}/M股</div>`;
       break;
     case 'smart_money':
       // 主力动向榜显示VWAP偏离度和成交额
-      const smartVwapPercent = stock.price_vs_vwap_percent ? `+${Number(stock.price_vs_vwap_percent).toFixed(2)}%` : 'N/A';
-      const smartTurnover = stock.turnover ? formatLargeNumber(stock.turnover) : 'N/A';
+      const smart_vwap_val = parseFloat(stock.price_vs_vwap_percent);
+      const smartVwapPercent = !isNaN(smart_vwap_val) ? `+${smart_vwap_val.toFixed(2)}%` : 'N/A';
+      const smartTurnover = stock.turnover && !isNaN(parseFloat(stock.turnover)) ? formatLargeNumber(stock.turnover) : 'N/A';
       mainMetricHTML = `<div class="price">${smartVwapPercent}</div><div class="metric-small">${smartTurnover}</div>`;
       break;
     case 'high_liquidity':
       // 高流动性榜显示成交量和换手率
-      const volume = stock.volume ? formatLargeNumber(stock.volume) : 'N/A';
-      const turnoverRate = stock.turnover_rate_percent ? `${Number(stock.turnover_rate_percent).toFixed(2)}%` : 'N/A';
+      const volume = stock.volume && !isNaN(parseFloat(stock.volume)) ? formatLargeNumber(stock.volume) : 'N/A';
+      const turnover_rate_val = parseFloat(stock.turnover_rate_percent);
+      const turnoverRate = !isNaN(turnover_rate_val) ? `${turnover_rate_val.toFixed(2)}%` : 'N/A';
       mainMetricHTML = `<div class="price">${volume}</div><div class="metric-small">换手率: ${turnoverRate}</div>`;
       break;
     case 'unusual_activity':
       // 异动榜显示交易笔数和异常指标
-      const unusualTrades = stock.trade_count ? formatLargeNumber(stock.trade_count) : 'N/A';
-      const unusualRatio = stock.trades_per_million_shares ? Number(stock.trades_per_million_shares).toFixed(1) : 'N/A';
+      const unusualTrades = stock.trade_count && !isNaN(parseFloat(stock.trade_count)) ? formatLargeNumber(stock.trade_count) : 'N/A';
+      const unusual_ratio_val = parseFloat(stock.trades_per_million_shares);
+      const unusualRatio = !isNaN(unusual_ratio_val) ? unusual_ratio_val.toFixed(1) : 'N/A';
       mainMetricHTML = `<div class="price">${unusualTrades}笔</div><div class="metric-small">异动指数: ${unusualRatio}</div>`;
       break;
     case 'momentum_stocks':
       // 动量榜显示动量评分和成交量
-      const momentumScore = stock.momentum_score ? Number(stock.momentum_score).toFixed(2) : 'N/A';
-      const momentumVolume = stock.volume ? formatLargeNumber(stock.volume) : 'N/A';
+      const momentum_score_val = parseFloat(stock.momentum_score);
+      const momentumScore = !isNaN(momentum_score_val) ? momentum_score_val.toFixed(2) : 'N/A';
+      const momentumVolume = stock.volume && !isNaN(parseFloat(stock.volume)) ? formatLargeNumber(stock.volume) : 'N/A';
       mainMetricHTML = `<div class="price">评分: ${momentumScore}</div><div class="metric-small">${momentumVolume}</div>`;
       break;
     case 'top_market_cap':
       // 市值榜显示市值和价格，根据市场类型调用不同的格式化函数
       let marketCapFormatted = 'N/A';
-      if (stock.market_cap) {
+      const market_cap_val = parseFloat(stock.market_cap);
+      if (!isNaN(market_cap_val) && market_cap_val > 0) {
         if (marketType === 'chinese_stocks') {
           // 中概股：调用中概股专属函数（输入为美元）
           marketCapFormatted = formatChineseStockMarketCap(stock.market_cap);
@@ -252,12 +273,17 @@ function createStockListItemHTML(stock, type, rank, marketType = 'sp500') {
           marketCapFormatted = formatSP500MarketCap(stock.market_cap);
         }
       }
-      mainMetricHTML = `<div class="price">${marketCapFormatted}</div><div class="metric-small">$${price.toFixed(2)}</div>`;
+      const marketCapPrice = !isNaN(price) ? `$${price.toFixed(2)}` : 'N/A';
+      mainMetricHTML = `<div class="price">${marketCapFormatted}</div><div class="metric-small">${marketCapPrice}</div>`;
       break;
     default: // 涨幅榜等默认显示价格和涨跌幅
-      mainMetricHTML = `<div class="price">$${price.toFixed(2)}</div>`;
+      const defaultPrice = !isNaN(price) ? `$${price.toFixed(2)}` : 'N/A';
+      mainMetricHTML = `<div class="price">${defaultPrice}</div>`;
       break;
   }
+
+  // 健壮的涨跌幅显示
+  const changeDisplay = !isNaN(changePercent) ? `${sign}${changePercent.toFixed(2)}%` : 'N/A';
 
   return `
     <li class="stock-item">
@@ -265,13 +291,13 @@ function createStockListItemHTML(stock, type, rank, marketType = 'sp500') {
         <div class="stock-header">
           <div class="rank-circle">${rank}</div>
           <div class="stock-basic">
-            <div class="name">${stock.name_zh || stock.name || 'N/A'}</div>
-            <div class="ticker">${stock.ticker}</div>
+            <div class="name">${name}</div>
+            <div class="ticker">${ticker}</div>
           </div>
         </div>
         <div class="stock-metrics">
           ${mainMetricHTML}
-          <div class="change ${colorClass}">${sign}${changePercent.toFixed(2)}%</div>
+          <div class="change ${colorClass}">${changeDisplay}</div>
         </div>
       </a>
     </li>
