@@ -26,9 +26,9 @@ const ORDER_BY_MAP = {
   new_highs: 'ORDER BY (last_price / week_52_high) DESC NULLS LAST',
   new_lows: 'ORDER BY (last_price / week_52_low) ASC NULLS LAST',
   
-  // === 技术指标榜单 (基于现有数据计算) ===
-  top_volatility: 'ORDER BY ((high_price - low_price) / previous_close) DESC NULLS LAST',
-  top_gap_up: 'ORDER BY ((open_price - previous_close) / previous_close) DESC NULLS LAST',
+  // === 技术指标榜单 (修复字段映射) ===
+  top_volatility: 'ORDER BY ((week_52_high - week_52_low) / last_price) DESC NULLS LAST',
+  top_gap_up: 'ORDER BY change_percent DESC NULLS LAST', // 使用涨跌幅替代缺口计算
   unusual_activity: 'ORDER BY ABS(change_percent) DESC NULLS LAST',
   momentum_stocks: 'ORDER BY change_percent DESC NULLS LAST',
 

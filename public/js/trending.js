@@ -741,7 +741,8 @@ function updateMarketButtons(currentMarket) {
  * @param {string} market - 市场类型
  */
 /**
- * 【最终调试版】渲染单个榜单的股票列表
+ * 【Project Golden Display】渲染单个榜单的股票列表
+ * 桌面版使用表格渲染，移动版使用列表渲染
  */
 function renderSingleRankingList(stocks, listType, market) {
   console.log(`🎨 [RENDER-1/4] 开始渲染榜单，股票数量: ${stocks ? stocks.length : 0}`);
@@ -760,24 +761,35 @@ function renderSingleRankingList(stocks, listType, market) {
   }
   
   try {
-    console.log(`🎨 [RENDER-3/4] 开始生成 ${stocks.length} 条股票的HTML`);
-    // 生成股票列表HTML
-    const stocksHTML = stocks.map((stock, index) => {
-      const html = createStockListItemHTML(stock, listType, index + 1, market);
-      if (!html) {
-        console.warn(`⚠️ 第 ${index + 1} 条股票HTML生成失败:`, stock);
-      }
-      return html;
-    }).join('');
+    console.log(`🎨 [RENDER-3/4] 开始渲染 ${stocks.length} 条股票数据`);
     
-    if (!stocksHTML) {
-      console.error(`❌ [RENDER-ERROR] 所有股票HTML生成失败`);
-      listContainer.innerHTML = '<li class="error-item">❌ 数据渲染失败</li>';
-      return;
+    // 检测设备类型，桌面版使用表格渲染
+    const isMobile = window.innerWidth <= 768;
+    
+    if (!isMobile) {
+      // 桌面版：使用新的表格渲染函数
+      console.log(`🎨 [DESKTOP] 使用表格渲染模式`);
+      renderStockList(listContainer, stocks, market);
+    } else {
+      // 移动版：保持原有的列表渲染
+      console.log(`🎨 [MOBILE] 使用列表渲染模式`);
+      const stocksHTML = stocks.map((stock, index) => {
+        const html = createStockListItemHTML(stock, listType, index + 1, market);
+        if (!html) {
+          console.warn(`⚠️ 第 ${index + 1} 条股票HTML生成失败:`, stock);
+        }
+        return html;
+      }).join('');
+      
+      if (!stocksHTML) {
+        console.error(`❌ [RENDER-ERROR] 所有股票HTML生成失败`);
+        listContainer.innerHTML = '<li class="error-item">❌ 数据渲染失败</li>';
+        return;
+      }
+      
+      listContainer.innerHTML = stocksHTML;
     }
     
-    console.log(`🎨 [RENDER-4/4] HTML生成成功，长度: ${stocksHTML.length} 字符，开始插入DOM`);
-    listContainer.innerHTML = stocksHTML;
     console.log(`✅ [RENDER-SUCCESS] 榜单渲染完成，容器内元素数量: ${listContainer.children.length}`);
     
     // 更新统计信息
@@ -810,6 +822,75 @@ function updateRankingStats(stocks, listType) {
   let statsHTML = `<span class="stat-item">共 ${totalCount} 只股票</span>`;
   
   statsContainer.innerHTML = statsHTML;
+}
+
+/**
+ * 【Project Golden Display】桌面版表格渲染函数
+ * 渲染股票列表为表格格式，显示股价等关键指标
+ * @param {HTMLElement} container - 容器元素
+ * @param {Array} stocks - 股票数据数组
+ * @param {string} marketType - 市场类型 ('chinese_stocks' 或 'sp500')
+ */
+function renderStockList(container, stocks, marketType) {
+  if (!container) return;
+  
+  // 创建表格结构 (如果尚不存在)
+  let tableBody = container.querySelector('tbody');
+  if (!tableBody) {
+    const table = document.createElement('table');
+    table.className = 'stock-table'; // 确保CSS可以选中
+    table.innerHTML = `
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>名称</th>
+                <th>市值</th>
+                <th>股价</th>
+                <th>涨跌幅</th>
+            </tr>
+        </thead>
+        <tbody></tbody>`;
+    tableBody = table.querySelector('tbody');
+    container.innerHTML = '';
+    container.appendChild(table);
+  }
+  tableBody.innerHTML = '';
+
+  // 循环渲染每一行
+  stocks.forEach((stock, index) => {
+    const row = tableBody.insertRow();
+    
+    const last_price = parseFloat(stock.last_price);
+    const change_percent = parseFloat(stock.change_percent);
+    
+    // 排名
+    row.insertCell().textContent = index + 1;
+    
+    // 名称
+    const nameCell = row.insertCell();
+    nameCell.innerHTML = `<div>${stock.name_zh || stock.name_en}</div><div class="ticker">${stock.ticker}</div>`;
+    
+    // 市值 (使用我们已有的、完美的分支逻辑)
+    const marketCapCell = row.insertCell();
+    if (marketType === 'chinese_stocks') {
+      marketCapCell.textContent = formatChineseStockMarketCap(stock.market_cap);
+    } else {
+      marketCapCell.textContent = formatSP500MarketCap(stock.market_cap);
+    }
+    
+    // 股价 (新增的关键部分)
+    const priceCell = row.insertCell();
+    priceCell.textContent = !isNaN(last_price) ? `$${last_price.toFixed(2)}` : 'N/A';
+
+    // 涨跌幅 (保持健壮)
+    const changeCell = row.insertCell();
+    if (!isNaN(change_percent)) {
+      changeCell.textContent = `${change_percent.toFixed(2)}%`;
+      changeCell.className = change_percent < 0 ? 'text-red' : 'text-green';
+    } else {
+      changeCell.textContent = 'N/A';
+    }
+  });
 }
 
 /**
