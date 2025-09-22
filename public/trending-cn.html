@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中概股趋势榜单 - Stock Tag Explorer</title>
+    <link rel="stylesheet" href="./styles/main.css">
+    <link rel="stylesheet" href="./styles/trending.css">
+    <style>
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* 中概股专用样式 */
+        .chinese-stocks-header {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            color: white;
+        }
+        
+        .chinese-stocks-badge {
+            background: #dc2626;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- 图标库 -->
+    <script>
+        // 加载图标库
+        fetch('./assets/icons.svg')
+            .then(response => response.text())
+            .then(data => {
+                const div = document.createElement('div');
+                div.innerHTML = data;
+                document.body.insertBefore(div, document.body.firstChild);
+            });
+    </script>
+</head>
+<body>
+    <!-- 全局导航栏 -->
+    <nav class="global-navbar">
+        <div class="navbar-container">
+            <a href="index.html" class="navbar-brand">
+                <span class="navbar-logo">📊</span>
+                <span class="navbar-title">Stock Explorer</span>
+            </a>
+            <ul class="navbar-links">
+                <li>
+                    <a href="index.html" class="global-nav-link">
+                        <svg class="nav-icon tag-icon">
+                            <use href="#icon-tag"></use>
+                        </svg>
+                        标签云广场
+                    </a>
+                </li>
+                <li>
+                    <a href="trending.html" class="global-nav-link">
+                        <svg class="nav-icon trending-icon">
+                            <use href="#icon-trending"></use>
+                        </svg>
+                        标普500榜单
+                    </a>
+                </li>
+                <li>
+                    <a href="trending-cn.html" class="global-nav-link active">
+                        <svg class="nav-icon trending-icon">
+                            <use href="#icon-trending"></use>
+                        </svg>
+                        中概股榜单 <span class="chinese-stocks-badge">CN</span>
+                    </a>
+                </li>
+                <li class="dropdown">
+                    <a href="https://heatmap-pro.vercel.app/sector-aggregation.html" class="global-nav-link dropdown-toggle">
+                        <svg class="nav-icon heatmap-icon">
+                            <use href="#icon-heatmap"></use>
+                        </svg>
+                        股票热力图
+                        <svg class="dropdown-arrow">
+                            <use href="#icon-chevron-down"></use>
+                        </svg>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a href="https://heatmap-pro.vercel.app/">全景热力图</a></li>
+                        <li><a href="https://heatmap-pro.vercel.app/sector-aggregation.html">行业热力图 <span class="hot-badge">HOT</span></a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    
+    <div id="app">
+        <!-- 头部 -->
+        <header class="header chinese-stocks-header">
+            <div class="container">
+                <div class="header-content">
+                    <div class="header-left">
+                        <h1 class="logo">🇨🇳 中概股趋势榜单</h1>
+                        <p class="subtitle">实时追踪中概股市场热点 - 发现投资机会</p>
+                    </div>
+                    <div class="header-right">
+                        <!-- 市场切换标签 -->
+                        <div class="market-nav-buttons">
+                            <a href="trending.html" class="market-nav-btn" title="标普500榜单">
+                                <span class="market-icon">🇺🇸</span>
+                                <span class="market-text">标普500</span>
+                            </a>
+                            <a href="trending-cn.html" class="market-nav-btn active" title="中概股榜单">
+                                <span class="market-icon">🇨🇳</span>
+                                <span class="market-text">中概股</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- 主内容区 -->
+        <main class="main">
+            <div class="container">
+                <!-- 顶部统计数据 - 横排展示 -->
+                <section class="top-stats-horizontal">
+                    <div class="stats-container">
+                        <div class="stat-item-horizontal">
+                            <div class="stat-icon-horizontal">📊</div>
+                            <div class="stat-content-horizontal">
+                                <div class="stat-number-horizontal" id="summary-total-stocks">--</div>
+                                <div class="stat-label-horizontal">总股票数</div>
+                            </div>
+                        </div>
+                        <div class="stat-item-horizontal">
+                            <div class="stat-icon-horizontal">📈</div>
+                            <div class="stat-content-horizontal">
+                                <div class="stat-number-horizontal" id="summary-rising-stocks">--</div>
+                                <div class="stat-label-horizontal">上涨股票</div>
+                            </div>
+                        </div>
+                        <div class="stat-item-horizontal">
+                            <div class="stat-icon-horizontal">📉</div>
+                            <div class="stat-content-horizontal">
+                                <div class="stat-number-horizontal" id="summary-falling-stocks">--</div>
+                                <div class="stat-label-horizontal">下跌股票</div>
+                            </div>
+                        </div>
+                        <div class="stat-item-horizontal">
+                            <div class="stat-icon-horizontal">💎</div>
+                            <div class="stat-content-horizontal">
+                                <div class="stat-number-horizontal" id="summary-total-market-cap">--</div>
+                                <div class="stat-label-horizontal">总市值</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 中概股趋势榜单 - 两列展示 -->
+                <section class="trending-rankings">
+                    <div class="section-header-main">
+                        <h2 class="section-title-main">🇨🇳 中概股趋势榜单</h2>
+                        <div class="section-controls-main">
+                            <span class="update-time">已更新至最新数据</span>
+                            <button class="refresh-btn">🔄 刷新</button>
+                        </div>
+                    </div>
+                    
+                    <div class="rankings-grid-two">
+                        <!-- 市值榜 -->
+                        <div class="ranking-card">
+                            <div class="ranking-header">
+                                <div class="ranking-title-row">
+                                    <h3 class="ranking-title">💰 市值榜</h3>
+                                </div>
+                                <div class="ranking-description">
+                                    按市值排序，展示中概股市场巨头和蓝筹股，适合稳健投资和长期价值投资策略。
+                                </div>
+                            </div>
+                            <ul class="ranking-list-compact" id="top_market_cap-list">
+                                <!-- 动态加载市值榜前5名数据 -->
+                            </ul>
+                            <div class="ranking-footer">
+                                <a href="#" class="more-btn-link" onclick="navigateToChineseStockDetail('top_market_cap')">查看更多</a>
+                            </div>
+                        </div>
+                        
+                        <!-- 涨幅榜 -->
+                        <div class="ranking-card">
+                            <div class="ranking-header">
+                                <div class="ranking-title-row">
+                                    <h3 class="ranking-title">🚀 涨幅榜</h3>
+                                </div>
+                                <div class="ranking-description">
+                                    按当日涨跌幅排序，反映中概股市场热点和资金偏好，适合捕捉短期强势股。
+                                </div>
+                            </div>
+                            <ul class="ranking-list-compact" id="top_gainers-list">
+                                <!-- 动态加载涨幅榜前5名数据 -->
+                            </ul>
+                            <div class="ranking-footer">
+                                <a href="#" class="more-btn-link" onclick="navigateToChineseStockDetail('top_gainers')">查看更多</a>
+                            </div>
+                        </div>
+                        
+                        <!-- 跌幅榜 -->
+                        <div class="ranking-card">
+                            <div class="ranking-header">
+                                <div class="ranking-title-row">
+                                    <h3 class="ranking-title">📉 跌幅榜</h3>
+                                </div>
+                                <div class="ranking-description">
+                                    按当日跌幅排序，识别中概股市场风险和避险情绪，适合风险控制和逆向投资参考。
+                                </div>
+                            </div>
+                            <ul class="ranking-list-compact" id="top_losers-list">
+                                <!-- 动态加载跌幅榜前5名数据 -->
+                            </ul>
+                            <div class="ranking-footer">
+                                <a href="#" class="more-btn-link" onclick="navigateToChineseStockDetail('top_losers')">查看更多</a>
+                            </div>
+                        </div>
+                        
+                        <!-- 成交量榜 -->
+                        <div class="ranking-card">
+                            <div class="ranking-header">
+                                <div class="ranking-title-row">
+                                    <h3 class="ranking-title">📊 成交量榜</h3>
+                                </div>
+                                <div class="ranking-description">
+                                    按成交量排序，反映中概股市场关注度和流动性，大资金进出的重要参考指标。
+                                </div>
+                            </div>
+                            <ul class="ranking-list-compact" id="most_active-list">
+                                <!-- 动态加载成交量榜前5名数据 -->
+                            </ul>
+                            <div class="ranking-footer">
+                                <a href="#" class="more-btn-link" onclick="navigateToChineseStockDetail('most_active')">查看更多</a>
+                            </div>
+                        </div>
+                        
+                        <!-- 跳空高开榜 -->
+                        <div class="ranking-card">
+                            <div class="ranking-header">
+                                <div class="ranking-title-row">
+                                    <h3 class="ranking-title">🌅 跳空高开榜</h3>
+                                </div>
+                                <div class="ranking-description">
+                                    开盘价相对前收盘价的涨幅，反映隔夜消息面影响和中概股市场预期变化。
+                                </div>
+                            </div>
+                            <ul class="ranking-list-compact" id="top_gap_up-list">
+                                 <!-- 动态加载跳空高开榜前5名数据 -->
+                             </ul>
+                             <div class="ranking-footer">
+                                 <a href="#" class="more-btn-link" onclick="navigateToChineseStockDetail('top_gap_up')">查看更多</a>
+                             </div>
+                         </div>
+                        
+                        <!-- 跳空低开榜 -->
+                        <div class="ranking-card">
+                            <div class="ranking-header">
+                                <div class="ranking-title-row">
+                                    <h3 class="ranking-title">🌇 跳空低开榜</h3>
+                                </div>
+                                <div class="ranking-description">
+                                    开盘价相对前收盘价的跌幅，反映隔夜负面消息和中概股市场风险情绪。
+                                </div>
+                            </div>
+                            <ul class="ranking-list-compact" id="top_gap_down-list">
+                                <!-- 动态加载跳空低开榜前5名数据 -->
+                            </ul>
+                            <div class="ranking-footer">
+                                <a href="#" class="more-btn-link" onclick="navigateToChineseStockDetail('top_gap_down')">查看更多</a>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+        
+        <!-- 页脚 -->
+        <footer class="footer">
+            <div class="container">
+                <div class="footer-content">
+                    <div class="footer-left">
+                        <p>&copy; 2024 Stock Tag Explorer. 专注中概股数据分析.</p>
+                    </div>
+                    <div class="footer-right">
+                        <span class="data-source">数据来源: 实时市场数据</span>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Toast 通知 -->
+    <div id="toast" class="toast">
+        <span id="toast-message"></span>
+    </div>
+
+    <!-- 加载中概股专用的独立JS -->
+    <script src="/js/chinese-stocks-app.js"></script>
+</body>
+</html>
