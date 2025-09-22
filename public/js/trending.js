@@ -309,22 +309,16 @@ function formatSP500MarketCap(marketCapInMillions) {
 }
 
 /**
- * 【中概股专用函数】
- * 将一个以【美元】为单位的数字，格式化为"X,XXX.X亿美元"的格式。
+ * 【新增的中概股专用函数】
+ * 将一个以【美元】为单位的巨大数字（可能是字符串），格式化为"X,XXX.XX亿美元"的格式。
  */
 function formatChineseStockMarketCap(marketCapInUSD) {
   const numericMarketCap = parseFloat(marketCapInUSD);
   if (isNaN(numericMarketCap) || numericMarketCap === 0) return 'N/A';
-  
-  const BILLION = 100_000_000; // 1亿 = 100,000,000
-  
+  const BILLION = 100000000; // 一亿
   const marketCapInHundredMillions = numericMarketCap / BILLION;
-  
-  const formattedValue = marketCapInHundredMillions.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  return `$${formattedValue}亿`;
+  const formattedValue = marketCapInHundredMillions.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `$${formattedValue}亿美元`;
 }
 
 /**
@@ -578,9 +572,12 @@ async function loadAndRenderSingleList(market, listType) {
  */
 function updateSingleListPageUI(listType, market) {
   const config = RANKING_CONFIG[listType];
-  if (!config) return;
+  if (!config) {
+    console.warn(`⚠️ 未找到榜单类型 ${listType} 的配置`);
+    return;
+  }
   
-  // 更新页面标题
+  // 更新页面标题 - 增强DOM安全性
   const pageTitle = document.getElementById('page-title');
   const pageSubtitle = document.getElementById('page-subtitle');
   const breadcrumbCurrent = document.getElementById('breadcrumb-current');
@@ -588,12 +585,42 @@ function updateSingleListPageUI(listType, market) {
   const cardTitle = document.getElementById('card-title');
   const cardDescription = document.getElementById('card-description');
   
-  if (pageTitle) pageTitle.textContent = config.name;
-  if (pageSubtitle) pageSubtitle.textContent = config.description;
-  if (breadcrumbCurrent) breadcrumbCurrent.textContent = config.name;
-  if (rankingTitle) rankingTitle.textContent = config.title;
-  if (cardTitle) cardTitle.textContent = config.title;
-  if (cardDescription) cardDescription.textContent = config.description;
+  // 安全地更新每个元素，避免null引用错误
+  if (pageTitle) {
+    pageTitle.textContent = config.name;
+  } else {
+    console.warn('⚠️ 未找到 page-title 元素');
+  }
+  
+  if (pageSubtitle) {
+    pageSubtitle.textContent = config.description;
+  } else {
+    console.warn('⚠️ 未找到 page-subtitle 元素');
+  }
+  
+  if (breadcrumbCurrent) {
+    breadcrumbCurrent.textContent = config.name;
+  } else {
+    console.warn('⚠️ 未找到 breadcrumb-current 元素');
+  }
+  
+  if (rankingTitle) {
+    rankingTitle.textContent = config.title;
+  } else {
+    console.warn('⚠️ 未找到 ranking-title 元素');
+  }
+  
+  if (cardTitle) {
+    cardTitle.textContent = config.title;
+  } else {
+    console.warn('⚠️ 未找到 card-title 元素');
+  }
+  
+  if (cardDescription) {
+    cardDescription.textContent = config.description;
+  } else {
+    console.warn('⚠️ 未找到 card-description 元素');
+  }
   
   // 更新页面标题
   document.title = `${config.name} - ${market.toUpperCase()} | Stock Tag Explorer`;
@@ -723,7 +750,15 @@ function renderSingleRankingList(stocks, listType, market) {
  */
 function updateRankingStats(stocks, listType) {
   const statsContainer = document.getElementById('ranking-stats');
-  if (!statsContainer || !stocks.length) return;
+  if (!statsContainer) {
+    console.warn('⚠️ 未找到 ranking-stats 元素，跳过统计信息更新');
+    return;
+  }
+  
+  if (!stocks || !stocks.length) {
+    console.warn('⚠️ 股票数据为空，跳过统计信息更新');
+    return;
+  }
   
   const totalCount = stocks.length;
   let statsHTML = `<span class="stat-item">共 ${totalCount} 只股票</span>`;
@@ -792,141 +827,156 @@ function bindMarketSwitchEvents(currentListType) {
 // 生成右侧榜单导航按钮
 function generateNavigationButtons(currentListType, currentMarket) {
   const navigationContainer = document.getElementById('navigation-buttons');
-  if (!navigationContainer) return;
+  if (!navigationContainer) {
+    console.warn('⚠️ 未找到 navigation-buttons 元素，跳过导航按钮生成');
+    return;
+  }
 
-  const navigationHTML = TRENDING_LISTS_CONFIG.map(config => {
-    const rankingConfig = RANKING_CONFIG[config.type];
-    if (!rankingConfig) return '';
-    
-    const isActive = config.type === currentListType;
-    const activeClass = isActive ? 'active' : '';
-    
-    // 提取emoji图标
-    const titleParts = rankingConfig.title.split(' ');
-    const icon = titleParts[0];
-    const name = titleParts.slice(1).join(' ');
-    
-    return `
-      <a href="list-detail.html?market=${currentMarket}&list=${config.type}" 
-         class="navigation-button ${activeClass}" 
-         data-list-type="${config.type}">
-        <span class="navigation-button-icon">${icon}</span>
-        <span class="navigation-button-text">${name}</span>
-      </a>
-    `;
-  }).join('');
+  if (!currentListType || !currentMarket) {
+    console.warn('⚠️ 缺少必要参数，跳过导航按钮生成', { currentListType, currentMarket });
+    return;
+  }
 
-  navigationContainer.innerHTML = navigationHTML;
+  try {
+    const navigationHTML = TRENDING_LISTS_CONFIG.map(config => {
+      const rankingConfig = RANKING_CONFIG[config.type];
+      if (!rankingConfig) {
+        console.warn(`⚠️ 未找到榜单类型 ${config.type} 的配置`);
+        return '';
+      }
+      
+      const isActive = config.type === currentListType;
+      const activeClass = isActive ? 'active' : '';
+      
+      // 提取emoji图标
+      const titleParts = rankingConfig.title.split(' ');
+      const icon = titleParts[0] || '📊';
+      const name = titleParts.slice(1).join(' ') || rankingConfig.name;
+      
+      return `
+        <a href="list-detail.html?market=${currentMarket}&list=${config.type}" 
+           class="navigation-button ${activeClass}" 
+           data-list-type="${config.type}">
+          <span class="navigation-button-icon">${icon}</span>
+          <span class="navigation-button-text">${name}</span>
+        </a>
+      `;
+    }).join('');
+
+    navigationContainer.innerHTML = navigationHTML;
+    console.log(`✅ 成功生成 ${TRENDING_LISTS_CONFIG.length} 个导航按钮`);
+  } catch (error) {
+    console.error('❌ 生成导航按钮时发生错误:', error);
+    navigationContainer.innerHTML = '<div class="error-message">导航按钮加载失败</div>';
+  }
 }
 
 // ================================================================
 // == 最终执行模式：将主逻辑封装为独立的、自执行的异步函数 ==
 // ================================================================
 
-// 1. 将所有主逻辑，都放入一个名为 main 的异步函数中
-async function main() {
-    try {
-        console.log("📊 趋势页面脚本开始执行...");
+// 【最终健壮版】主入口逻辑
+function initializeApp() {
+  console.log("📊 趋势页面脚本开始执行...");
+  const urlParams = new URLSearchParams(window.location.search);
+  const pageName = window.location.pathname.split('/').pop();
+  const market = urlParams.get('market') || 'sp500';
+  const listType = urlParams.get('list') || urlParams.get('type'); // 支持两种参数名
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const pageType = getCurrentPageType();
-        const market = urlParams.get('market') || getCurrentMarket();
-        const listType = getCurrentListType(); // 使用getCurrentListType函数，它已经处理了list和type参数
+  console.log(`🔍 页面类型: ${pageName}, 市场: ${market}, 榜单类型: ${listType || 'N/A'}`);
 
-        console.log(`🔍 页面类型: ${pageType}, 市场: ${market}, 榜单类型: ${listType || 'N/A'}`);
-
-        if (pageType === 'list-detail' && listType) {
-            console.log(`📋 加载二级榜单页面...`);
-            // 直接 await 调用，确保我们能看到它的完整执行过程
-            await loadAndRenderSingleList(market, listType);
-            
-            // 绑定市场切换事件（如果存在）
-            bindMarketSwitchEvents(listType);
-        } else {
-            // 一级趋势页面逻辑（原有逻辑）
-            console.log('📊 加载一级趋势页面...');
-           
-           // 更新市场导航状态
-           updateMarketNavigation();
-           
-           // 并发地加载所有榜单和汇总数据
-           loadAndRenderSummaryData(); // <-- 新增的调用
-           TRENDING_LISTS_CONFIG.forEach(loadAndRenderList);
-           
-           // 为榜单导航按钮添加点击事件
-           const rankingNavBtns = document.querySelectorAll('.ranking-nav-btn');
-           rankingNavBtns.forEach(btn => {
-             btn.addEventListener('click', () => {
-               const rankingType = btn.getAttribute('data-ranking');
-               if (rankingType) {
-                 navigateToRankingDetail(rankingType);
-               }
-             });
-           });
-           
-           // 为所有"更多"按钮添加事件监听
-           document.addEventListener('click', (e) => {
-             if (e.target.classList.contains('more-btn') || e.target.classList.contains('more-btn-small')) {
-               const type = e.target.getAttribute('data-type');
-               if (type) {
-                 handleMoreButtonClick(type);
-               }
-             }
-             
-             // 处理顶部导航的市场切换按钮
-             if (e.target.classList.contains('market-carousel-btn')) {
-               const targetMarket = e.target.getAttribute('data-market-target');
-               if (targetMarket) {
-                 // 跳转到对应市场的榜单首页
-                 const currentUrl = new URL(window.location);
-                 currentUrl.searchParams.set('market', targetMarket);
-                 window.location.href = currentUrl.toString();
-               }
-             }
-             
-             // 处理榜单右侧的市场切换按钮
-             if (e.target.classList.contains('market-toggle-btn')) {
-               const targetMarket = e.target.getAttribute('data-market-target');
-               if (targetMarket) {
-                 // 跳转到对应市场的榜单首页
-                 const currentUrl = new URL(window.location);
-                 currentUrl.searchParams.set('market', targetMarket);
-                 window.location.href = currentUrl.toString();
-               }
-             }
-             
-             // 处理榜单卡片内的市场切换链接
-             if (e.target.classList.contains('market-link')) {
-               e.preventDefault();
-               const targetMarket = e.target.getAttribute('data-market');
-               if (targetMarket) {
-                 // 跳转到对应市场的榜单首页
-                 const currentUrl = new URL(window.location);
-                 currentUrl.searchParams.set('market', targetMarket);
-                 window.location.href = currentUrl.toString();
-               }
-             }
-             
-             // 处理榜单卡片内的"查看更多"链接
-             if (e.target.classList.contains('more-btn-link')) {
-               e.preventDefault();
-               const type = e.target.getAttribute('data-type');
-               if (type) {
-                 handleMoreButtonClick(type);
-               }
-             }
-           });
-         }
-
-        console.log("✅ 趋势页面脚本执行完成");
-
-    } catch (error) {
-        console.error("❌ 脚本主流程发生致命错误:", error);
+  // 关键的、健壮的分支判断
+  if (pageName.includes('list-detail.html') || pageName.includes('mobile-ranking-detail.html')) {
+    // --- 这是二级详情页的专属逻辑 ---
+    if (listType) {
+      console.log(`📋 加载二级榜单页面...`);
+      loadAndRenderSingleList(market, listType);
+    } else {
+      // 如果是详情页但没有list参数，清晰地显示错误
+      const container = document.getElementById('ranking-list') || document.getElementById('ranking-list-container');
+      if (container) {
+        container.innerHTML = `<li class="error-item">❌ 错误：URL中未指定榜单类型 (Missing 'list' or 'type' parameter)</li>`;
+      }
+      console.error("❌ 页面错误: 详情页需要一个 'list' 或 'type' URL参数。");
     }
+  } else {
+    // --- 这是一级概览页的专属逻辑 ---
+    console.log(`🏠 加载一级榜单页面...`);
+    
+    // 更新市场导航状态
+    updateMarketNavigation();
+    
+    // 并发地加载所有榜单和汇总数据
+    loadAndRenderSummaryData();
+    TRENDING_LISTS_CONFIG.forEach(loadAndRenderList);
+    
+    // 为榜单导航按钮添加点击事件
+    const rankingNavBtns = document.querySelectorAll('.ranking-nav-btn');
+    rankingNavBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const rankingType = btn.getAttribute('data-ranking');
+        if (rankingType) {
+          navigateToRankingDetail(rankingType);
+        }
+      });
+    });
+    
+    // 为所有"更多"按钮添加事件监听
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('more-btn') || e.target.classList.contains('more-btn-small')) {
+        const type = e.target.getAttribute('data-type');
+        if (type) {
+          handleMoreButtonClick(type);
+        }
+      }
+      
+      // 处理顶部导航的市场切换按钮
+      if (e.target.classList.contains('market-carousel-btn')) {
+        const targetMarket = e.target.getAttribute('data-market-target');
+        if (targetMarket) {
+          const currentUrl = new URL(window.location);
+          currentUrl.searchParams.set('market', targetMarket);
+          window.location.href = currentUrl.toString();
+        }
+      }
+      
+      // 处理榜单右侧的市场切换按钮
+      if (e.target.classList.contains('market-toggle-btn')) {
+        const targetMarket = e.target.getAttribute('data-market-target');
+        if (targetMarket) {
+          const currentUrl = new URL(window.location);
+          currentUrl.searchParams.set('market', targetMarket);
+          window.location.href = currentUrl.toString();
+        }
+      }
+      
+      // 处理榜单卡片内的市场切换链接
+      if (e.target.classList.contains('market-link')) {
+        e.preventDefault();
+        const targetMarket = e.target.getAttribute('data-market');
+        if (targetMarket) {
+          const currentUrl = new URL(window.location);
+          currentUrl.searchParams.set('market', targetMarket);
+          window.location.href = currentUrl.toString();
+        }
+      }
+      
+      // 处理榜单卡片内的"查看更多"链接
+      if (e.target.classList.contains('more-btn-link')) {
+        e.preventDefault();
+        const type = e.target.getAttribute('data-type');
+        if (type) {
+          handleMoreButtonClick(type);
+        }
+      }
+    });
+  }
+
+  console.log("✅ 趋势页面脚本执行完成");
 }
 
-// 2. 在脚本的最后，直接调用这个 main 函数
-main();
+// 确保在DOM加载后调用
+document.addEventListener('DOMContentLoaded', initializeApp);
 
 // 将函数暴露到全局作用域，供HTML中的onclick使用
 window.navigateToRankingDetail = navigateToRankingDetail;

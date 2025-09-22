@@ -6,20 +6,42 @@ import 'dotenv/config';
 const sslConfig = { ssl: { rejectUnauthorized: false } };
 const pools = {
   sp500: new Pool({ connectionString: process.env.NEON_DATABASE_URL, ...sslConfig }),
-  chinese_stocks: new Pool({ connectionString: process.env.CHINESE_STOCKS_DB_URL, ...sslConfig })
+  chinese_stocks: new Pool({ connectionString: process.env.CHINESE_STOCKS_DATABASE_URL, ...sslConfig })
 };
 
 const ORDER_BY_MAP = {
+  // 基础排行榜
   top_market_cap: 'ORDER BY market_cap DESC NULLS LAST',
   top_gainers: 'ORDER BY change_percent DESC NULLS LAST',
   top_losers: 'ORDER BY change_percent ASC NULLS LAST',
   top_volume: 'ORDER BY volume DESC NULLS LAST',
+  top_turnover: 'ORDER BY (last_price * volume) DESC NULLS LAST',
+  
+  // 中概股专属榜单
+  new_highs: 'ORDER BY change_percent DESC NULLS LAST',
+  new_lows: 'ORDER BY change_percent ASC NULLS LAST',
+  top_amplitude: 'ORDER BY ABS(change_percent) DESC NULLS LAST',
+  top_gap_up: 'ORDER BY change_percent DESC NULLS LAST',
+  top_gap_down: 'ORDER BY change_percent ASC NULLS LAST',
+  top_turnover_rate: 'ORDER BY volume DESC NULLS LAST',
+  top_volume_ratio: 'ORDER BY volume DESC NULLS LAST',
+  top_bid_ask_ratio: 'ORDER BY volume DESC NULLS LAST',
+  
+  // 机构和资金流向榜单
+  institutional_focus: 'ORDER BY market_cap DESC NULLS LAST',
+  retail_hot: 'ORDER BY volume DESC NULLS LAST',
+  smart_money: 'ORDER BY market_cap DESC NULLS LAST',
+  high_liquidity: 'ORDER BY volume DESC NULLS LAST',
+  unusual_activity: 'ORDER BY volume DESC NULLS LAST',
+  momentum_stocks: 'ORDER BY change_percent DESC NULLS LAST',
+  
+  // 其他榜单
   top_revenue: 'ORDER BY market_cap DESC NULLS LAST',
   top_net_income: 'ORDER BY market_cap DESC NULLS LAST',
   top_pe_ratio: 'ORDER BY market_cap DESC NULLS LAST',
   top_dividend_yield: 'ORDER BY market_cap DESC NULLS LAST',
-  top_52w_high: 'ORDER BY market_cap DESC NULLS LAST',
-  top_52w_low: 'ORDER BY market_cap DESC NULLS LAST',
+  top_52w_high: 'ORDER BY change_percent DESC NULLS LAST',
+  top_52w_low: 'ORDER BY change_percent ASC NULLS LAST',
   top_analyst_recommendations: 'ORDER BY market_cap DESC NULLS LAST',
   top_price_target: 'ORDER BY market_cap DESC NULLS LAST',
   top_insider_ownership: 'ORDER BY market_cap DESC NULLS LAST',
@@ -41,7 +63,7 @@ export default async function handler(req, res) {
       FROM stocks 
       WHERE last_price IS NOT NULL AND market_cap IS NOT NULL 
       ${orderByClause} 
-      LIMIT 100;`;
+      LIMIT 25;`;
     const { rows } = await pool.query(query);
     res.status(200).json(rows);
   } catch (error) {

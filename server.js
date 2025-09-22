@@ -44,7 +44,7 @@ const server = createServer(async (req, res) => {
       } else if (apiName === 'market-summary') {
         apiHandler = importAPI('./api/market-summary-mock.js');
       } else if (apiName === 'ranking') {
-        // 临时使用模拟API来测试前端功能
+        // 使用模拟数据API
         apiHandler = importAPI('./api/ranking-mock.js');
       } else {
         apiHandler = importAPI(apiPath);
