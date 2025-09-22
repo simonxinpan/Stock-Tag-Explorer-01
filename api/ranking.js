@@ -1,4 +1,4 @@
-// 文件: /api/ranking.js (最终全功能版)
+// 文件: /api/ranking.js (最终宽容版)
 import pg from 'pg';
 const { Pool } = pg;
 import 'dotenv/config';
@@ -9,48 +9,51 @@ const pools = {
   chinese_stocks: new Pool({ connectionString: process.env.CHINESE_STOCKS_DB_URL, ...sslConfig })
 };
 
-// ================================================================
-// == 关键的、包含了所有14个榜单真实排序逻辑的映射 ==
-// ================================================================
+// 包含了所有14个榜单的、理想的SQL排序逻辑
 const ORDER_BY_MAP = {
-  // === 核心榜单 (已验证) ===
-  top_market_cap: 'ORDER BY market_cap DESC NULLS LAST',
-  top_gainers: 'ORDER BY change_percent DESC NULLS LAST',
-  top_losers: 'ORDER BY change_percent ASC NULLS LAST',
-  
-  // === 交易活跃度榜单 (需要 volume, turnover 字段) ===
-  top_volume: 'ORDER BY volume DESC NULLS LAST',
-  top_turnover: 'ORDER BY turnover DESC NULLS LAST',
-  
-  // === 价格趋势榜单 (需要 52周高/低价字段) ===
-  new_highs: 'ORDER BY (last_price / week_52_high) DESC NULLS LAST',
-  new_lows: 'ORDER BY (last_price / week_52_low) ASC NULLS LAST',
-  
-  // === 技术指标榜单 (修复字段映射) ===
-  top_volatility: 'ORDER BY ((week_52_high - week_52_low) / last_price) DESC NULLS LAST',
-  top_gap_up: 'ORDER BY change_percent DESC NULLS LAST', // 使用涨跌幅替代缺口计算
-  unusual_activity: 'ORDER BY ABS(change_percent) DESC NULLS LAST',
-  momentum_stocks: 'ORDER BY change_percent DESC NULLS LAST',
-
-  // === 情绪/关注度榜单 (使用合理替代逻辑) ===
-  institutional_focus: 'ORDER BY market_cap DESC NULLS LAST',
-  retail_hot: 'ORDER BY turnover DESC NULLS LAST',
-  smart_money: 'ORDER BY turnover DESC NULLS LAST',
-  high_liquidity: 'ORDER BY volume DESC NULLS LAST',
-
-  // 默认排序
-  default: 'ORDER BY market_cap DESC NULLS LAST'
+  top_market_cap: { sql: 'ORDER BY market_cap DESC NULLS LAST', required_columns: ['market_cap'] },
+  top_gainers: { sql: 'ORDER BY change_percent DESC NULLS LAST', required_columns: ['change_percent'] },
+  top_losers: { sql: 'ORDER BY change_percent ASC NULLS LAST', required_columns: ['change_percent'] },
+  top_volume: { sql: 'ORDER BY volume DESC NULLS LAST', required_columns: ['volume'] },
+  top_turnover: { sql: 'ORDER BY turnover DESC NULLS LAST', required_columns: ['turnover'] },
+  new_highs: { sql: 'ORDER BY (last_price / week_52_high) DESC NULLS LAST', required_columns: ['last_price', 'week_52_high'] },
+  new_lows: { sql: 'ORDER BY (last_price / week_52_low) ASC NULLS LAST', required_columns: ['last_price', 'week_52_low'] },
+  top_volatility: { sql: 'ORDER BY ((high_price - low_price) / previous_close) DESC NULLS LAST', required_columns: ['high_price', 'low_price', 'previous_close'] },
+  top_gap_up: { sql: 'ORDER BY ((open_price - previous_close) / previous_close) DESC NULLS LAST', required_columns: ['open_price', 'previous_close'] },
+  unusual_activity: { sql: 'ORDER BY ABS(change_percent) DESC NULLS LAST', required_columns: ['change_percent'] },
+  momentum_stocks: { sql: 'ORDER BY change_percent DESC NULLS LAST', required_columns: ['change_percent'] },
+  institutional_focus: { sql: 'ORDER BY market_cap DESC NULLS LAST', required_columns: ['market_cap'] },
+  retail_hot: { sql: 'ORDER BY turnover DESC NULLS LAST', required_columns: ['turnover'] },
+  smart_money: { sql: 'ORDER BY turnover DESC NULLS LAST', required_columns: ['turnover'] },
+  high_liquidity: { sql: 'ORDER BY volume DESC NULLS LAST', required_columns: ['volume'] },
+  default: { sql: 'ORDER BY market_cap DESC NULLS LAST', required_columns: ['market_cap'] }
 };
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate');
   const { type = 'default', market = 'sp500' } = req.query;
   const pool = pools[market];
-  const orderByClause = ORDER_BY_MAP[type] || ORDER_BY_MAP.default;
-
+  
   if (!pool) return res.status(400).json({ error: `Invalid market: ${market}` });
 
   try {
+    // 关键的优雅降级逻辑
+    let orderByConfig = ORDER_BY_MAP[type] || ORDER_BY_MAP.default;
+    
+    // 检查所需列的数据是否真的存在 (只检查第一行作为样本)
+    const checkQuery = `SELECT ${orderByConfig.required_columns.join(', ')} FROM stocks WHERE ${orderByConfig.required_columns.map(c => `${c} IS NOT NULL`).join(' AND ')} LIMIT 1;`;
+    const checkResult = await pool.query(checkQuery);
+
+    let orderByClause;
+    if (checkResult.rows.length > 0) {
+        // 如果数据存在，使用理想的排序
+        orderByClause = orderByConfig.sql;
+    } else {
+        // 如果数据不存在(全是NULL)，则安全地回退到市值排序
+        console.warn(`[API Ranking] Data for '${type}' sort is missing in '${market}' DB. Falling back to market cap sort.`);
+        orderByClause = ORDER_BY_MAP.default.sql;
+    }
+
     const query = `
       SELECT 
         ticker, name_zh, name_en, last_price, change_amount, 
@@ -59,6 +62,7 @@ export default async function handler(req, res) {
       WHERE last_price IS NOT NULL AND market_cap IS NOT NULL AND change_percent IS NOT NULL
       ${orderByClause}
       LIMIT 100;`;
+      
     const { rows } = await pool.query(query);
     res.status(200).json(rows);
   } catch (error) {
