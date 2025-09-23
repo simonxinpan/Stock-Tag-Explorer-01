@@ -1256,3 +1256,186 @@
         font-size: 12px;
     }
 }
+
+/* ================================================================ */
+/* 新增：专业移动版榜单样式 - 左右对齐布局 */
+/* ================================================================ */
+
+/* 列表容器 */
+.stock-list {
+    list-style: none;
+    padding: 0 1rem; /* 左右留出边距 */
+    margin: 0;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+/* 列表项 (li) */
+.stock-item-mobile {
+    border-bottom: 1px solid #f0f0f0; /* 分隔线 */
+}
+
+.stock-item-mobile:last-child {
+    border-bottom: none; /* 最后一项不显示分隔线 */
+}
+
+/* 链接 (a) - 核心布局 */
+.stock-link-mobile {
+    display: flex;                  /* 启用Flexbox布局 */
+    justify-content: space-between; /* 核心：让左右两部分分开 */
+    align-items: center;            /* 垂直居中对齐 */
+    padding: 14px 4px;              /* 上下内边距，提供呼吸空间 */
+    text-decoration: none;
+    color: inherit;
+    transition: background-color 0.2s ease;
+    min-height: 60px; /* 确保足够的点击区域 */
+}
+
+.stock-link-mobile:active {
+    background-color: #f9f9f9; /* 点击时的背景反馈 */
+}
+
+.stock-link-mobile:hover {
+    background-color: #fafafa; /* 悬停时的背景反馈 */
+}
+
+/* 左侧信息区 */
+.info-section {
+    display: flex;
+    align-items: center;
+    text-align: left; /* 左对齐 */
+    flex: 1; /* 占据剩余空间 */
+    min-width: 0; /* 允许内容收缩 */
+}
+
+.rank-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f0f2f5, #e2e8f0);
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 600;
+    margin-right: 12px;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.name-section {
+    flex: 1;
+    min-width: 0; /* 允许文本截断 */
+}
+
+.name-section .name-zh {
+    font-size: 15px;
+    font-weight: 500;
+    color: #1a1a1a;
+    line-height: 1.3;
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.name-section .ticker {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+/* 右侧数值区 */
+.values-section {
+    text-align: right; /* 右对齐 */
+    flex-shrink: 0;    /* 防止被压缩 */
+    padding-left: 12px; /* 与左侧保持距离 */
+    min-width: 80px; /* 确保数值区域有足够宽度 */
+}
+
+.values-section .primary-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a1a;
+    line-height: 1.3;
+    margin-bottom: 2px;
+}
+
+.values-section .secondary-value {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+/* 颜色定义 - 涨绿跌红 */
+.text-green {
+    color: #22c55e !important; /* 上涨绿色 */
+}
+
+.text-red {
+    color: #ef4444 !important; /* 下跌红色 */
+}
+
+/* 特殊排名样式 */
+.rank-circle:nth-child(1) {
+    background: linear-gradient(135deg, #ffd700, #ffb347); /* 第1名金色 */
+    color: #8b4513;
+}
+
+.stock-item-mobile:nth-child(2) .rank-circle {
+    background: linear-gradient(135deg, #c0c0c0, #a8a8a8); /* 第2名银色 */
+    color: #4a4a4a;
+}
+
+.stock-item-mobile:nth-child(3) .rank-circle {
+    background: linear-gradient(135deg, #cd7f32, #b8860b); /* 第3名铜色 */
+    color: #ffffff;
+}
+
+/* 响应式优化 */
+@media (max-width: 375px) {
+    .stock-list {
+        padding: 0 0.75rem;
+    }
+    
+    .name-section .name-zh {
+        font-size: 14px;
+    }
+    
+    .values-section .primary-value {
+        font-size: 14px;
+    }
+    
+    .values-section .secondary-value {
+        font-size: 12px;
+    }
+}
+
+/* 加载状态样式 */
+.mobile-loading-item {
+    padding: 20px;
+    text-align: center;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.mobile-no-data-item {
+    padding: 40px 20px;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+.mobile-error-item {
+    padding: 20px;
+    text-align: center;
+    color: #ef4444;
+    font-size: 14px;
+    background-color: #fef2f2;
+    border-radius: 8px;
+    margin: 16px;
+}

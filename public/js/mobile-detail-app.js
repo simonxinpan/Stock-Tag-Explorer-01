@@ -213,7 +213,7 @@ function formatTurnover(value) {
 
 /**
  * 创建移动版股票列表项的HTML
- * @param {Object} stock - 股票数据
+ * @param {Object} stock - 股票数据对象
  * @param {string} type - 榜单类型
  * @param {number} rank - 排名
  * @param {string} marketType - 市场类型
@@ -240,11 +240,9 @@ function createMobileStockListItemHTML(stock, type, rank, marketType = 'sp500') 
   // 格式化价格
   const formattedPrice = last_price ? `$${parseFloat(last_price).toFixed(2)}` : 'N/A';
   
-  // 格式化涨跌额
-  const formattedChange = change_amount ? `${change_amount >= 0 ? '+' : ''}$${parseFloat(change_amount).toFixed(2)}` : 'N/A';
-  
   // 格式化涨跌幅
-  const formattedPercent = change_percent ? `${change_percent >= 0 ? '+' : ''}${parseFloat(change_percent).toFixed(2)}%` : 'N/A';
+  const changePercent = parseFloat(change_percent) || 0;
+  const formattedPercent = `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`;
   
   // 格式化市值
   let formattedMarketCap = 'N/A';
@@ -262,46 +260,48 @@ function createMobileStockListItemHTML(stock, type, rank, marketType = 'sp500') 
   // 格式化成交额
   const formattedTurnover = turnover ? formatTurnover(turnover) : 'N/A';
   
-  // 确定涨跌颜色类
-  let changeClass = 'neutral';
-  if (change_percent > 0) changeClass = 'positive';
-  else if (change_percent < 0) changeClass = 'negative';
+  // 确定涨跌颜色类 - 使用新的颜色类名
+  let colorClass = '';
+  if (changePercent > 0) colorClass = 'text-green';
+  else if (changePercent < 0) colorClass = 'text-red';
   
-  // 根据榜单类型显示不同的指标
-  let metricHTML = '';
+  // 根据榜单类型显示不同的主要数值
+  let valueHTML = '';
   switch (type) {
     case 'top_market_cap':
-      metricHTML = `<span class="metric-value">${formattedMarketCap}</span>`;
+      valueHTML = formattedMarketCap;
       break;
     case 'top_volume':
-      metricHTML = `<span class="metric-value">${formattedVolume}</span>`;
+      valueHTML = formattedVolume;
       break;
     case 'top_turnover':
-      metricHTML = `<span class="metric-value">${formattedTurnover}</span>`;
+      valueHTML = formattedTurnover;
       break;
     default:
-      metricHTML = `<span class="metric-value">${formattedMarketCap}</span>`;
+      valueHTML = formattedPrice; // 默认显示股价
   }
 
-  // 移动版使用更紧凑的布局
+  // 新的移动版HTML结构 - 左右对齐布局
   return `
-    <li class="mobile-stock-item" data-ticker="${ticker}">
-      <div class="mobile-stock-rank">${rank}</div>
-      <div class="mobile-stock-main">
-        <div class="mobile-stock-info">
-          <div class="mobile-stock-symbol">${ticker}</div>
-          <div class="mobile-stock-name">${displayName}</div>
-        </div>
-        <div class="mobile-stock-price">
-          <div class="mobile-current-price">${formattedPrice}</div>
-          <div class="mobile-price-change ${changeClass}">
-            <span class="mobile-change-percent">${formattedPercent}</span>
+    <li class="stock-item-mobile">
+      <a href="./mobile-stock-detail.html?symbol=${ticker}" class="stock-link-mobile">
+        
+        <!-- 左侧信息区 -->
+        <div class="info-section">
+          <div class="rank-circle">${rank}</div>
+          <div class="name-section">
+            <div class="name-zh">${displayName}</div>
+            <div class="ticker">${ticker}</div>
           </div>
         </div>
-      </div>
-      <div class="mobile-stock-metric">
-        ${metricHTML}
-      </div>
+
+        <!-- 右侧数值区 -->
+        <div class="values-section">
+          <div class="primary-value">${valueHTML}</div>
+          <div class="secondary-value ${colorClass}">${formattedPercent}</div>
+        </div>
+
+      </a>
     </li>
   `;
 }

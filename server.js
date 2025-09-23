@@ -7,9 +7,11 @@ const PORT = process.env.PORT || 3000;
 // 导入 API 处理函数
 const importAPI = (apiPath) => {
   try {
+    // 将相对路径转换为绝对路径
+    const absolutePath = apiPath.startsWith('./') ? join(__dirname, apiPath.slice(2)) : apiPath;
     // 清除 require 缓存以支持热重载
-    delete require.cache[require.resolve(apiPath)];
-    const module = require(apiPath);
+    delete require.cache[require.resolve(absolutePath)];
+    const module = require(absolutePath);
     return module.default || module;
   } catch (error) {
     console.error(`Failed to import ${apiPath}:`, error);
@@ -37,18 +39,8 @@ const server = createServer(async (req, res) => {
     const apiPath = join(__dirname, 'api', `${apiName}.js`);
     
     try {
-      // 🔧 临时使用模拟数据API
-      let apiHandler;
-      if (apiName === 'trending') {
-        apiHandler = importAPI('./api/trending-mock.js');
-      } else if (apiName === 'market-summary') {
-        apiHandler = importAPI('./api/market-summary-mock.js');
-      } else if (apiName === 'ranking') {
-        // 临时使用模拟API来测试前端功能
-        apiHandler = importAPI('./api/ranking-mock.js');
-      } else {
-        apiHandler = importAPI(apiPath);
-      }
+      // 使用真实API
+      const apiHandler = importAPI(apiPath);
       
       if (apiHandler) {
         // 创建模拟的 Vercel 请求/响应对象
