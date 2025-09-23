@@ -1,5 +1,5 @@
 // 文件: public/js/mobile-app.js
-// 版本: SPA Interaction Model
+// 版本: Mobile-Overview-Only-v1.0 (精简版，仅服务于mobile.html一级页面)
 
 document.addEventListener('DOMContentLoaded', () => {
     // 页面加载时的总入口
@@ -14,7 +14,7 @@ function initializeApp() {
     const urlParams = new URLSearchParams(window.location.search);
     const market = urlParams.get('market') || 'chinese_stocks'; // 默认市场为中概股
 
-    console.log(`🚀 Initializing page for market: ${market}`);
+    console.log(`🚀 Initializing mobile page for market: ${market} (Mobile-Overview-Only-v1.0)`);
 
     // 更新UI状态（例如按钮高亮）
     updateActiveMarketButtons(market);
@@ -85,6 +85,17 @@ function bindEventListeners() {
             initializeApp();
         });
     });
+
+    // 绑定"查看更多"按钮点击事件，跳转到移动版二级页面
+    document.querySelectorAll('.ranking-nav-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            e.preventDefault();
+            const rankingType = button.getAttribute('data-ranking');
+            if (rankingType) {
+                handleMoreButtonClick(rankingType);
+            }
+        });
+    });
     
     hasBoundEvents = true;
 }
@@ -152,12 +163,12 @@ function renderIndividualStockList(element, stocks, marketType) {
     element.innerHTML = stocksHtml;
 }
 
-// 导航到榜单详情页面
-function navigateToRankingDetail(listType) {
+// 处理"更多"按钮点击事件，跳转到移动版二级页面
+function handleMoreButtonClick(rankingType) {
     const urlParams = new URLSearchParams(window.location.search);
     const currentMarket = urlParams.get('market') || 'chinese_stocks';
     
-    // 构造详情页面URL
-    const detailUrl = `/trending.html?list=${listType}&market=${currentMarket}`;
+    // 跳转到移动版二级详情页面
+    const detailUrl = `./mobile-ranking-detail.html?market=${currentMarket}&type=${rankingType}`;
     window.location.href = detailUrl;
 }

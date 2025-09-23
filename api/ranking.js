@@ -1,4 +1,5 @@
-// 文件: /api/ranking.js (最终完美版)
+// 文件: /api/ranking.js
+// 版本: API-v3.0
 import pg from 'pg';
 const { Pool } = pg;
 import 'dotenv/config';
@@ -9,7 +10,6 @@ const pools = {
   chinese_stocks: new Pool({ connectionString: process.env.CHINESE_STOCKS_DB_URL, ...sslConfig })
 };
 
-// 最终的、经过完全验证的SQL排序逻辑映射
 const ORDER_BY_MAP = {
   top_market_cap: 'ORDER BY market_cap DESC NULLS LAST',
   top_gainers: 'ORDER BY change_percent DESC NULLS LAST',
@@ -20,8 +20,8 @@ const ORDER_BY_MAP = {
   new_lows: 'ORDER BY (last_price / week_52_low) ASC NULLS LAST',
   top_volatility: 'ORDER BY ((high_price - low_price) / previous_close) DESC NULLS LAST',
   top_gap_up: 'ORDER BY ((open_price - previous_close) / previous_close) DESC NULLS LAST',
-  institutional_focus: 'ORDER BY market_cap DESC NULLS LAST', // 使用市值作为机构关注度的可靠替代指标
-  retail_hot: 'ORDER BY turnover DESC NULLS LAST', // 使用成交额作为散户热门度的可靠替代指标
+  institutional_focus: 'ORDER BY market_cap DESC NULLS LAST',
+  retail_hot: 'ORDER BY turnover DESC NULLS LAST',
   smart_money: 'ORDER BY turnover DESC NULLS LAST',
   high_liquidity: 'ORDER BY volume DESC NULLS LAST',
   unusual_activity: 'ORDER BY ABS(change_percent) DESC NULLS LAST',
@@ -40,9 +40,9 @@ export default async function handler(req, res) {
   try {
     const query = `
       SELECT 
-        ticker, name_zh, name_en, last_price, change_amount, 
+        ticker, name_zh, name_en, last_price, change_amount,
         change_percent, market_cap
-      FROM stocks 
+      FROM stocks
       WHERE last_price IS NOT NULL AND market_cap IS NOT NULL AND change_percent IS NOT NULL
       ${orderByClause}
       LIMIT 100;`;
