@@ -143,7 +143,7 @@ module.exports = async (req, res) => {
     if (market === 'chinese_stocks') {
       tableName = 'stocks';
       tickerField = 'ticker';
-      nameField = 'company_name';
+      nameField = 'name_zh';
       priceField = 'current_price';
       changeField = 'change_percent';
       marketCapField = 'market_cap';
