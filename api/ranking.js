@@ -8,11 +8,20 @@ require('dotenv').config();
 // SSL 配置，确保能连接到 Neon
 const sslConfig = { ssl: { rejectUnauthorized: false } };
 
-// 数据库连接池
-const pools = {
-  sp500: new Pool({ connectionString: process.env.NEON_DATABASE_URL, ...sslConfig }),
-  chinese_stocks: new Pool({ connectionString: process.env.CHINESE_STOCKS_DB_URL, ...sslConfig })
-};
+// 数据库连接池 - 添加环境变量检查
+const pools = {};
+
+// 初始化数据库连接池，添加错误处理
+try {
+  if (process.env.NEON_DATABASE_URL) {
+    pools.sp500 = new Pool({ connectionString: process.env.NEON_DATABASE_URL, ...sslConfig });
+  }
+  if (process.env.CHINESE_STOCKS_DB_URL) {
+    pools.chinese_stocks = new Pool({ connectionString: process.env.CHINESE_STOCKS_DB_URL, ...sslConfig });
+  }
+} catch (error) {
+  console.error('Database pool initialization error:', error);
+}
 
 // 包含了所有14个榜单的、最终的、真实的SQL排序逻辑映射
 const ORDER_BY_MAP = {
@@ -52,8 +61,24 @@ module.exports = async (req, res) => {
   const pool = pools[market];
   const orderByClause = ORDER_BY_MAP[type] || ORDER_BY_MAP.default;
 
+  // 详细的错误检查和日志
+  console.log(`[API Request - ranking]: type=${type}, market=${market}`);
+  console.log(`[Environment Check]: NEON_DATABASE_URL exists: ${!!process.env.NEON_DATABASE_URL}`);
+  console.log(`[Environment Check]: CHINESE_STOCKS_DB_URL exists: ${!!process.env.CHINESE_STOCKS_DB_URL}`);
+  console.log(`[Pool Check]: Available pools: ${Object.keys(pools)}`);
+  console.log(`[Pool Check]: Requested pool exists: ${!!pool}`);
+
   if (!pool) {
-    return res.status(400).json({ error: `Invalid market specified: ${market}` });
+    const errorMsg = `Invalid market specified: ${market}. Available markets: ${Object.keys(pools).join(', ')}`;
+    console.error(`[API Error - ranking]: ${errorMsg}`);
+    return res.status(400).json({ 
+      error: errorMsg,
+      availableMarkets: Object.keys(pools),
+      environmentVariables: {
+        NEON_DATABASE_URL: !!process.env.NEON_DATABASE_URL,
+        CHINESE_STOCKS_DB_URL: !!process.env.CHINESE_STOCKS_DB_URL
+      }
+    });
   }
 
   try {
@@ -65,10 +90,21 @@ module.exports = async (req, res) => {
       WHERE last_price IS NOT NULL AND market_cap IS NOT NULL AND change_percent IS NOT NULL
       ${orderByClause}
       LIMIT 100;`;
+    
+    console.log(`[API Query - ranking]: Executing query for ${market}`);
     const { rows } = await pool.query(query);
+    console.log(`[API Success - ranking]: Retrieved ${rows.length} rows for ${market}/${type}`);
     res.status(200).json(rows);
   } catch (error) {
     console.error(`[API Error - ranking]: type=${type}, market=${market}`, error);
-    res.status(500).json({ error: 'Internal Server Error', details: error.message });
+    console.error(`[API Error Details]: ${error.message}`);
+    console.error(`[API Error Stack]: ${error.stack}`);
+    res.status(500).json({ 
+      error: 'Internal Server Error', 
+      details: error.message,
+      market: market,
+      type: type,
+      timestamp: new Date().toISOString()
+    });
   }
 };
