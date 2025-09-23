@@ -1,75 +1,82 @@
-// 文件: /api/ranking.js
-// 版本: API-v4.0-Final
+// 文件: /api/ranking.js (终极健壮连接版)
 import pg from 'pg';
 const { Pool } = pg;
 import 'dotenv/config';
 
-const sslConfig = { ssl: { rejectUnauthorized: false } };
-const pools = {
-  sp500: new Pool({ connectionString: process.env.NEON_DATABASE_URL, ...sslConfig }),
-  chinese_stocks: new Pool({ connectionString: process.env.CHINESE_STOCKS_DB_URL, ...sslConfig })
-};
+// --- 辅助日志函数 ---
+function log(message) { console.log(`[API Ranking] ${message}`); }
 
-// 包含了所有14个榜单的、最终的、真实的SQL排序逻辑映射
+// ================================================================
+// == 关键的、健壮的数据库连接配置函数 ==
+// ================================================================
+function createDbPoolFromUrl(connectionString) {
+  if (!connectionString) return null;
+  try {
+    const url = new URL(connectionString);
+    const config = {
+      user: decodeURIComponent(url.username),
+      password: decodeURIComponent(url.password),
+      host: url.hostname,
+      port: url.port || 5432,
+      database: url.pathname.slice(1),
+      ssl: { rejectUnauthorized: false }
+    };
+    return new Pool(config);
+  } catch (error) {
+    log(`❌ CRITICAL ERROR parsing database URL: ${error.message}`);
+    return null;
+  }
+}
+
+// --- 数据库连接池 ---
+let pools = {};
+try {
+    log("Step 1: Initializing database pools...");
+    pools.sp500 = createDbPoolFromUrl(process.env.NEON_DATABASE_URL);
+    if (pools.sp500) log("✅ S&P 500 pool configured.");
+    else log("⚠️ S&P 500 DB URL missing!");
+
+    pools.chinese_stocks = createDbPoolFromUrl(process.env.CHINESE_STOCKS_DB_URL);
+    if (pools.chinese_stocks) log("✅ Chinese Stocks pool configured.");
+    else log("⚠️ Chinese Stocks DB URL missing!");
+
+    log("Step 1 Complete.");
+} catch (e) {
+    log(`❌ CRITICAL ERROR during pool initialization: ${e.message}`);
+}
+
+// --- SQL排序逻辑 (全功能版) ---
 const ORDER_BY_MAP = {
-  // === 核心榜单 ===
   top_market_cap: 'ORDER BY market_cap DESC NULLS LAST',
   top_gainers: 'ORDER BY change_percent DESC NULLS LAST',
   top_losers: 'ORDER BY change_percent ASC NULLS LAST',
-  
-  // === 交易活跃度榜单 ===
   top_volume: 'ORDER BY volume DESC NULLS LAST',
   top_turnover: 'ORDER BY turnover DESC NULLS LAST',
-  
-  // === 价格趋势榜单 ===
   new_highs: 'ORDER BY (last_price / week_52_high) DESC NULLS LAST',
   new_lows: 'ORDER BY (last_price / week_52_low) ASC NULLS LAST',
-  
-  // === 技术指标榜单 ===
-  top_volatility: 'ORDER BY ((high_price - low_price) / previous_close) DESC NULLS LAST',
-  top_gap_up: 'ORDER BY ((open_price - previous_close) / previous_close) DESC NULLS LAST',
-  unusual_activity: 'ORDER BY ABS(change_percent) DESC NULLS LAST',
-  momentum_stocks: 'ORDER BY change_percent DESC NULLS LAST',
-
-  // === 情绪/关注度榜单 (使用合理替代逻辑) ===
-  institutional_focus: 'ORDER BY market_cap DESC NULLS LAST',
-  retail_hot: 'ORDER BY turnover DESC NULLS LAST',
-  smart_money: 'ORDER BY turnover DESC NULLS LAST',
-  high_liquidity: 'ORDER BY volume DESC NULLS LAST',
-
-  // 默认排序
   default: 'ORDER BY market_cap DESC NULLS LAST'
 };
 
 export default async function handler(req, res) {
-  res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate');
   const { type = 'default', market = 'sp500' } = req.query;
-  const pool = pools[market];
-  const orderByClause = ORDER_BY_MAP[type] || ORDER_BY_MAP.default;
-
-  if (!pool) {
-    return res.status(400).json({ error: `Invalid market specified: ${market}` });
-  }
+  log(`---> Request for market='${market}', type='${type}'`);
 
   try {
-    const query = `
-      SELECT 
-        ticker, name_zh, name_en, last_price, change_amount, 
-        change_percent, market_cap
-      FROM stocks 
-      WHERE last_price IS NOT NULL AND market_cap IS NOT NULL AND change_percent IS NOT NULL
-      ${orderByClause}
-      LIMIT 100;`;
-    const { rows } = await pool.query(query);
-    res.status(200).json(rows);
-  } catch (error) {
-    console.error(`[API Error - ranking]: type=${type}, market=${market}`, error);
-    res.status(500).json({ error: 'Internal Server Error', details: error.message });
-  }
-}```
+    const pool = pools[market];
+    if (!pool) throw new Error(`Database pool for '${market}' is not available.`);
 
-**任务成功标准：**
-*   `/api/ranking.js` 文件已被**【版本 API-v4.0-Final】**的完整代码覆盖。
-*   此项操作完成后，本项目的后端API部分即达到**最终的、可交付的**状态。
+    log(`Step 2: Connecting to '${market}' database...`);
+    const client = await pool.connect();
+    log("✅ Step 2 Complete: DB client connected.");
+    
+    try {
+      const orderByClause = ORDER_BY_MAP[type] || ORDER_BY_MAP.default;
+      const query = `SELECT ticker, name_zh, market_cap, last_price, change_percent FROM stocks WHERE market_cap IS NOT NULL ${orderByClause} LIMIT 100;`;
+      log(`Step 3: Executing SQL query...`);
+      
+      const { rows } = await client.query(query);
+      log(`✅ Step 3 Complete: Query successful, found ${rows.length} rows.`);
 
-**Trae AI，这是一个无歧义的代码覆盖指令。请执行它，以完成我们“物理隔离”重构方案中的后端定稿工作。**
+      res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate');
+      log(`<--- Sending 200 OK.`);
+      res.status(200).json(rows);
