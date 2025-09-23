@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // 统一的初始化/刷新函数
 function initializeApp() {
     const urlParams = new URLSearchParams(window.location.search);
-    const market = urlParams.get('market') || 'chinese_stocks'; // 默认市场为中概股
+    const market = urlParams.get('market') || 'sp500'; // 默认市场为标普500
 
     console.log(`🚀 Initializing mobile page for market: ${market} (Mobile-Overview-Only-v1.0)`);
 
@@ -175,8 +175,9 @@ function handleMoreButtonClick(rankingType) {
 
 // 为mobile.html提供的导航函数
 function navigateToRankingDetail(listType) {
-    const urlParams = new URLSearchParams(window.location.search);
-    const currentMarket = urlParams.get('market') || 'chinese_stocks';
+    // 从当前激活的市场按钮获取市场信息，而不是从URL参数
+    const activeMarketButton = document.querySelector('.market-carousel-btn.active');
+    const currentMarket = activeMarketButton ? activeMarketButton.dataset.marketTarget : 'sp500';
     
     // 跳转到移动版二级详情页面，使用list参数而不是type参数
     const detailUrl = `./mobile-ranking-detail.html?market=${currentMarket}&list=${listType}`;
