@@ -376,6 +376,134 @@ async function handleMoreButtonClick(type) {
   }
 }
 
+// 新增：用于二级页面的单个榜单加载函数
+async function loadAndRenderSingleList(market, listType) {
+  console.log(`🔄 [1/5] 开始加载单个榜单: ${listType} (市场: ${market})`);
+  const listContainer = document.getElementById('ranking-list'); // 二级页面的容器ID
+
+  // DOM 检查: 确保我们的目标容器存在
+  if (!listContainer) {
+    console.error("❌ [CRITICAL ERROR] 渲染失败: 未在HTML中找到 ID 为 'ranking-list' 的元素。");
+    return;
+  }
+  console.log(`✅ [1/5] 成功找到容器元素 'ranking-list'`);
+
+  try {
+    listContainer.innerHTML = '<li class="loading-item">📊 正在加载数据...</li>'; // 显示加载状态
+    
+    const apiUrl = `/api/ranking?market=${market}&type=${listType}`;
+    console.log(`🔄 [2/5] 准备请求API: ${apiUrl}`);
+    
+    const response = await fetch(apiUrl);
+    console.log(`🔄 [3/5] API 响应已收到，状态码: ${response.status}`);
+
+    if (!response.ok) {
+      throw new Error(`API请求失败，状态码: ${response.status}`);
+    }
+
+    const stocks = await response.json();
+    console.log(`🔄 [4/5] 成功解析JSON数据，获取到 ${stocks.length} 条股票记录。`);
+    
+    if (stocks.length === 0) {
+      listContainer.innerHTML = '<li class="no-data-item">📊 暂无数据</li>';
+      return;
+    }
+
+    // 更新页面标题和UI
+    updateSingleListPageUI(listType, market);
+    
+    // 渲染股票列表
+    renderSingleRankingList(stocks, listType, market);
+    console.log(`✅ [5/5] 单个榜单渲染完成: ${listType}`);
+    
+  } catch (error) {
+    console.error(`❌ 加载榜单失败 (${listType}):`, error);
+    listContainer.innerHTML = `<li class="error-item">❌ 加载失败: ${error.message}</li>`;
+  }
+}
+
+// 新增：更新二级页面的UI元素
+function updateSingleListPageUI(listType, market) {
+  const config = RANKING_CONFIG[listType];
+  if (!config) return;
+
+  // 更新页面标题
+  const titleElement = document.querySelector('.ranking-title');
+  if (titleElement) {
+    titleElement.textContent = config.title;
+  }
+
+  // 更新描述
+  const descElement = document.querySelector('.ranking-description');
+  if (descElement) {
+    descElement.textContent = config.description;
+  }
+
+  // 更新市场按钮状态
+  updateMarketButtons(market);
+}
+
+// 新增：更新市场按钮的激活状态
+function updateMarketButtons(currentMarket) {
+  const marketButtons = document.querySelectorAll('.market-btn');
+  marketButtons.forEach(btn => {
+    const market = btn.getAttribute('data-market');
+    if (market === currentMarket) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+}
+
+// 新增：渲染单个榜单的股票列表
+function renderSingleRankingList(stocks, listType, market) {
+  const listContainer = document.getElementById('ranking-list');
+  if (!listContainer) return;
+
+  let htmlContent = '';
+  
+  stocks.forEach((stock, index) => {
+    const rank = index + 1;
+    const listItemHTML = createStockListItemHTML(stock, listType, rank, market);
+    htmlContent += listItemHTML;
+  });
+  
+  listContainer.innerHTML = htmlContent;
+}
+
+// 新增：一级页面的所有榜单加载函数（重命名原main函数的逻辑）
+async function loadAndRenderAllLists(market) {
+  console.log(`📊 加载一级趋势页面...`);
+  
+  // 更新市场导航
+  updateMarketNavigation();
+  
+  // 加载汇总数据
+  await loadAndRenderSummaryData();
+  
+  // 并行加载所有榜单数据
+  const loadPromises = TRENDING_LISTS_CONFIG.map(listConfig => 
+    loadAndRenderList(listConfig)
+  );
+  
+  await Promise.all(loadPromises);
+  
+  // 绑定"查看更多"按钮的点击事件
+  const moreButtons = document.querySelectorAll('.more-btn-link');
+  moreButtons.forEach(button => {
+    button.addEventListener('click', (e) => {
+      e.preventDefault(); // 阻止默认的链接跳转
+      const type = button.getAttribute('data-type');
+      if (type) {
+        handleMoreButtonClick(type);
+      }
+    });
+  });
+  
+  console.log('✅ 所有榜单数据加载完成，事件监听器已绑定');
+}
+
 // 新函数：获取并渲染市场汇总数据
 async function loadAndRenderSummaryData() {
   try {
@@ -411,36 +539,41 @@ async function loadAndRenderSummaryData() {
 }
 
 // 主函数：初始化页面
-async function main() {
-  console.log('🚀 trending.js 初始化开始 (Desktop-Overview-Only-v1.0)');
-  
-  // 更新市场导航状态
-  updateMarketNavigation();
-  
-  // 加载市场汇总数据
-  await loadAndRenderSummaryData();
-  
-  // 并行加载所有榜单数据
-  const loadPromises = TRENDING_LISTS_CONFIG.map(listConfig => loadAndRenderList(listConfig));
-  await Promise.all(loadPromises);
-  
-  // 绑定所有"查看更多"按钮的点击事件
-  const moreButtons = document.querySelectorAll('.more-btn-link');
-  moreButtons.forEach(button => {
-    button.addEventListener('click', (e) => {
-      e.preventDefault(); // 阻止默认的链接跳转
-      const type = button.getAttribute('data-type');
-      if (type) {
-        handleMoreButtonClick(type);
+// 【最终健壮版】主入口逻辑 - 严格区分一级和二级页面处理流程
+function initializeApp() {
+  console.log("📊 趋势页面脚本开始执行...");
+  const urlParams = new URLSearchParams(window.location.search);
+  const pageName = window.location.pathname.split('/').pop();
+  const market = urlParams.get('market') || 'sp500';
+  const listType = urlParams.get('list');
+
+  console.log(`🔍 页面类型: ${pageName}, 市场: ${market}, 榜单类型: ${listType || 'N/A'}`);
+
+  // 关键的、健壮的分支判断
+  if (pageName.includes('list-detail.html')) {
+    // --- 这是二级详情页的专属逻辑 ---
+    if (listType) {
+      console.log(`📋 加载二级榜单页面...`);
+      loadAndRenderSingleList(market, listType);
+    } else {
+      // 如果是详情页但没有list参数，清晰地显示错误
+      const container = document.getElementById('ranking-list');
+      if (container) {
+        container.innerHTML = `<div class="error-message">错误：URL中未指定榜单类型 (Missing 'list' parameter)。</div>`;
       }
-    });
-  });
-  
-  console.log('✅ 所有榜单数据加载完成，事件监听器已绑定');
+      console.error("❌ 页面错误: list-detail.html 需要一个 'list' URL参数。");
+    }
+  } else if (pageName.includes('trending.html')) {
+    // --- 这是一级概览页的专属逻辑 ---
+    console.log(`🏠 加载一级榜单页面...`);
+    loadAndRenderAllLists(market); // 调用重构后的一级页面加载函数
+  }
+
+  console.log("✅ 趋势页面脚本执行完成");
 }
 
-// 页面加载完成后执行主函数
-document.addEventListener('DOMContentLoaded', main);
+// 确保在DOM加载后调用
+document.addEventListener('DOMContentLoaded', initializeApp);
 
 // 导出全局函数供HTML调用
 window.handleMoreButtonClick = handleMoreButtonClick;
