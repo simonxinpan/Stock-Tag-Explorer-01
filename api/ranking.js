@@ -149,9 +149,9 @@ module.exports = async (req, res) => {
       marketCapField = 'market_cap';
     } else if (market === 'sp500') {
       tableName = 'sp500_stocks';
-      tickerField = 'symbol';
-      nameField = 'company_name';
-      priceField = 'current_price';
+      tickerField = 'ticker';
+      nameField = 'name_zh';
+      priceField = 'last_price';
       changeField = 'change_percent';
       marketCapField = 'market_cap';
     } else {
