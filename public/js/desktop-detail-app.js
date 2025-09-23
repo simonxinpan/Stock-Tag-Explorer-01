@@ -234,8 +234,8 @@ function createStockListItemHTML(stock, type, rank, marketType = 'sp500') {
     turnover = 0
   } = stock;
 
-  // 根据市场类型选择显示的名称
-  const displayName = marketType === 'chinese_stocks' ? (name_zh || name_en || ticker) : (name_en || name_zh || ticker);
+  // 根据市场类型选择显示的名称 - 优先显示中文名称
+  const displayName = name_zh || name_en || ticker;
   
   // 格式化价格
   const formattedPrice = last_price ? `$${parseFloat(last_price).toFixed(2)}` : 'N/A';
