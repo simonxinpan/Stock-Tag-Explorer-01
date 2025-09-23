@@ -172,3 +172,17 @@ function handleMoreButtonClick(rankingType) {
     const detailUrl = `./mobile-ranking-detail.html?market=${currentMarket}&type=${rankingType}`;
     window.location.href = detailUrl;
 }
+
+// 为mobile.html提供的导航函数
+function navigateToRankingDetail(listType) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentMarket = urlParams.get('market') || 'chinese_stocks';
+    
+    // 跳转到移动版二级详情页面，使用list参数而不是type参数
+    const detailUrl = `./mobile-ranking-detail.html?market=${currentMarket}&list=${listType}`;
+    window.location.href = detailUrl;
+    console.log(`🔗 移动版跳转: ${detailUrl}`);
+}
+
+// 导出全局函数供HTML调用
+window.navigateToRankingDetail = navigateToRankingDetail;

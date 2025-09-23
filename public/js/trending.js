@@ -424,7 +424,19 @@ async function main() {
   const loadPromises = TRENDING_LISTS_CONFIG.map(listConfig => loadAndRenderList(listConfig));
   await Promise.all(loadPromises);
   
-  console.log('✅ 所有榜单数据加载完成');
+  // 绑定所有"查看更多"按钮的点击事件
+  const moreButtons = document.querySelectorAll('.more-btn-link');
+  moreButtons.forEach(button => {
+    button.addEventListener('click', (e) => {
+      e.preventDefault(); // 阻止默认的链接跳转
+      const type = button.getAttribute('data-type');
+      if (type) {
+        handleMoreButtonClick(type);
+      }
+    });
+  });
+  
+  console.log('✅ 所有榜单数据加载完成，事件监听器已绑定');
 }
 
 // 页面加载完成后执行主函数
