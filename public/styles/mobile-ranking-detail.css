@@ -286,8 +286,7 @@
     border-bottom: 1px solid var(--border-color);
     transition: var(--transition);
     cursor: pointer;
-    min-height: 80px; /* 固定最小高度 */
-    height: 80px; /* 固定高度 */
+    min-height: auto; /* 改为自适应高度 */
 }
 
 .stock-item:last-child {
@@ -904,8 +903,7 @@
     border-bottom: 1px solid var(--border-color);
     transition: var(--transition);
     cursor: pointer;
-    min-height: 80px;
-    height: 80px;
+    min-height: auto;
 }
 
 .stock-item:last-child {

@@ -28,9 +28,9 @@ function initializeApp() {
 
 // 统一的数据加载和渲染函数
 async function loadAllRankings(market) {
-    const rankingTypes = [ // 定义所有需要加载的榜单类型
+    const rankingTypes = [ // 定义所有需要加载的榜单类型，与HTML中的data-ranking属性一致
         'top_gainers', 'top_market_cap', 'new_highs',
-        'top_volume', 'top_turnover', 'gap_up', 
+        'top_turnover', 'top_volatility', 'top_gap_up', 
         'top_losers', 'new_lows', 'institutional_focus',
         'retail_hot', 'smart_money', 'high_liquidity',
         'unusual_activity', 'momentum_stocks'
@@ -86,18 +86,47 @@ function bindEventListeners() {
         });
     });
 
-    // 绑定"查看更多"按钮点击事件，跳转到移动版二级页面
+    // 绑定顶部右滑导航按钮点击事件，跳转到移动版二级页面
     document.querySelectorAll('.ranking-nav-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             e.preventDefault();
             const rankingType = button.getAttribute('data-ranking');
             if (rankingType) {
-                handleMoreButtonClick(rankingType);
+                navigateToRankingDetail(rankingType);
             }
         });
     });
     
     hasBoundEvents = true;
+}
+
+// 辅助函数：获取当前市场
+function getCurrentMarket() {
+    const urlParams = new URLSearchParams(window.location.search);
+    let currentMarket = urlParams.get('market');
+    
+    if (!currentMarket) {
+        const activeMarketButton = document.querySelector('.market-carousel-btn.active');
+        if (activeMarketButton) {
+            currentMarket = activeMarketButton.dataset.marketTarget;
+        } else {
+            // 检查页面上是否有标普500相关的激活状态
+            const sp500Button = document.querySelector('[data-market-target="sp500"]');
+            const chineseButton = document.querySelector('[data-market-target="chinese_stocks"]');
+            
+            if (sp500Button && sp500Button.classList.contains('active')) {
+                currentMarket = 'sp500';
+            } else if (chineseButton && chineseButton.classList.contains('active')) {
+                currentMarket = 'chinese_stocks';
+            } else {
+                // 最后的默认值
+                currentMarket = 'chinese_stocks';
+            }
+        }
+    }
+    
+    console.log(`🎯 当前市场: ${currentMarket}`);
+    return currentMarket;
 }
 
 // 辅助函数：更新按钮的激活状态
@@ -165,25 +194,66 @@ function renderIndividualStockList(element, stocks, marketType) {
 
 // 处理"更多"按钮点击事件，跳转到移动版二级页面
 function handleMoreButtonClick(rankingType) {
-    const urlParams = new URLSearchParams(window.location.search);
-    const currentMarket = urlParams.get('market') || 'chinese_stocks';
-    
-    // 跳转到移动版二级详情页面
-    const detailUrl = `./mobile-ranking-detail.html?market=${currentMarket}&type=${rankingType}`;
-    window.location.href = detailUrl;
+    // 直接调用navigateToRankingDetail函数，复用生产地址逻辑
+    navigateToRankingDetail(rankingType);
 }
 
 // 为mobile.html提供的导航函数
 function navigateToRankingDetail(listType) {
-    // 从当前激活的市场按钮获取市场信息，而不是从URL参数
-    const activeMarketButton = document.querySelector('.market-carousel-btn.active');
-    const currentMarket = activeMarketButton ? activeMarketButton.dataset.marketTarget : 'sp500';
+    const currentMarket = getCurrentMarket();
     
-    // 跳转到Vercel服务器上的移动版二级详情页面
-    const baseUrl = 'https://stock-tag-explorer-01-kc4r6dgq9-simon-pans-projects.vercel.app';
-    const detailUrl = `${baseUrl}/mobile-ranking-detail.html?market=${currentMarket}&list=${listType}`;
+    // 生产服务器地址映射
+    const productionUrls = {
+        // 中概股榜单
+        'chinese_stocks': {
+            'top_gainers': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=top_gainers',
+            'top_market_cap': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=top_market_cap',
+            'new_highs': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=new_highs',
+            'top_turnover': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=top_turnover',
+            'top_volatility': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=top_volatility',
+            'top_gap_up': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=top_gap_up',
+            'top_losers': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=top_losers',
+            'new_lows': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=new_lows',
+            'institutional_focus': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=institutional_focus',
+            'retail_hot': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=retail_hot',
+            'smart_money': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=smart_money',
+            'high_liquidity': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=high_liquidity',
+            'unusual_activity': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=unusual_activity',
+            'momentum_stocks': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=momentum_stocks'
+        },
+        // 标普500榜单
+        'sp500': {
+            'top_gainers': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=top_gainers',
+            'top_market_cap': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=top_market_cap',
+            'new_highs': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=new_highs',
+            'top_turnover': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=top_turnover',
+            'top_volatility': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=top_volatility',
+            'top_gap_up': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=top_gap_up',
+            'top_losers': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=top_losers',
+            'new_lows': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=new_lows',
+            'institutional_focus': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=institutional_focus',
+            'retail_hot': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=retail_hot',
+            'smart_money': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=smart_money',
+            'high_liquidity': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=high_liquidity',
+            'unusual_activity': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=unusual_activity',
+            'momentum_stocks': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=momentum_stocks'
+        }
+    };
+    
+    // 检查是否在生产环境或需要使用生产链接
+    const isProduction = window.location.hostname.includes('vercel.app') || window.location.hostname.includes('stock-tag-explorer-01');
+    
+    let detailUrl;
+    if (isProduction && productionUrls[currentMarket] && productionUrls[currentMarket][listType]) {
+        // 使用生产服务器地址
+        detailUrl = productionUrls[currentMarket][listType];
+    } else {
+        // 使用相对路径（开发环境）
+        detailUrl = `mobile-ranking-detail.html?market=${encodeURIComponent(currentMarket)}&list=${encodeURIComponent(listType)}`;
+    }
+    
     window.location.href = detailUrl;
-    console.log(`🔗 移动版跳转到Vercel: ${detailUrl}`);
+    console.log(`🔗 移动版跳转: ${detailUrl}`);
 }
 
 // 导出全局函数供HTML调用

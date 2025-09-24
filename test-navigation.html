@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>移动版导航测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .test-container { max-width: 800px; margin: 0 auto; }
+        .test-section { margin: 20px 0; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .test-button { display: inline-block; margin: 8px; padding: 12px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 6px; border: none; cursor: pointer; }
+        .test-button:hover { background: #0056b3; }
+        .test-button.sp500 { background: #28a745; }
+        .test-button.chinese { background: #dc3545; }
+        .market-selector { text-align: center; margin-bottom: 30px; }
+        .ranking-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
+        .ranking-item { padding: 15px; border: 1px solid #ddd; border-radius: 6px; background: #f8f9fa; }
+        .ranking-title { font-weight: bold; margin-bottom: 10px; color: #333; }
+        .test-link { display: block; margin-top: 8px; color: #007bff; text-decoration: none; font-size: 14px; }
+        .test-link:hover { text-decoration: underline; }
+        h1 { text-align: center; color: #333; }
+        h2 { color: #555; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        .status { padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 移动版导航功能测试</h1>
+        
+        <div class="status info">
+            <strong>测试说明：</strong> 点击下方按钮测试移动版榜单页面的跳转功能。在生产环境中会自动跳转到生产服务器地址。
+        </div>
+
+        <div class="test-section">
+            <h2>📱 移动版首页入口</h2>
+            <div class="market-selector">
+                <a href="mobile.html?market=chinese_stocks" class="test-button chinese">中概股移动版首页</a>
+                <a href="mobile.html?market=sp500" class="test-button sp500">标普500移动版首页</a>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🎯 直接测试导航函数</h2>
+            <div class="market-selector">
+                <button class="test-button chinese" onclick="testNavigation('chinese_stocks', 'top_gainers')">测试中概股涨幅榜</button>
+                <button class="test-button sp500" onclick="testNavigation('sp500', 'top_gainers')">测试标普500涨幅榜</button>
+                <button class="test-button sp500" onclick="testNavigation('sp500', 'top_market_cap')">测试标普500市值榜</button>
+                <button class="test-button chinese" onclick="testNavigation('chinese_stocks', 'top_losers')">测试中概股跌幅榜</button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📋 完整榜单链接清单</h2>
+            <div class="ranking-grid" id="ranking-links"></div>
+        </div>
+
+        <div class="status success">
+            <strong>✅ 修复内容：</strong>
+            <ul>
+                <li>直接在代码中硬编码了28个生产服务器地址（14个中概股 + 14个标普500）</li>
+                <li>自动检测生产环境，在生产环境中使用完整URL</li>
+                <li>改进了getCurrentMarket函数的市场识别逻辑</li>
+                <li>统一了顶部导航和卡片"查看更多"的跳转逻辑</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // 模拟移动版的导航函数（简化版）
+        function testNavigation(market, listType) {
+            const productionUrls = {
+                'chinese_stocks': {
+                    'top_gainers': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=top_gainers',
+                    'top_market_cap': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=top_market_cap',
+                    'top_losers': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=top_losers'
+                },
+                'sp500': {
+                    'top_gainers': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=top_gainers',
+                    'top_market_cap': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=top_market_cap',
+                    'top_losers': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=top_losers'
+                }
+            };
+
+            const url = productionUrls[market] && productionUrls[market][listType] 
+                ? productionUrls[market][listType]
+                : `mobile-ranking-detail.html?market=${market}&list=${listType}`;
+            
+            console.log(`🔗 测试跳转: ${url}`);
+            alert(`将跳转到: ${url}`);
+            // window.open(url, '_blank'); // 取消注释可实际跳转
+        }
+
+        // 生成完整榜单清单
+        const rankingTypes = [
+            { id: 'top_gainers', name: '🚀 涨幅榜' },
+            { id: 'top_market_cap', name: '💰 市值榜' },
+            { id: 'new_highs', name: '⬆️ 创新高' },
+            { id: 'top_turnover', name: '💰 成交额' },
+            { id: 'top_volatility', name: '📊 振幅榜' },
+            { id: 'top_gap_up', name: '🌅 高开缺口' },
+            { id: 'top_losers', name: '📉 跌幅榜' },
+            { id: 'new_lows', name: '⬇️ 创新低' },
+            { id: 'institutional_focus', name: '🏛️ 机构关注' },
+            { id: 'retail_hot', name: '👥 散户热门' },
+            { id: 'smart_money', name: '🏛️ 主力动向' },
+            { id: 'high_liquidity', name: '💧 高流动性' },
+            { id: 'unusual_activity', name: '⚡ 异动榜' },
+            { id: 'momentum_stocks', name: '🚀 动量榜' }
+        ];
+
+        function generateRankingLinks() {
+            const container = document.getElementById('ranking-links');
+            
+            rankingTypes.forEach(ranking => {
+                const item = document.createElement('div');
+                item.className = 'ranking-item';
+                
+                const chineseUrl = `https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=${ranking.id}`;
+                const sp500Url = `https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=${ranking.id}`;
+                
+                item.innerHTML = `
+                    <div class="ranking-title">${ranking.name}</div>
+                    <a href="${chineseUrl}" class="test-link" target="_blank">🇨🇳 中概股: ${ranking.id}</a>
+                    <a href="${sp500Url}" class="test-link" target="_blank">🇺🇸 标普500: ${ranking.id}</a>
+                `;
+                
+                container.appendChild(item);
+            });
+        }
+
+        // 页面加载完成后生成链接
+        document.addEventListener('DOMContentLoaded', generateRankingLinks);
+    </script>
+</body>
+</html>

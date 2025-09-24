@@ -1227,46 +1227,23 @@ class MobileStockApp {
 
     // 切换榜单类型
     switchRanking(ranking) {
-        // 更新导航按钮状态
-        const rankingButtons = document.querySelectorAll('.ranking-nav-btn');
-        rankingButtons.forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.ranking === ranking);
-        });
+        // 直接跳转到对应的榜单详情页
+        this.navigateToRankingDetail(ranking);
+    }
 
-        // 显示所有榜单内容（移除隐藏逻辑）
-        document.querySelectorAll('.list-section-preview').forEach(section => {
-            section.style.display = 'block';
-        });
+    // 导航到榜单详情页
+    navigateToRankingDetail(listType) {
+        // 获取当前激活的市场按钮
+        const activeMarketBtn = document.querySelector('.market-btn.active');
+        const market = activeMarketBtn ? activeMarketBtn.dataset.market : 'sp500';
         
-        // 滚动到选中的榜单
-        const rankingToSectionMap = {
-            'top_gainers': 'top_gainers',
-            'top_market_cap': 'top_market_cap',
-            'new_highs': 'new_highs',
-            'top_turnover': 'top_turnover',
-            'top_volatility': 'top_volatility',
-            'top_gap_up': 'top_gap_up',
-            'top_losers': 'top_losers',
-            'new_lows': 'new_lows',
-            'institutional_focus': 'institutional_focus',
-            'retail_hot': 'retail_hot',
-            'smart_money': 'smart_money',
-            'high_liquidity': 'high_liquidity',
-            'unusual_activity': 'unusual_activity',
-            'momentum_stocks': 'momentum_stocks'
-        };
+        // 构建相对路径URL
+        const url = `mobile-ranking-detail.html?market=${encodeURIComponent(market)}&list=${encodeURIComponent(listType)}`;
         
-        const sectionName = rankingToSectionMap[ranking] || 'top_gainers';
-        const currentSection = document.querySelector(`[data-ranking="${sectionName}"]`);
-        if (currentSection) {
-            currentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-
-        // 根据榜单类型加载对应数据
-        this.loadRankingData(ranking);
+        // 跳转
+        window.location.href = url;
         
-        // 预加载下一个榜单数据（缓存加速）
-        this.preloadNextRankingData(ranking);
+        console.log('Navigating to ranking detail:', listType, market);
     }
 
     // 通用的榜单数据加载方法
@@ -1376,7 +1353,7 @@ class MobileStockApp {
         
         // 跳转到榜单详情页面
         const market = this.currentMarket || 'sp500';
-        const rankingDetailUrl = `mobile-ranking-detail.html?type=${encodeURIComponent(listType)}&market=${encodeURIComponent(market)}`;
+        const rankingDetailUrl = `mobile-ranking-detail.html?market=${encodeURIComponent(market)}&list=${encodeURIComponent(listType)}`;
         window.location.href = rankingDetailUrl;
         
         console.log('Navigating to ranking detail:', listType, market);
