@@ -1,537 +1,596 @@
 /**
- * 移动版首页专用应用 (mobile-home-app.js)
- * 
- * 这是一个完全独立的、自包含的JavaScript文件，专门为移动版首页 (mobile.html) 设计
- * 与桌面版的 trending.js 完全隔离，实现零冲突的物理文件分离架构
- * 
- * 功能包括：
- * - 支持标普500和中概股两个市场的数据加载和显示
- * - 完整的榜单预览渲染逻辑
- * - 正确的页面跳转和导航功能
- * - 生产环境硬编码链接支持
+ * 移动版首页应用 - 最终数据直连版
+ * Project Mobile Grid - API直连 + CSS网格布局
+ * 实现真实的API调用、健壮的渲染和完整的逻辑
  */
 
-// ==================== 全局配置 ====================
-const CONFIG = {
-    // API端点配置
-    API_BASE: '/api',
-    
-    // 榜单类型配置 (与HTML中的data-ranking属性保持一致)
-    RANKING_TYPES: [
-        'top_market_cap',
-        'top_gainers', 
-        'top_losers',
-        'top_turnover',
-        'top_gap_up',
-        'momentum_stocks',
-        'new_highs',
-        'new_lows',
-        'high_liquidity',
-        'top_volatility',
-        'unusual_activity',
-        'smart_money',
-        'institutional_focus',
-        'retail_hot'
-    ],
-    
-    // 市场配置
-    MARKETS: {
-        SP500: 'sp500',
-        CHINESE_STOCKS: 'chinese_stocks'
+// 全局状态管理
+const AppState = {
+    currentMarket: 'sp500', // 当前选中的市场
+    isLoading: false,
+    lastUpdateTime: null,
+    cache: new Map(), // 数据缓存
+    retryCount: 0,
+    maxRetries: 3
+};
+
+// API配置
+const API_CONFIG = {
+    baseUrl: '/api',
+    timeout: 10000,
+    endpoints: {
+        ranking: '/api/ranking-mock',
+        marketSummary: '/api/market-summary-mock'
+    }
+};
+
+// 榜单类型配置
+const RANKING_TYPES = [
+    'top_gainers',
+    'top_market_cap', 
+    'new_highs',
+    'top_turnover',
+    'top_losers',
+    'new_lows',
+    'top_volatility',
+    'momentum_stocks',
+    'smart_money',
+    'institutional_focus',
+    'retail_hot',
+    'unusual_activity',
+    'high_liquidity',
+    'top_gap_up'
+];
+
+// 榜单显示配置
+const RANKING_CONFIG = {
+    top_gainers: { title: '🚀 涨幅榜', description: '按当日涨跌幅排序，反映市场热点和资金偏好' },
+    top_market_cap: { title: '💰 市值榜', description: '按市值排序，展示市场巨头和蓝筹股' },
+    new_highs: { title: '⬆️ 创年内新高', description: '突破52周最高价的股票，显示强劲上升趋势' },
+    top_turnover: { title: '💰 成交额榜', description: '按成交金额排序，反映市场关注度和流动性' },
+    top_losers: { title: '📉 跌幅榜', description: '按当日跌幅排序，识别市场调整和机会' },
+    new_lows: { title: '⬇️ 创年内新低', description: '跌破52周最低价的股票，需要谨慎关注' },
+    top_volatility: { title: '⚡ 波动榜', description: '按波动率排序，适合短线交易者关注' },
+    momentum_stocks: { title: '🎯 动量股', description: '具有强劲上升动量的股票，技术面强势' },
+    smart_money: { title: '🧠 聪明钱', description: '机构资金青睐的股票，资金流向明确' },
+    institutional_focus: { title: '🏛️ 机构重仓', description: '机构持仓集中的股票，长期价值显著' },
+    retail_hot: { title: '🔥 散户热门', description: '散户关注度高的股票，情绪驱动明显' },
+    unusual_activity: { title: '🚨 异动股', description: '交易量异常放大的股票，可能有重大消息' },
+    high_liquidity: { title: '💧 高流动性', description: '流动性充足的股票，适合大额交易' },
+    top_gap_up: { title: '📈 跳空高开', description: '开盘大幅高开的股票，市场情绪积极' }
+};
+
+// 工具函数
+const Utils = {
+    // 格式化数字
+    formatNumber(num, decimals = 2) {
+        if (num === null || num === undefined || isNaN(num)) return 'N/A';
+        return Number(num).toFixed(decimals);
     },
-    
-    // 预览显示数量
-    PREVIEW_LIMIT: 5,
-    
-    // 生产环境硬编码链接映射
-    PRODUCTION_URLS: {
-        'chinese_stocks': {
-            'top_market_cap': 'https://stockinsight.ai/mobile-chinese-stocks-top-market-cap.html',
-            'top_gainers': 'https://stockinsight.ai/mobile-chinese-stocks-top-gainers.html',
-            'top_losers': 'https://stockinsight.ai/mobile-chinese-stocks-top-losers.html',
-            'top_turnover': 'https://stockinsight.ai/mobile-chinese-stocks-top-turnover.html',
-            'top_gap_up': 'https://stockinsight.ai/mobile-chinese-stocks-top-gap-up.html',
-            'momentum_stocks': 'https://stockinsight.ai/mobile-chinese-stocks-momentum-stocks.html',
-            'new_highs': 'https://stockinsight.ai/mobile-chinese-stocks-new-highs.html',
-            'new_lows': 'https://stockinsight.ai/mobile-chinese-stocks-new-lows.html',
-            'high_liquidity': 'https://stockinsight.ai/mobile-chinese-stocks-high-liquidity.html',
-            'top_volatility': 'https://stockinsight.ai/mobile-chinese-stocks-top-volatility.html',
-            'unusual_activity': 'https://stockinsight.ai/mobile-chinese-stocks-unusual-activity.html',
-            'smart_money': 'https://stockinsight.ai/mobile-chinese-stocks-smart-money.html',
-            'institutional_focus': 'https://stockinsight.ai/mobile-chinese-stocks-institutional-focus.html',
-            'retail_hot': 'https://stockinsight.ai/mobile-chinese-stocks-retail-hot.html'
-        },
-        'sp500': {
-            'top_market_cap': 'https://stockinsight.ai/mobile-sp500-top-market-cap.html',
-            'top_gainers': 'https://stockinsight.ai/mobile-sp500-top-gainers.html',
-            'top_losers': 'https://stockinsight.ai/mobile-sp500-top-losers.html',
-            'top_turnover': 'https://stockinsight.ai/mobile-sp500-top-turnover.html',
-            'top_gap_up': 'https://stockinsight.ai/mobile-sp500-top-gap-up.html',
-            'momentum_stocks': 'https://stockinsight.ai/mobile-sp500-momentum-stocks.html',
-            'new_highs': 'https://stockinsight.ai/mobile-sp500-new-highs.html',
-            'new_lows': 'https://stockinsight.ai/mobile-sp500-new-lows.html',
-            'high_liquidity': 'https://stockinsight.ai/mobile-sp500-high-liquidity.html',
-            'top_volatility': 'https://stockinsight.ai/mobile-sp500-top-volatility.html',
-            'unusual_activity': 'https://stockinsight.ai/mobile-sp500-unusual-activity.html',
-            'smart_money': 'https://stockinsight.ai/mobile-sp500-smart-money.html',
-            'institutional_focus': 'https://stockinsight.ai/mobile-sp500-institutional-focus.html',
-            'retail_hot': 'https://stockinsight.ai/mobile-sp500-retail-hot.html'
+
+    // 格式化百分比
+    formatPercentage(num, decimals = 2) {
+        if (num === null || num === undefined || isNaN(num)) return 'N/A';
+        const formatted = Number(num).toFixed(decimals);
+        return `${formatted}%`;
+    },
+
+    // 格式化市值
+    formatMarketCap(value) {
+        if (!value || isNaN(value)) return 'N/A';
+        
+        const num = Number(value);
+        if (num >= 1e12) {
+            return `$${(num / 1e12).toFixed(2)}万亿`;
+        } else if (num >= 1e9) {
+            return `$${(num / 1e9).toFixed(2)}B`;
+        } else if (num >= 1e6) {
+            return `$${(num / 1e6).toFixed(2)}M`;
+        } else if (num >= 1e3) {
+            return `$${(num / 1e3).toFixed(2)}K`;
+        }
+        return `$${num.toFixed(2)}`;
+    },
+
+    // 格式化标普500市值
+    formatSP500MarketCap(value) {
+        if (!value || isNaN(value)) return 'N/A';
+        
+        const num = Number(value);
+        if (num >= 1e12) {
+            return `$${(num / 1e12).toFixed(2)}万亿`;
+        } else if (num >= 1e9) {
+            return `$${(num / 1e9).toFixed(2)}B`;
+        } else if (num >= 1e6) {
+            return `$${(num / 1e6).toFixed(2)}M`;
+        }
+        return `$${num.toFixed(2)}`;
+    },
+
+    // 格式化中概股市值
+    formatChineseStockMarketCap(value) {
+        if (!value || isNaN(value)) return 'N/A';
+        
+        const num = Number(value);
+        if (num >= 1e9) {
+            return `$${(num / 1e9).toFixed(2)}B`;
+        } else if (num >= 1e6) {
+            return `$${(num / 1e6).toFixed(2)}M`;
+        } else if (num >= 1e3) {
+            return `$${(num / 1e3).toFixed(2)}K`;
+        }
+        return `$${num.toFixed(2)}`;
+    },
+
+    // 获取涨跌幅样式类
+    getChangeClass(change) {
+        if (!change || isNaN(change)) return '';
+        return Number(change) >= 0 ? 'positive' : 'negative';
+    },
+
+    // 防抖函数
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    },
+
+    // 显示错误消息
+    showError(message, container) {
+        if (container) {
+            container.innerHTML = `
+                <div class="error-message">
+                    <p>⚠️ ${message}</p>
+                    <button onclick="location.reload()" class="retry-btn">重试</button>
+                </div>
+            `;
+        }
+        console.error('移动版首页错误:', message);
+    },
+
+    // 显示加载状态
+    showLoading(container) {
+        if (container) {
+            container.innerHTML = `
+                <div class="loading-state">
+                    <div class="loading-spinner"></div>
+                    <p>加载中...</p>
+                </div>
+            `;
         }
     }
 };
 
-// ==================== 工具函数 ====================
 
-/**
- * 格式化标普500市值
- */
-function formatSP500MarketCap(cap) {
-    if (!cap || cap === 0) return 'N/A';
-    
-    const numCap = parseFloat(cap);
-    if (isNaN(numCap)) return 'N/A';
-    
-    if (numCap >= 1e12) {
-        return `$${(numCap / 1e12).toFixed(2)}T`;
-    } else if (numCap >= 1e9) {
-        return `$${(numCap / 1e9).toFixed(2)}B`;
-    } else if (numCap >= 1e6) {
-        return `$${(numCap / 1e6).toFixed(2)}M`;
-    } else {
-        return `$${numCap.toFixed(2)}`;
-    }
-}
 
-/**
- * 格式化中概股市值
- */
-function formatChineseStockMarketCap(cap) {
-    if (!cap || cap === 0) return 'N/A';
-    
-    const numCap = parseFloat(cap);
-    if (isNaN(numCap)) return 'N/A';
-    
-    if (numCap >= 1e12) {
-        return `${(numCap / 1e12).toFixed(2)}万亿`;
-    } else if (numCap >= 1e8) {
-        return `${(numCap / 1e8).toFixed(2)}亿`;
-    } else if (numCap >= 1e4) {
-        return `${(numCap / 1e4).toFixed(2)}万`;
-    } else {
-        return `${numCap.toFixed(2)}`;
-    }
-}
+// API调用模块
+const API = {
+    // 通用API调用
+    async request(url, options = {}) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.timeout);
 
-/**
- * 格式化百分比变化
- */
-function formatPercentageChange(change) {
-    if (!change && change !== 0) return 'N/A';
-    
-    const numChange = parseFloat(change);
-    if (isNaN(numChange)) return 'N/A';
-    
-    const sign = numChange >= 0 ? '+' : '';
-    return `${sign}${numChange.toFixed(2)}%`;
-}
+        try {
+            const response = await fetch(url, {
+                ...options,
+                signal: controller.signal
+            });
 
-/**
- * 获取当前市场
- */
-function getCurrentMarket() {
-    // 1. 优先从URL参数获取
-    const urlParams = new URLSearchParams(window.location.search);
-    const marketParam = urlParams.get('market');
-    if (marketParam) {
-        console.log('从URL参数获取市场:', marketParam);
-        return marketParam;
-    }
-    
-    // 2. 从激活的市场按钮获取
-    const activeMarketButton = document.querySelector('.market-nav-button.active');
-    if (activeMarketButton) {
-        const market = activeMarketButton.getAttribute('data-market-target');
-        if (market) {
-            console.log('从激活按钮获取市场:', market);
-            return market;
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                throw new Error('请求超时，请检查网络连接');
+            }
+            throw error;
         }
-    }
-    
-    // 3. 检查页面上的激活状态
-    const sp500Active = document.querySelector('.sp500-section.active, .sp500-content.active');
-    const chineseActive = document.querySelector('.chinese-stocks-section.active, .chinese-content.active');
-    
-    if (sp500Active) {
-        console.log('检测到标普500激活状态');
-        return CONFIG.MARKETS.SP500;
-    }
-    
-    if (chineseActive) {
-        console.log('检测到中概股激活状态');
-        return CONFIG.MARKETS.CHINESE_STOCKS;
-    }
-    
-    // 4. 默认为标普500
-    console.log('使用默认市场: sp500');
-    return CONFIG.MARKETS.SP500;
-}
+    },
 
-/**
- * 检测是否为生产环境
- */
-function isProductionEnvironment() {
-    return window.location.hostname === 'stockinsight.ai' || 
-           window.location.hostname === 'www.stockinsight.ai';
-}
-
-/**
- * 显示错误消息
- */
-function showErrorMessage(container, message) {
-    if (!container) return;
-    
-    container.innerHTML = `
-        <div class="error-message" style="
-            padding: 10px;
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-            border-radius: 4px;
-            margin: 10px 0;
-            text-align: center;
-        ">
-            <i class="fas fa-exclamation-triangle"></i>
-            ${message}
-        </div>
-    `;
-}
-
-/**
- * 显示加载状态
- */
-function showLoadingState(container) {
-    if (!container) return;
-    
-    container.innerHTML = `
-        <div class="loading-state" style="
-            padding: 20px;
-            text-align: center;
-            color: #6c757d;
-        ">
-            <i class="fas fa-spinner fa-spin"></i>
-            <span style="margin-left: 8px;">加载中...</span>
-        </div>
-    `;
-}
-
-// ==================== 渲染函数 ====================
-
-/**
- * 渲染个股列表预览
- */
-function renderPreviewList(container, stocks, market) {
-    if (!container) {
-        console.error('容器不存在');
-        return;
-    }
-    
-    if (!stocks || !Array.isArray(stocks) || stocks.length === 0) {
-        showErrorMessage(container, '暂无数据');
-        return;
-    }
-    
-    const stocksHtml = stocks.slice(0, CONFIG.PREVIEW_LIMIT).map((stock, index) => {
-        // 格式化市值
-        let marketCapFormatted = 'N/A';
-        if (stock.market_cap) {
-            marketCapFormatted = market === CONFIG.MARKETS.CHINESE_STOCKS 
-                ? formatChineseStockMarketCap(stock.market_cap)
-                : formatSP500MarketCap(stock.market_cap);
+    // 获取榜单数据
+    async getRankingData(rankingType, market = 'sp500') {
+        const cacheKey = `${rankingType}_${market}`;
+        
+        // 检查缓存
+        if (AppState.cache.has(cacheKey)) {
+            const cached = AppState.cache.get(cacheKey);
+            const now = Date.now();
+            if (now - cached.timestamp < 60000) { // 1分钟缓存
+                return cached.data;
+            }
         }
+
+        const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.ranking}?type=${rankingType}&market=${market}&limit=3`;
+        const data = await this.request(url);
         
-        // 格式化涨跌幅
-        const changeFormatted = formatPercentageChange(stock.change_percent);
-        const changeClass = stock.change_percent >= 0 ? 'positive' : 'negative';
+        // 缓存数据
+        AppState.cache.set(cacheKey, {
+            data,
+            timestamp: Date.now()
+        });
+
+        return data;
+    },
+
+    // 获取市场概览数据
+    async getMarketSummary(market = 'sp500') {
+        const cacheKey = `market_summary_${market}`;
         
+        // 检查缓存
+        if (AppState.cache.has(cacheKey)) {
+            const cached = AppState.cache.get(cacheKey);
+            const now = Date.now();
+            if (now - cached.timestamp < 30000) { // 30秒缓存
+                return cached.data;
+            }
+        }
+
+        const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.marketSummary}?market=${market}`;
+        const data = await this.request(url);
+        
+        // 缓存数据
+        AppState.cache.set(cacheKey, {
+            data,
+            timestamp: Date.now()
+        });
+
+        return data;
+    }
+};
+
+// 渲染模块
+const Renderer = {
+    // 渲染股票列表项
+    renderStockItem(stock, index) {
+        if (!stock) return '';
+
+        const symbol = stock.symbol || stock.ticker || 'N/A';
+        const name = stock.name || stock.company_name || 'N/A';
+        const price = stock.price || stock.current_price || 0;
+        const change = stock.change_percent || stock.percent_change || 0;
+        const marketCap = stock.market_cap || 0;
+
+        // 根据当前市场选择合适的市值格式化函数
+        const formatMarketCap = AppState.currentMarket === 'sp500' 
+            ? Utils.formatSP500MarketCap 
+            : Utils.formatChineseStockMarketCap;
+
         return `
-            <div class="stock-item" style="
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 12px 0;
-                border-bottom: 1px solid #eee;
-            ">
-                <div class="stock-info" style="flex: 1;">
-                    <div class="stock-symbol" style="
-                        font-weight: bold;
-                        font-size: 16px;
-                        color: #333;
-                        margin-bottom: 4px;
-                    ">${stock.symbol || 'N/A'}</div>
-                    <div class="stock-name" style="
-                        font-size: 12px;
-                        color: #666;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                        white-space: nowrap;
-                        max-width: 150px;
-                    ">${stock.name || 'N/A'}</div>
+            <div class="stock-item" data-symbol="${symbol}">
+                <div class="stock-rank">${index + 1}</div>
+                <div class="stock-info">
+                    <div class="stock-symbol">${symbol}</div>
+                    <div class="stock-name">${name}</div>
                 </div>
-                <div class="stock-metrics" style="
-                    text-align: right;
-                    min-width: 80px;
-                ">
-                    <div class="stock-change ${changeClass}" style="
-                        font-weight: bold;
-                        font-size: 14px;
-                        margin-bottom: 4px;
-                        color: ${stock.change_percent >= 0 ? '#28a745' : '#dc3545'};
-                    ">${changeFormatted}</div>
-                    <div class="stock-market-cap" style="
-                        font-size: 12px;
-                        color: #666;
-                    ">${marketCapFormatted}</div>
+                <div class="stock-metrics">
+                    <div class="stock-price">$${Utils.formatNumber(price)}</div>
+                    <div class="stock-change ${Utils.getChangeClass(change)}">
+                        ${Utils.formatPercentage(change)}
+                    </div>
+                    <div class="stock-market-cap">${formatMarketCap(marketCap)}</div>
                 </div>
             </div>
         `;
-    }).join('');
-    
-    container.innerHTML = `
-        <div class="preview-list" style="
-            background: white;
-            border-radius: 8px;
-            padding: 16px;
-            margin: 10px 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        ">
-            ${stocksHtml}
-        </div>
-    `;
-}
+    },
 
-// ==================== 数据加载函数 ====================
+    // 渲染榜单预览
+    renderRankingPreview(container, stocks, rankingType) {
+        if (!container) return;
 
-/**
- * 加载单个榜单的预览数据
- */
-async function loadRankingPreview(market, rankingType) {
-    const container = document.getElementById(`${rankingType}-mobile-list`);
-    if (!container) {
-        console.warn(`容器不存在: ${rankingType}-mobile-list`);
-        return;
-    }
-    
-    showLoadingState(container);
-    
-    try {
-        const response = await fetch(`${CONFIG.API_BASE}/ranking?market=${market}&type=${rankingType}&limit=${CONFIG.PREVIEW_LIMIT}`);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const stocks = await response.json();
-        renderPreviewList(container, stocks, market);
-        
-        console.log(`✅ 成功加载 ${market} - ${rankingType} 预览数据:`, stocks.length, '条');
-        
-    } catch (error) {
-        console.error(`❌ 加载 ${market} - ${rankingType} 预览数据失败:`, error);
-        showErrorMessage(container, `加载失败: ${error.message}`);
-    }
-}
-
-/**
- * 加载所有榜单的预览数据
- */
-async function loadAllPreviews(market) {
-    console.log(`🔄 开始加载所有榜单预览数据 - 市场: ${market}`);
-    
-    // 并发加载所有榜单数据
-    const loadPromises = CONFIG.RANKING_TYPES.map(rankingType => 
-        loadRankingPreview(market, rankingType)
-    );
-    
-    try {
-        await Promise.allSettled(loadPromises);
-        console.log(`✅ 所有榜单预览数据加载完成 - 市场: ${market}`);
-    } catch (error) {
-        console.error(`❌ 加载榜单预览数据时发生错误:`, error);
-    }
-}
-
-// ==================== 导航和跳转函数 ====================
-
-/**
- * 导航到榜单详情页
- */
-function navigateToRankingDetail(listType) {
-    const currentMarket = getCurrentMarket();
-    
-    console.log(`🔗 导航到榜单详情页:`, {
-        market: currentMarket,
-        list: listType
-    });
-    
-    // 检查是否为生产环境，如果是则使用硬编码链接
-    if (isProductionEnvironment()) {
-        const productionUrl = CONFIG.PRODUCTION_URLS[currentMarket]?.[listType];
-        if (productionUrl) {
-            console.log(`🌐 使用生产环境链接:`, productionUrl);
-            window.location.href = productionUrl;
+        if (!stocks || !Array.isArray(stocks) || stocks.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <p>暂无数据</p>
+                </div>
+            `;
             return;
         }
-    }
-    
-    // 开发环境或没有硬编码链接时，使用相对路径
-    const url = `/mobile-ranking-detail.html?market=${currentMarket}&list=${listType}`;
-    console.log(`🔗 跳转到:`, url);
-    window.location.href = url;
-}
 
-/**
- * 处理"查看更多"按钮点击
- */
-function handleMoreButtonClick(event) {
-    event.preventDefault();
-    
-    const button = event.currentTarget;
-    const listType = button.getAttribute('data-ranking') || button.getAttribute('data-list-type');
-    
-    if (!listType) {
-        console.error('❌ 无法获取榜单类型');
-        return;
-    }
-    
-    navigateToRankingDetail(listType);
-}
+        // 只显示前3名
+        const topStocks = stocks.slice(0, 3);
+        const stocksHtml = topStocks.map((stock, index) => 
+            this.renderStockItem(stock, index)
+        ).join('');
 
-/**
- * 处理顶部导航按钮点击
- */
-function handleTopNavClick(event) {
-    event.preventDefault();
-    
-    const button = event.currentTarget;
-    const listType = button.getAttribute('data-ranking') || button.getAttribute('data-list-type');
-    
-    if (!listType) {
-        console.error('❌ 无法获取榜单类型');
-        return;
-    }
-    
-    navigateToRankingDetail(listType);
-}
+        container.innerHTML = `
+            <div class="stock-list">
+                ${stocksHtml}
+            </div>
+        `;
+    },
 
-// ==================== 事件绑定函数 ====================
+    // 渲染市场概览
+    renderMarketOverview(data) {
+        if (!data) return;
 
-/**
- * 绑定所有事件监听器
- */
-function bindEventListeners() {
-    console.log('🔗 开始绑定事件监听器');
-    
-    // 绑定"查看更多"按钮
-    const moreButtons = document.querySelectorAll('[data-ranking], [data-list-type]');
-    moreButtons.forEach(button => {
-        button.addEventListener('click', handleMoreButtonClick);
-    });
-    
-    // 绑定顶部导航按钮
-    const topNavButtons = document.querySelectorAll('.top-nav-button, .nav-button');
-    topNavButtons.forEach(button => {
-        button.addEventListener('click', handleTopNavClick);
-    });
-    
-    // 绑定市场切换按钮
-    const marketButtons = document.querySelectorAll('.market-nav-button');
-    marketButtons.forEach(button => {
-        button.addEventListener('click', (event) => {
-            event.preventDefault();
-            
-            const targetMarket = button.getAttribute('data-market-target');
-            if (targetMarket) {
-                // 更新URL参数
-                const url = new URL(window.location);
-                url.searchParams.set('market', targetMarket);
-                window.history.pushState({}, '', url);
-                
-                // 重新加载数据
-                loadAllPreviews(targetMarket);
-                
-                // 更新按钮状态
-                updateActiveMarketButtons(targetMarket);
-            }
-        });
-    });
-    
-    console.log(`✅ 事件监听器绑定完成 - 共绑定 ${moreButtons.length + topNavButtons.length + marketButtons.length} 个元素`);
-}
+        const elements = {
+            totalStocks: document.getElementById('total-stocks'),
+            risingStocks: document.getElementById('rising-stocks'),
+            fallingStocks: document.getElementById('falling-stocks'),
+            totalMarketCap: document.getElementById('total-market-cap')
+        };
 
-/**
- * 更新激活的市场按钮状态
- */
-function updateActiveMarketButtons(activeMarket) {
-    const marketButtons = document.querySelectorAll('.market-nav-button');
-    marketButtons.forEach(button => {
-        const targetMarket = button.getAttribute('data-market-target');
-        if (targetMarket === activeMarket) {
-            button.classList.add('active');
-        } else {
-            button.classList.remove('active');
+        // 安全更新元素内容
+        if (elements.totalStocks) {
+            elements.totalStocks.textContent = data.total_stocks || 'N/A';
         }
-    });
-    
-    // 更新内容区域的显示状态
-    const contentSections = document.querySelectorAll('.market-content');
-    contentSections.forEach(section => {
-        const sectionMarket = section.getAttribute('data-market');
-        if (sectionMarket === activeMarket) {
-            section.classList.add('active');
-            section.style.display = 'block';
-        } else {
-            section.classList.remove('active');
-            section.style.display = 'none';
+        if (elements.risingStocks) {
+            elements.risingStocks.textContent = data.rising_stocks || 'N/A';
         }
-    });
-}
-
-// ==================== 初始化函数 ====================
-
-/**
- * 初始化移动版首页应用
- */
-function initialize() {
-    console.log('🚀 移动版首页应用开始初始化');
-    
-    // 获取当前市场
-    const currentMarket = getCurrentMarket();
-    console.log('📱 当前市场:', currentMarket);
-    
-    // 更新市场按钮状态
-    updateActiveMarketButtons(currentMarket);
-    
-    // 绑定事件监听器
-    bindEventListeners();
-    
-    // 加载所有榜单预览数据
-    loadAllPreviews(currentMarket);
-    
-    console.log('✅ 移动版首页应用初始化完成');
-}
-
-// ==================== 应用入口 ====================
-
-// 等待DOM加载完成后初始化应用
-document.addEventListener('DOMContentLoaded', initialize);
-
-// 导出函数供全局使用（如果需要）
-window.MobileHomeApp = {
-    initialize,
-    getCurrentMarket,
-    navigateToRankingDetail,
-    loadAllPreviews,
-    CONFIG
+        if (elements.fallingStocks) {
+            elements.fallingStocks.textContent = data.falling_stocks || 'N/A';
+        }
+        if (elements.totalMarketCap) {
+            const formatMarketCap = AppState.currentMarket === 'sp500' 
+                ? Utils.formatSP500MarketCap 
+                : Utils.formatChineseStockMarketCap;
+            elements.totalMarketCap.textContent = formatMarketCap(data.total_market_cap);
+        }
+    }
 };
 
-console.log('📱 移动版首页应用脚本已加载 (mobile-home-app.js)');
+// 榜单加载模块
+const RankingLoader = {
+    // 加载单个榜单预览
+    async loadRankingPreview(rankingType) {
+        const container = document.getElementById(`${rankingType}-mobile-list`);
+        if (!container) {
+            console.warn(`容器不存在: ${rankingType}-mobile-list`);
+            return;
+        }
+
+        try {
+            Utils.showLoading(container);
+            
+            const data = await API.getRankingData(rankingType, AppState.currentMarket);
+            
+            if (data && data.success && data.data) {
+                Renderer.renderRankingPreview(container, data.data, rankingType);
+            } else {
+                throw new Error(data?.message || '数据格式错误');
+            }
+        } catch (error) {
+            console.error(`加载榜单预览失败 (${rankingType}):`, error);
+            Utils.showError('加载失败', container);
+        }
+    },
+
+    // 加载所有榜单预览
+    async loadAllRankingPreviews() {
+        if (AppState.isLoading) return;
+        
+        AppState.isLoading = true;
+        AppState.retryCount = 0;
+
+        try {
+            // 并发加载所有榜单
+            const loadPromises = RANKING_TYPES.map(rankingType => 
+                this.loadRankingPreview(rankingType)
+            );
+
+            await Promise.allSettled(loadPromises);
+            AppState.lastUpdateTime = Date.now();
+            
+        } catch (error) {
+            console.error('加载榜单预览失败:', error);
+        } finally {
+            AppState.isLoading = false;
+        }
+    },
+
+    // 重试加载
+    async retryLoad() {
+        if (AppState.retryCount >= AppState.maxRetries) {
+            console.error('达到最大重试次数，停止重试');
+            return;
+        }
+
+        AppState.retryCount++;
+        console.log(`重试加载 (${AppState.retryCount}/${AppState.maxRetries})`);
+        
+        // 清除缓存
+        AppState.cache.clear();
+        
+        // 延迟重试
+        await new Promise(resolve => setTimeout(resolve, 1000 * AppState.retryCount));
+        
+        await this.loadAllRankingPreviews();
+    }
+};
+
+// 市场切换模块
+const MarketSwitcher = {
+    // 初始化市场切换按钮
+    init() {
+        const buttons = document.querySelectorAll('.market-toggle-btn');
+        buttons.forEach(button => {
+            button.addEventListener('click', this.handleMarketSwitch.bind(this));
+        });
+    },
+
+    // 处理市场切换
+    async handleMarketSwitch(event) {
+        const button = event.target;
+        const market = button.dataset.marketTarget;
+        
+        if (!market || market === AppState.currentMarket) return;
+
+        // 更新状态
+        AppState.currentMarket = market;
+        
+        // 更新按钮状态
+        this.updateButtonStates(market);
+        
+        // 重新加载数据
+        await this.switchMarket(market);
+    },
+
+    // 更新按钮状态
+    updateButtonStates(activeMarket) {
+        const buttons = document.querySelectorAll('.market-toggle-btn');
+        buttons.forEach(button => {
+            const market = button.dataset.marketTarget;
+            if (market === activeMarket) {
+                button.classList.add('active');
+            } else {
+                button.classList.remove('active');
+            }
+        });
+    },
+
+    // 切换市场
+    async switchMarket(market) {
+        try {
+            // 清除相关缓存
+            AppState.cache.forEach((value, key) => {
+                if (key.includes('_sp500') || key.includes('_chinese_stocks')) {
+                    AppState.cache.delete(key);
+                }
+            });
+
+            // 加载市场概览
+            await this.loadMarketOverview(market);
+            
+            // 重新加载所有榜单
+            await RankingLoader.loadAllRankingPreviews();
+            
+        } catch (error) {
+            console.error('切换市场失败:', error);
+            Utils.showError('切换市场失败，请重试');
+        }
+    },
+
+    // 加载市场概览
+    async loadMarketOverview(market) {
+        try {
+            const data = await API.getMarketSummary(market);
+            if (data && data.success) {
+                Renderer.renderMarketOverview(data.data);
+            }
+        } catch (error) {
+            console.error('加载市场概览失败:', error);
+        }
+    }
+};
+
+// 导航模块
+const Navigation = {
+    // 导航到榜单详情页
+    navigateToRankingDetail(rankingType) {
+        if (!rankingType) return;
+        
+        const market = AppState.currentMarket;
+        const url = `/mobile-${market}-${rankingType.replace(/_/g, '-')}.html`;
+        
+        // 添加页面转场效果
+        document.body.style.opacity = '0.8';
+        setTimeout(() => {
+            window.location.href = url;
+        }, 150);
+    }
+};
+
+// 应用初始化
+const App = {
+    // 初始化应用
+    async init() {
+        console.log('移动版首页应用初始化开始...');
+        
+        try {
+            // 初始化市场切换器
+            MarketSwitcher.init();
+            
+            // 设置全局导航函数
+            window.navigateToRankingDetail = Navigation.navigateToRankingDetail;
+            
+            // 加载初始数据
+            await this.loadInitialData();
+            
+            // 设置定时刷新
+            this.setupAutoRefresh();
+            
+            // 设置错误处理
+            this.setupErrorHandling();
+            
+            console.log('移动版首页应用初始化完成');
+            
+        } catch (error) {
+            console.error('应用初始化失败:', error);
+            this.handleInitError(error);
+        }
+    },
+
+    // 加载初始数据
+    async loadInitialData() {
+        // 加载市场概览
+        await MarketSwitcher.loadMarketOverview(AppState.currentMarket);
+        
+        // 加载所有榜单预览
+        await RankingLoader.loadAllRankingPreviews();
+    },
+
+    // 设置自动刷新
+    setupAutoRefresh() {
+        // 每5分钟刷新一次数据
+        setInterval(async () => {
+            if (!AppState.isLoading) {
+                console.log('自动刷新数据...');
+                await this.loadInitialData();
+            }
+        }, 5 * 60 * 1000);
+    },
+
+    // 设置错误处理
+    setupErrorHandling() {
+        window.addEventListener('error', (event) => {
+            console.error('全局错误:', event.error);
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('未处理的Promise拒绝:', event.reason);
+        });
+    },
+
+    // 处理初始化错误
+    handleInitError(error) {
+        const errorContainer = document.getElementById('error-trending');
+        if (errorContainer) {
+            errorContainer.classList.remove('hidden');
+            errorContainer.innerHTML = `
+                <div class="error-message">
+                    <h3>⚠️ 应用初始化失败</h3>
+                    <p>${error.message}</p>
+                    <button onclick="location.reload()" class="retry-btn">重新加载</button>
+                </div>
+            `;
+        }
+    }
+};
+
+// 页面加载完成后初始化应用
+document.addEventListener('DOMContentLoaded', () => {
+    App.init();
+});
+
+// 导出模块供其他脚本使用
+window.MobileHomeApp = {
+    AppState,
+    API,
+    Utils,
+    Renderer,
+    RankingLoader,
+    MarketSwitcher,
+    Navigation,
+    App
+};

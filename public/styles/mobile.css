@@ -892,6 +892,30 @@ body {
     padding: 0 16px;
 }
 
+/* 榜单预览单列布局 */
+.trending-lists-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 0 8px;
+}
+
+.list-section-preview {
+    background: var(--surface-color);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.list-section-preview:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
 /* 市场概览田字格布局 */
 .market-overview-grid {
     display: grid;
@@ -1028,6 +1052,10 @@ body {
     overflow: hidden;
     box-shadow: var(--shadow-sm);
     margin-bottom: 16px;
+    padding: 4px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
 }
 
 /* 更多按钮容器 */
@@ -1063,88 +1091,78 @@ body {
 
 .stock-item {
     display: flex;
-    align-items: center;
-    padding: 16px;
-    border-bottom: 1px solid var(--border-color);
+    flex-direction: column;
+    padding: 8px;
+    background: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
     transition: var(--transition);
     cursor: pointer;
-    min-height: 80px; /* 固定最小高度 */
-    height: 80px; /* 固定高度 */
+    min-height: auto;
+    height: auto;
 }
 
-.stock-item:last-child {
-    border-bottom: none;
+.stock-item:hover {
+    background: var(--surface-color);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
 }
 
 .stock-item:active {
-    background: var(--background-color);
+    transform: translateY(0);
 }
 
 .stock-rank {
-    width: 32px; /* 增加宽度 */
-    height: 32px; /* 增加高度 */
-    background: var(--primary-color);
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px; /* 增加字体大小 */
-    font-weight: 600;
-    margin-right: 16px; /* 增加右边距 */
-    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+    text-align: center;
 }
 
 .stock-info {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    height: 100%;
+    margin-bottom: 8px;
 }
 
 .stock-name {
-    font-size: 15px; /* 稍微增加字体大小 */
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: bold;
     color: var(--text-primary);
-    margin-bottom: 4px; /* 增加底部间距 */
-    white-space: nowrap;
+    margin-bottom: 2px;
     overflow: hidden;
     text-overflow: ellipsis;
-    line-height: 1.2;
+    white-space: nowrap;
 }
 
 .stock-symbol {
-    font-size: 13px; /* 稍微增加字体大小 */
+    font-size: 10px;
     color: var(--text-secondary);
-    font-family: 'Monaco', 'Menlo', monospace;
-    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .stock-price {
-    text-align: right;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: flex-end;
-    height: 100%;
-    min-width: 80px; /* 固定最小宽度 */
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+    text-align: center;
 }
 
 .stock-current-price {
-    font-size: 15px; /* 稍微增加字体大小 */
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: bold;
     color: var(--text-primary);
-    margin-bottom: 4px; /* 增加底部间距 */
-    line-height: 1.2;
+    margin-bottom: 2px;
+    text-align: center;
 }
 
 .stock-change {
-    font-size: 13px; /* 稍微增加字体大小 */
-    font-weight: 500;
-    line-height: 1.2;
+    font-size: 11px;
+    font-weight: bold;
+    margin-bottom: 2px;
+    text-align: center;
 }
 
 .stock-change.positive {
