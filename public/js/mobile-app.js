@@ -107,9 +107,25 @@ function getCurrentMarket() {
     
     if (!currentMarket) {
         const activeMarketButton = document.querySelector('.market-carousel-btn.active');
-        currentMarket = activeMarketButton ? activeMarketButton.dataset.marketTarget : 'chinese_stocks';
+        if (activeMarketButton) {
+            currentMarket = activeMarketButton.dataset.marketTarget;
+        } else {
+            // 检查页面上是否有标普500相关的激活状态
+            const sp500Button = document.querySelector('[data-market-target="sp500"]');
+            const chineseButton = document.querySelector('[data-market-target="chinese_stocks"]');
+            
+            if (sp500Button && sp500Button.classList.contains('active')) {
+                currentMarket = 'sp500';
+            } else if (chineseButton && chineseButton.classList.contains('active')) {
+                currentMarket = 'chinese_stocks';
+            } else {
+                // 最后的默认值
+                currentMarket = 'chinese_stocks';
+            }
+        }
     }
     
+    console.log(`🎯 当前市场: ${currentMarket}`);
     return currentMarket;
 }
 
@@ -178,19 +194,64 @@ function renderIndividualStockList(element, stocks, marketType) {
 
 // 处理"更多"按钮点击事件，跳转到移动版二级页面
 function handleMoreButtonClick(rankingType) {
-    const currentMarket = getCurrentMarket();
-    
-    // 跳转到移动版二级详情页面
-    const detailUrl = `./mobile-ranking-detail.html?market=${currentMarket}&list=${rankingType}`;
-    window.location.href = detailUrl;
+    // 直接调用navigateToRankingDetail函数，复用生产地址逻辑
+    navigateToRankingDetail(rankingType);
 }
 
 // 为mobile.html提供的导航函数
 function navigateToRankingDetail(listType) {
     const currentMarket = getCurrentMarket();
     
-    // 构建相对路径URL
-    const detailUrl = `mobile-ranking-detail.html?market=${encodeURIComponent(currentMarket)}&list=${encodeURIComponent(listType)}`;
+    // 生产服务器地址映射
+    const productionUrls = {
+        // 中概股榜单
+        'chinese_stocks': {
+            'top_gainers': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=top_gainers',
+            'top_market_cap': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=top_market_cap',
+            'new_highs': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=new_highs',
+            'top_turnover': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=top_turnover',
+            'top_volatility': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=top_volatility',
+            'top_gap_up': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=top_gap_up',
+            'top_losers': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=top_losers',
+            'new_lows': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=new_lows',
+            'institutional_focus': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=institutional_focus',
+            'retail_hot': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=retail_hot',
+            'smart_money': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=smart_money',
+            'high_liquidity': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=high_liquidity',
+            'unusual_activity': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=unusual_activity',
+            'momentum_stocks': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=chinese_stocks&list=momentum_stocks'
+        },
+        // 标普500榜单
+        'sp500': {
+            'top_gainers': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=top_gainers',
+            'top_market_cap': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=top_market_cap',
+            'new_highs': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=new_highs',
+            'top_turnover': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=top_turnover',
+            'top_volatility': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=top_volatility',
+            'top_gap_up': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=top_gap_up',
+            'top_losers': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=top_losers',
+            'new_lows': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=new_lows',
+            'institutional_focus': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=institutional_focus',
+            'retail_hot': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=retail_hot',
+            'smart_money': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=smart_money',
+            'high_liquidity': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=high_liquidity',
+            'unusual_activity': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=unusual_activity',
+            'momentum_stocks': 'https://stock-tag-explorer-01.vercel.app/mobile-ranking-detail.html?market=sp500&list=momentum_stocks'
+        }
+    };
+    
+    // 检查是否在生产环境或需要使用生产链接
+    const isProduction = window.location.hostname.includes('vercel.app') || window.location.hostname.includes('stock-tag-explorer-01');
+    
+    let detailUrl;
+    if (isProduction && productionUrls[currentMarket] && productionUrls[currentMarket][listType]) {
+        // 使用生产服务器地址
+        detailUrl = productionUrls[currentMarket][listType];
+    } else {
+        // 使用相对路径（开发环境）
+        detailUrl = `mobile-ranking-detail.html?market=${encodeURIComponent(currentMarket)}&list=${encodeURIComponent(listType)}`;
+    }
+    
     window.location.href = detailUrl;
     console.log(`🔗 移动版跳转: ${detailUrl}`);
 }
