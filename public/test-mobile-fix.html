@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>移动版修复测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔧 移动版导航修复测试</h1>
+        <div class="info">
+            <strong>修复内容：</strong> 将 mobile.html 中的 script 引用从 trending.js 改为 mobile-app.js
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h2>📱 移动版首页入口</h2>
+        <p>点击下方按钮访问修复后的移动版首页：</p>
+        <button class="test-button" onclick="window.open('/mobile.html', '_blank')">
+            打开移动版首页
+        </button>
+    </div>
+
+    <div class="test-container">
+        <h2>🧪 函数存在性测试</h2>
+        <p>测试 navigateToRankingDetail 函数是否已正确加载：</p>
+        <button class="test-button" onclick="testFunction()">
+            测试函数是否存在
+        </button>
+        <div id="function-test-result"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>🔗 导航功能测试</h2>
+        <p>测试各种榜单的导航链接：</p>
+        
+        <h3>标普500榜单测试</h3>
+        <button class="test-button" onclick="testNavigation('sp500', 'top_gainers')">
+            标普500涨幅榜
+        </button>
+        <button class="test-button" onclick="testNavigation('sp500', 'top_losers')">
+            标普500跌幅榜
+        </button>
+        <button class="test-button" onclick="testNavigation('sp500', 'top_turnover')">
+            标普500成交额榜
+        </button>
+        
+        <h3>中概股榜单测试</h3>
+        <button class="test-button" onclick="testNavigation('chinese_stocks', 'top_gainers')">
+            中概股涨幅榜
+        </button>
+        <button class="test-button" onclick="testNavigation('chinese_stocks', 'top_losers')">
+            中概股跌幅榜
+        </button>
+        <button class="test-button" onclick="testNavigation('chinese_stocks', 'top_turnover')">
+            中概股成交额榜
+        </button>
+        
+        <div id="navigation-test-result"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>📋 修复前后对比</h2>
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr style="background: #f8f9fa;">
+                <th style="border: 1px solid #ddd; padding: 8px;">项目</th>
+                <th style="border: 1px solid #ddd; padding: 8px;">修复前</th>
+                <th style="border: 1px solid #ddd; padding: 8px;">修复后</th>
+            </tr>
+            <tr>
+                <td style="border: 1px solid #ddd; padding: 8px;">Script引用</td>
+                <td style="border: 1px solid #ddd; padding: 8px; color: #dc3545;">js/trending.js</td>
+                <td style="border: 1px solid #ddd; padding: 8px; color: #28a745;">js/mobile-app.js</td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid #ddd; padding: 8px;">函数可用性</td>
+                <td style="border: 1px solid #ddd; padding: 8px; color: #dc3545;">❌ navigateToRankingDetail 未定义</td>
+                <td style="border: 1px solid #ddd; padding: 8px; color: #28a745;">✅ navigateToRankingDetail 可用</td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid #ddd; padding: 8px;">控制台错误</td>
+                <td style="border: 1px solid #ddd; padding: 8px; color: #dc3545;">ReferenceError: navigateToRankingDetail is not defined</td>
+                <td style="border: 1px solid #ddd; padding: 8px; color: #28a745;">无错误</td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid #ddd; padding: 8px;">页面跳转</td>
+                <td style="border: 1px solid #ddd; padding: 8px; color: #dc3545;">❌ 无法跳转</td>
+                <td style="border: 1px solid #ddd; padding: 8px; color: #28a745;">✅ 正常跳转</td>
+            </tr>
+        </table>
+    </div>
+
+    <script>
+        function testFunction() {
+            const resultDiv = document.getElementById('function-test-result');
+            
+            // 创建一个iframe来加载mobile-app.js并测试函数
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = 'data:text/html,<script src="/js/mobile-app.js"><\/script><script>parent.postMessage({type: "function-test", exists: typeof navigateToRankingDetail === "function"}, "*");<\/script>';
+            
+            window.addEventListener('message', function(event) {
+                if (event.data.type === 'function-test') {
+                    if (event.data.exists) {
+                        resultDiv.innerHTML = '<div class="success">✅ navigateToRankingDetail 函数已正确加载！</div>';
+                    } else {
+                        resultDiv.innerHTML = '<div class="error">❌ navigateToRankingDetail 函数仍未定义</div>';
+                    }
+                    document.body.removeChild(iframe);
+                }
+            });
+            
+            document.body.appendChild(iframe);
+        }
+
+        function testNavigation(market, list) {
+            const resultDiv = document.getElementById('navigation-test-result');
+            
+            // 构建预期的URL
+            const expectedUrl = `/mobile-ranking-detail.html?market=${market}&list=${list}`;
+            
+            resultDiv.innerHTML = `
+                <div class="info">
+                    <strong>测试导航：</strong><br>
+                    市场: ${market}<br>
+                    榜单: ${list}<br>
+                    预期URL: ${expectedUrl}<br>
+                    <button class="test-button" onclick="window.open('${expectedUrl}', '_blank')" style="margin-top: 10px;">
+                        打开此榜单页面
+                    </button>
+                </div>
+            `;
+        }
+
+        // 页面加载完成后自动测试
+        window.addEventListener('load', function() {
+            console.log('🔧 移动版修复测试页面已加载');
+            console.log('📝 修复内容: mobile.html script引用 trending.js → mobile-app.js');
+        });
+    </script>
+</body>
+</html>
