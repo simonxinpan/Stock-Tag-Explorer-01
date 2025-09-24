@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>导航测试页面</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
+        .test-link { display: block; margin: 5px 0; padding: 8px; background: #f0f0f0; text-decoration: none; color: #333; border-radius: 4px; }
+        .test-link:hover { background: #e0e0e0; }
+        .market-selector { margin: 10px 0; }
+        .market-btn { margin: 5px; padding: 8px 15px; border: 1px solid #ccc; background: #fff; cursor: pointer; }
+        .market-btn.active { background: #007bff; color: white; }
+    </style>
+</head>
+<body>
+    <h1>移动版导航链接测试</h1>
+    
+    <div class="market-selector">
+        <h3>选择市场：</h3>
+        <button class="market-btn active" onclick="setMarket('chinese_stocks')">中概股</button>
+        <button class="market-btn" onclick="setMarket('sp500')">标普500</button>
+    </div>
+
+    <div class="test-section">
+        <h3>14个榜单的移动版详情页链接</h3>
+        <div id="ranking-links"></div>
+    </div>
+
+    <script>
+        let currentMarket = 'chinese_stocks';
+
+        const rankingTypes = [
+            { id: 'top_gainers', name: '🚀 涨幅榜' },
+            { id: 'top_market_cap', name: '💰 市值榜' },
+            { id: 'new_highs', name: '⬆️ 创新高' },
+            { id: 'top_turnover', name: '💰 成交额' },
+            { id: 'top_volatility', name: '📊 振幅榜' },
+            { id: 'top_gap_up', name: '🌅 高开缺口' },
+            { id: 'top_losers', name: '📉 跌幅榜' },
+            { id: 'new_lows', name: '⬇️ 创新低' },
+            { id: 'institutional_focus', name: '🏛️ 机构关注' },
+            { id: 'retail_hot', name: '👥 散户热门' },
+            { id: 'smart_money', name: '🏛️ 主力动向' },
+            { id: 'high_liquidity', name: '💧 高流动性' },
+            { id: 'unusual_activity', name: '⚡ 异动榜' },
+            { id: 'momentum_stocks', name: '🚀 动量榜' }
+        ];
+
+        function setMarket(market) {
+            currentMarket = market;
+            document.querySelectorAll('.market-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            generateLinks();
+        }
+
+        function generateLinks() {
+            const container = document.getElementById('ranking-links');
+            container.innerHTML = '';
+
+            rankingTypes.forEach(ranking => {
+                const link = document.createElement('a');
+                link.className = 'test-link';
+                link.href = `mobile-ranking-detail.html?market=${currentMarket}&list=${ranking.id}`;
+                link.textContent = `${ranking.name} - ${link.href}`;
+                link.target = '_blank';
+                container.appendChild(link);
+            });
+        }
+
+        // 初始化
+        generateLinks();
+    </script>
+</body>
+</html>

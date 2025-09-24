@@ -28,9 +28,9 @@ function initializeApp() {
 
 // 统一的数据加载和渲染函数
 async function loadAllRankings(market) {
-    const rankingTypes = [ // 定义所有需要加载的榜单类型
+    const rankingTypes = [ // 定义所有需要加载的榜单类型，与HTML中的data-ranking属性一致
         'top_gainers', 'top_market_cap', 'new_highs',
-        'top_volume', 'top_turnover', 'gap_up', 
+        'top_turnover', 'top_volatility', 'top_gap_up', 
         'top_losers', 'new_lows', 'institutional_focus',
         'retail_hot', 'smart_money', 'high_liquidity',
         'unusual_activity', 'momentum_stocks'
@@ -86,18 +86,31 @@ function bindEventListeners() {
         });
     });
 
-    // 绑定"查看更多"按钮点击事件，跳转到移动版二级页面
+    // 绑定顶部右滑导航按钮点击事件，跳转到移动版二级页面
     document.querySelectorAll('.ranking-nav-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             e.preventDefault();
             const rankingType = button.getAttribute('data-ranking');
             if (rankingType) {
-                handleMoreButtonClick(rankingType);
+                navigateToRankingDetail(rankingType);
             }
         });
     });
     
     hasBoundEvents = true;
+}
+
+// 辅助函数：获取当前市场
+function getCurrentMarket() {
+    const urlParams = new URLSearchParams(window.location.search);
+    let currentMarket = urlParams.get('market');
+    
+    if (!currentMarket) {
+        const activeMarketButton = document.querySelector('.market-carousel-btn.active');
+        currentMarket = activeMarketButton ? activeMarketButton.dataset.marketTarget : 'chinese_stocks';
+    }
+    
+    return currentMarket;
 }
 
 // 辅助函数：更新按钮的激活状态
@@ -165,19 +178,16 @@ function renderIndividualStockList(element, stocks, marketType) {
 
 // 处理"更多"按钮点击事件，跳转到移动版二级页面
 function handleMoreButtonClick(rankingType) {
-    const urlParams = new URLSearchParams(window.location.search);
-    const currentMarket = urlParams.get('market') || 'chinese_stocks';
+    const currentMarket = getCurrentMarket();
     
     // 跳转到移动版二级详情页面
-    const detailUrl = `./mobile-ranking-detail.html?market=${currentMarket}&type=${rankingType}`;
+    const detailUrl = `./mobile-ranking-detail.html?market=${currentMarket}&list=${rankingType}`;
     window.location.href = detailUrl;
 }
 
 // 为mobile.html提供的导航函数
 function navigateToRankingDetail(listType) {
-    // 从当前激活的市场按钮获取市场信息，而不是从URL参数
-    const activeMarketButton = document.querySelector('.market-carousel-btn.active');
-    const currentMarket = activeMarketButton ? activeMarketButton.dataset.marketTarget : 'sp500';
+    const currentMarket = getCurrentMarket();
     
     // 构建相对路径URL
     const detailUrl = `mobile-ranking-detail.html?market=${encodeURIComponent(currentMarket)}&list=${encodeURIComponent(listType)}`;
