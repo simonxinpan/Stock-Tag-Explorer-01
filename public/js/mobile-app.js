@@ -179,11 +179,10 @@ function navigateToRankingDetail(listType) {
     const activeMarketButton = document.querySelector('.market-carousel-btn.active');
     const currentMarket = activeMarketButton ? activeMarketButton.dataset.marketTarget : 'sp500';
     
-    // 跳转到Vercel服务器上的移动版二级详情页面
-    const baseUrl = 'https://stock-tag-explorer-01.vercel.app';
-    const detailUrl = `${baseUrl}/mobile-ranking-detail.html?market=${currentMarket}&list=${listType}`;
+    // 构建相对路径URL
+    const detailUrl = `mobile-ranking-detail.html?market=${encodeURIComponent(currentMarket)}&list=${encodeURIComponent(listType)}`;
     window.location.href = detailUrl;
-    console.log(`🔗 移动版跳转到Vercel: ${detailUrl}`);
+    console.log(`🔗 移动版跳转: ${detailUrl}`);
 }
 
 // 导出全局函数供HTML调用

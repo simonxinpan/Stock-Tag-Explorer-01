@@ -1559,7 +1559,8 @@ body {
     border-radius: 8px;
     border: 1px solid var(--border-color);
     transition: all 0.2s ease;
-    min-height: auto; /* 改为自适应高度 */
+    min-height: auto !important; /* 改为自适应高度，使用!important确保优先级 */
+    height: auto !important; /* 移除固定高度限制 */
 }
 
 .stock-list-preview .stock-item:last-child {

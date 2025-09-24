@@ -1231,6 +1231,21 @@ class MobileStockApp {
         this.navigateToRankingDetail(ranking);
     }
 
+    // 导航到榜单详情页
+    navigateToRankingDetail(listType) {
+        // 获取当前激活的市场按钮
+        const activeMarketBtn = document.querySelector('.market-btn.active');
+        const market = activeMarketBtn ? activeMarketBtn.dataset.market : 'sp500';
+        
+        // 构建相对路径URL
+        const url = `mobile-ranking-detail.html?market=${encodeURIComponent(market)}&list=${encodeURIComponent(listType)}`;
+        
+        // 跳转
+        window.location.href = url;
+        
+        console.log('Navigating to ranking detail:', listType, market);
+    }
+
     // 通用的榜单数据加载方法
     async loadListData(listType, market) {
         try {
@@ -1338,7 +1353,7 @@ class MobileStockApp {
         
         // 跳转到榜单详情页面
         const market = this.currentMarket || 'sp500';
-        const rankingDetailUrl = `mobile-ranking-detail.html?type=${encodeURIComponent(listType)}&market=${encodeURIComponent(market)}`;
+        const rankingDetailUrl = `mobile-ranking-detail.html?market=${encodeURIComponent(market)}&list=${encodeURIComponent(listType)}`;
         window.location.href = rankingDetailUrl;
         
         console.log('Navigating to ranking detail:', listType, market);
