@@ -61,9 +61,14 @@ class MobileRankingDetailApp {
         
         const marketName = marketNames[this.currentMarket] || '全市场';
         
+        // 更新导航栏标题
+        document.getElementById('page-title').textContent = config.title; // 直接显示榜单名称，如"涨幅榜"
+        document.getElementById('page-subtitle').textContent = `${marketName} • ${config.subtitle}`; // 在副标题中显示市场和描述
+        
+        // 更新榜单详情卡片
         document.getElementById('ranking-title').textContent = config.title;
-        document.getElementById('page-title').textContent = `${config.icon} ${marketName}${config.title}`;
-        document.getElementById('page-subtitle').textContent = config.subtitle;
+        document.getElementById('ranking-icon').textContent = config.icon;
+        document.getElementById('ranking-description').textContent = `${marketName} • ${config.subtitle}`;
     }
 
     updateMarketTabs() {
