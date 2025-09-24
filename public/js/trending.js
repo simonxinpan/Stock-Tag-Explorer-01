@@ -1,26 +1,10 @@
 // public/js/trending.js
-// 版本: SPA & Multi-page Routing Enabled
+// 版本: Desktop-Overview-Only-v1.0 (精简版，仅服务于trending.html一级页面)
 
 // 获取当前市场类型
 function getCurrentMarket() {
   const urlParams = new URLSearchParams(window.location.search);
   return urlParams.get('market') || 'sp500'; // 默认为标普500
-}
-
-// 获取当前榜单类型（支持桌面版list参数和移动版type参数）
-function getCurrentListType() {
-  const urlParams = new URLSearchParams(window.location.search);
-  // 优先使用list参数（桌面版），其次使用type参数（移动版）
-  return urlParams.get('list') || urlParams.get('type') || null;
-}
-
-// 检测当前页面类型
-function getCurrentPageType() {
-  const pathname = window.location.pathname;
-  if (pathname.includes('list-detail.html') || pathname.includes('mobile-ranking-detail.html')) {
-    return 'list-detail';
-  }
-  return 'overview';
 }
 
 // 更新次级导航栏的激活状态
@@ -259,37 +243,6 @@ function createStockListItemHTML(stock, type, rank, marketType = 'sp500') {
 }
 
 /**
- * 格式化市值显示
- * @param {string|number} marketCap - 市值
- * @returns {string} - 格式化后的市值字符串
- */
-/**
- * 将一个以美元为单位的巨大数字，格式化为符合中文习惯的、带单位的字符串。
- * @param {number} marketCapInUSD - 从API获取的、以美元为单位的原始市值。
- * @returns {string} - 格式化后的字符串，例如 "$1,234.56亿美元"。
- */
-function formatMarketCap(marketCapInUSD) {
-  if (typeof marketCapInUSD !== 'number' || isNaN(marketCapInUSD)) {
-    return 'N/A'; // 或返回 '未知'
-  }
-
-  const B = 1_000_000_000; // 十亿
-  const M = 1_000_000;     // 百万
-
-  // 我们统一使用"亿美元"作为单位，以获得最佳的可读性和可比性
-  const marketCapInBillion = marketCapInUSD / B;
-
-  // 使用 toFixed(2) 来保留两位小数，确保精度
-  // 使用 toLocaleString() 来添加千位分隔符，例如 1,234.56
-  const formattedValue = marketCapInBillion.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-
-  return `$${formattedValue}亿美元`;
-}
-
-/**
  * 【标普500专用函数】
  * 将一个以【百万美元】为单位的数字，格式化为"X.XX万亿美元"的格式。
  */
@@ -423,61 +376,6 @@ async function handleMoreButtonClick(type) {
   }
 }
 
-/**
- * 获取榜单标题
- * @param {string} type - 榜单类型
- * @returns {string} - 榜单标题
- */
-function getRankingTitle(type) {
-  const titles = {
-    'top_gainers': '🚀 涨幅榜 - 完整榜单',
-    'top_market_cap': '💰 市值榜 - 完整榜单',
-    'top_losers': '📉 跌幅榜 - 完整榜单',
-    'high_volume': '💰 成交额榜 - 完整榜单',
-    'new_highs': '🎯 创年内新高 - 完整榜单',
-    'new_lows': '⬇️ 创年内新低 - 完整榜单',
-    'risk_warning': '⚠️ 风险警示 - 完整榜单',
-    'value_picks': '💎 特色价值 - 完整榜单',
-    // 🆕 基于Polygon API数据的新榜单
-    'institutional_focus': '🏛️ 机构关注榜 - 完整榜单',
-    'retail_hot': '👥 散户热门榜 - 完整榜单',
-    'smart_money': '🎯 主力动向榜 - 完整榜单',
-    'high_liquidity': '💧 高流动性榜 - 完整榜单',
-    'unusual_activity': '⚡ 异动榜 - 完整榜单',
-    'momentum_stocks': '🚀 动量榜 - 完整榜单'
-  };
-  return titles[type] || '榜单详情';
-}
-
-// 辅助函数：格式化大数字显示
-function formatLargeNumber(value, isCurrency = false) {
-  const num = parseFloat(value);
-  if (isNaN(num)) return '--';
-  
-  // 根据当前市场类型决定格式
-  const currentMarket = getCurrentMarket();
-  const prefix = isCurrency ? (currentMarket === 'chinese_stocks' ? '¥' : '$') : '';
-  
-  if (currentMarket === 'chinese_stocks') {
-    // 中概股使用中文数字格式
-    if (num >= 1e12) return `${prefix}${(num / 1e12).toFixed(2)}万亿`; // 万亿
-    if (num >= 1e8) return `${prefix}${(num / 1e8).toFixed(2)}亿`;   // 亿
-    if (num >= 1e4) return `${prefix}${(num / 1e4).toFixed(1)}万`;   // 万
-    return `${prefix}${num.toLocaleString('zh-CN')}`; // 中文千位分隔符
-  } else {
-    // 标普500使用英文数字格式
-    if (num >= 1e12) return `${prefix}${(num / 1e12).toFixed(2)}T`; // 万亿
-    if (num >= 1e9) return `${prefix}${(num / 1e9).toFixed(2)}B`;  // 十亿
-    if (num >= 1e6) return `${prefix}${(num / 1e6).toFixed(1)}M`;  // 百万
-    return `${prefix}${num.toLocaleString('en-US')}`; // 英文千位分隔符
-  }
-}
-
-// 辅助函数：格式化成交额显示（保持向后兼容）
-function formatTurnover(value) {
-  return formatLargeNumber(value);
-}
-
 // 新函数：获取并渲染市场汇总数据
 async function loadAndRenderSummaryData() {
   try {
@@ -490,443 +388,59 @@ async function loadAndRenderSummaryData() {
     const totalStocksEl = document.getElementById('summary-total-stocks') || document.getElementById('total-stocks');
     const risingStocksEl = document.getElementById('summary-rising-stocks') || document.getElementById('rising-stocks');
     const fallingStocksEl = document.getElementById('summary-falling-stocks') || document.getElementById('falling-stocks');
-    const totalMarketCapEl = document.getElementById('summary-total-market-cap') || document.getElementById('total-market-cap');
-    
-    if (totalStocksEl) totalStocksEl.textContent = data.totalStocks;
-    if (risingStocksEl) risingStocksEl.textContent = data.risingStocks;
-    if (fallingStocksEl) fallingStocksEl.textContent = data.fallingStocks;
-     
-    // 根据市场类型使用不同的格式化函数显示总市值
-    let totalMarketCapFormatted = 'N/A';
-    if (data.totalMarketCap) {
-      if (currentMarket === 'chinese_stocks') {
-        // 中概股：数据库存储的是美元，直接使用中概股格式化函数
-        totalMarketCapFormatted = formatChineseStockMarketCap(data.totalMarketCap);
-      } else {
-        // 标普500：数据库存储的是百万美元，使用标普500格式化函数
-        totalMarketCapFormatted = formatSP500MarketCap(data.totalMarketCap);
-      }
-    }
-    if (totalMarketCapEl) totalMarketCapEl.textContent = totalMarketCapFormatted;
+    const unchangedStocksEl = document.getElementById('summary-unchanged-stocks') || document.getElementById('unchanged-stocks');
+
+    if (totalStocksEl) totalStocksEl.textContent = data.total_stocks || '--';
+    if (risingStocksEl) risingStocksEl.textContent = data.rising_stocks || '--';
+    if (fallingStocksEl) fallingStocksEl.textContent = data.falling_stocks || '--';
+    if (unchangedStocksEl) unchangedStocksEl.textContent = data.unchanged_stocks || '--';
 
   } catch (error) {
     console.error('加载市场汇总数据失败:', error);
-    // 可以选择在这里显示错误提示
+    // 如果加载失败，显示默认值
+    const totalStocksEl = document.getElementById('summary-total-stocks') || document.getElementById('total-stocks');
+    const risingStocksEl = document.getElementById('summary-rising-stocks') || document.getElementById('rising-stocks');
+    const fallingStocksEl = document.getElementById('summary-falling-stocks') || document.getElementById('falling-stocks');
+    const unchangedStocksEl = document.getElementById('summary-unchanged-stocks') || document.getElementById('unchanged-stocks');
+
+    if (totalStocksEl) totalStocksEl.textContent = '--';
+    if (risingStocksEl) risingStocksEl.textContent = '--';
+    if (fallingStocksEl) fallingStocksEl.textContent = '--';
+    if (unchangedStocksEl) unchangedStocksEl.textContent = '--';
   }
 }
 
-/**
- * 【最终调试版】加载并渲染指定的单个榜单（用于二级页面）
- * @param {string} market - 市场类型 'sp500' | 'chinese_stocks'
- * @param {string} listType - 榜单类型 e.g., 'top_gainers', 'top_market_cap'
- */
-async function loadAndRenderSingleList(market, listType) {
-    console.log(`🔄 [1/5] 开始加载单个榜单: ${listType} (市场: ${market})`);
-    const listContainer = document.getElementById('ranking-list'); // 确保这是正确的容器ID
-
-    // DOM 检查: 确保我们的目标容器存在
-    if (!listContainer) {
-        console.error("❌ [CRITICAL ERROR] 渲染失败: 未在HTML中找到 ID 为 'ranking-list' 的元素。");
-        return;
-    }
-    console.log(`✅ [1/5] 成功找到容器元素 'ranking-list'`);
-  
-  try {
-    listContainer.innerHTML = '<li class="loading-item">📊 正在加载数据...</li>'; // 显示加载状态
-    
-    const apiUrl = `/api/ranking?market=${market}&type=${listType}`;
-    console.log(`🔄 [2/5] 准备请求API: ${apiUrl}`);
-    
-    const response = await fetch(apiUrl);
-    console.log(`🔄 [3/5] API 响应已收到，状态码: ${response.status}`);
-
-    if (!response.ok) {
-      throw new Error(`API请求失败，状态码: ${response.status}`);
-    }
-
-    const stocks = await response.json();
-    console.log(`🔄 [4/5] 成功解析JSON数据，获取到 ${stocks.length} 条股票记录。`);
-    
-    if (stocks.length === 0) {
-      listContainer.innerHTML = '<li class="no-data-item">📊 暂无数据</li>';
-      return;
-    }
-
-    // 更新页面标题和UI
-    updateSingleListPageUI(listType, market);
-    
-    // 生成右侧导航按钮
-    generateNavigationButtons(listType, market);
-    
-    // 渲染股票列表
-    console.log(`🔄 [5/5] 准备渲染 ${stocks.length} 条股票到页面...`);
-    renderSingleRankingList(stocks, listType, market);
-    console.log("✅ [SUCCESS] 渲染流程调用完成。");
-    
-  } catch (error) {
-    console.error(`❌ [CRITICAL ERROR] 加载或渲染榜单 ${listType} 时发生错误:`, error);
-    if (listContainer) {
-      listContainer.innerHTML = `<li class="error-item">❌ 加载${RANKING_CONFIG[listType]?.name || '榜单'}数据失败，请稍后重试</li>`;
-    }
-  }
-}
-
-/**
- * 更新单榜单页面的UI元素
- * @param {string} listType - 榜单类型
- * @param {string} market - 市场类型
- */
-function updateSingleListPageUI(listType, market) {
-  const config = RANKING_CONFIG[listType];
-  if (!config) return;
-  
-  // 更新页面标题
-  const pageTitle = document.getElementById('page-title');
-  const pageSubtitle = document.getElementById('page-subtitle');
-  const breadcrumbCurrent = document.getElementById('breadcrumb-current');
-  const rankingTitle = document.getElementById('ranking-title');
-  const cardTitle = document.getElementById('card-title');
-  const cardDescription = document.getElementById('card-description');
-  
-  if (pageTitle) pageTitle.textContent = config.name;
-  if (pageSubtitle) pageSubtitle.textContent = config.description;
-  if (breadcrumbCurrent) breadcrumbCurrent.textContent = config.name;
-  if (rankingTitle) rankingTitle.textContent = config.title;
-  if (cardTitle) cardTitle.textContent = config.title;
-  if (cardDescription) cardDescription.textContent = config.description;
-  
-  // 更新页面标题
-  document.title = `${config.name} - ${market.toUpperCase()} | Stock Tag Explorer`;
-  
-  // 更新市场按钮状态
-  updateMarketButtons(market);
-}
-
-/**
- * 更新市场切换按钮状态
- * @param {string} currentMarket - 当前市场
- */
-function updateMarketButtons(currentMarket) {
-  // 桌面版按钮
-  const sp500Btn = document.getElementById('sp500-btn');
-  const chineseBtn = document.getElementById('chinese-btn');
-  
-  // 移动版按钮
-  const mobileSp500Btn = document.querySelector('[data-market-target="sp500"]');
-  const mobileChineseBtn = document.querySelector('[data-market-target="chinese_stocks"]');
-  
-  // 获取当前榜单类型
-  const currentListType = getCurrentListType();
-  const currentPageType = getCurrentPageType();
-  
-  // 更新桌面版按钮
-  if (sp500Btn && chineseBtn) {
-    sp500Btn.classList.toggle('active', currentMarket === 'sp500');
-    chineseBtn.classList.toggle('active', currentMarket === 'chinese_stocks');
-    
-    if (currentListType) {
-      sp500Btn.onclick = () => {
-        window.location.href = `list-detail.html?market=sp500&list=${currentListType}`;
-      };
-      
-      chineseBtn.onclick = () => {
-        window.location.href = `list-detail.html?market=chinese_stocks&list=${currentListType}`;
-      };
-      
-      sp500Btn.style.pointerEvents = 'auto';
-      chineseBtn.style.pointerEvents = 'auto';
-      sp500Btn.style.opacity = '1';
-      chineseBtn.style.opacity = '1';
-    }
-  }
-  
-  // 更新移动版按钮
-  if (mobileSp500Btn && mobileChineseBtn) {
-    mobileSp500Btn.classList.toggle('active', currentMarket === 'sp500');
-    mobileChineseBtn.classList.toggle('active', currentMarket === 'chinese_stocks');
-    
-    if (currentListType) {
-      mobileSp500Btn.onclick = () => {
-        if (currentPageType === 'list-detail') {
-          window.location.href = `mobile-ranking-detail.html?market=sp500&type=${currentListType}`;
-        }
-      };
-      
-      mobileChineseBtn.onclick = () => {
-        if (currentPageType === 'list-detail') {
-          window.location.href = `mobile-ranking-detail.html?market=chinese_stocks&type=${currentListType}`;
-        }
-      };
-    }
-  }
-}
-
-/**
- * 渲染单个榜单的股票列表
- * @param {Array} stocks - 股票数据数组
- * @param {string} listType - 榜单类型
- * @param {string} market - 市场类型
- */
-/**
- * 【最终调试版】渲染单个榜单的股票列表
- */
-function renderSingleRankingList(stocks, listType, market) {
-  console.log(`🎨 [RENDER-1/4] 开始渲染榜单，股票数量: ${stocks ? stocks.length : 0}`);
-  
-  const listContainer = document.getElementById('ranking-list');
-  if (!listContainer) {
-    console.error("❌ [RENDER-ERROR] 渲染失败: 未在HTML中找到 ID 为 'ranking-list' 的元素。");
-    return;
-  }
-  console.log(`🎨 [RENDER-2/4] 找到容器元素 'ranking-list'`);
-  
-  if (!stocks || stocks.length === 0) {
-    console.log(`🎨 [RENDER-3/4] 无数据，显示空状态`);
-    listContainer.innerHTML = '<li class="no-data-item">📊 暂无数据</li>';
-    return;
-  }
-  
-  try {
-    console.log(`🎨 [RENDER-3/4] 开始生成 ${stocks.length} 条股票的HTML`);
-    // 生成股票列表HTML
-    const stocksHTML = stocks.map((stock, index) => {
-      const html = createStockListItemHTML(stock, listType, index + 1, market);
-      if (!html) {
-        console.warn(`⚠️ 第 ${index + 1} 条股票HTML生成失败:`, stock);
-      }
-      return html;
-    }).join('');
-    
-    if (!stocksHTML) {
-      console.error(`❌ [RENDER-ERROR] 所有股票HTML生成失败`);
-      listContainer.innerHTML = '<li class="error-item">❌ 数据渲染失败</li>';
-      return;
-    }
-    
-    console.log(`🎨 [RENDER-4/4] HTML生成成功，长度: ${stocksHTML.length} 字符，开始插入DOM`);
-    listContainer.innerHTML = stocksHTML;
-    console.log(`✅ [RENDER-SUCCESS] 榜单渲染完成，容器内元素数量: ${listContainer.children.length}`);
-    
-    // 更新统计信息
-    updateRankingStats(stocks, listType);
-    
-  } catch (error) {
-    console.error(`❌ [RENDER-ERROR] 渲染过程中发生错误:`, error);
-    listContainer.innerHTML = '<li class="error-item">❌ 渲染失败，请刷新重试</li>';
-  }
-}
-
-/**
- * 更新榜单统计信息
- * @param {Array} stocks - 股票数据
- * @param {string} listType - 榜单类型
- */
-function updateRankingStats(stocks, listType) {
-  const statsContainer = document.getElementById('ranking-stats');
-  if (!statsContainer || !stocks.length) return;
-  
-  const totalCount = stocks.length;
-  let statsHTML = `<span class="stat-item">共 ${totalCount} 只股票</span>`;
-  
-  statsContainer.innerHTML = statsHTML;
-}
-
-/**
- * 显示加载状态
- */
-function showLoadingSpinner() {
-  const listContainer = document.getElementById('ranking-list');
-  if (listContainer) {
-    listContainer.innerHTML = '<li class="loading-item">📊 正在加载数据...</li>';
-  }
-}
-
-/**
- * 隐藏加载状态
- */
-function hideLoadingSpinner() {
-  // 加载状态会被实际数据替换，这里可以添加额外的UI清理逻辑
-}
-
-/**
- * 显示错误消息
- * @param {string} message - 错误消息
- */
-function showErrorMessage(message) {
-  const listContainer = document.getElementById('ranking-list');
-  if (listContainer) {
-    listContainer.innerHTML = `<li class="error-item">❌ ${message}</li>`;
-  }
-}
-
-// 跳转到榜单详情页面
-function navigateToRankingDetail(type) {
-  const currentMarket = getCurrentMarket();
-  const detailUrl = `mobile-ranking-detail.html?type=${type}&market=${currentMarket}`;
-  window.location.href = detailUrl;
-}
-
-/**
- * 绑定市场切换事件（用于二级页面）
- * @param {string} currentListType - 当前榜单类型
- */
-function bindMarketSwitchEvents(currentListType) {
-  const sp500Btn = document.getElementById('sp500-btn');
-  const chineseBtn = document.getElementById('chinese-btn');
-  
-  if (sp500Btn) {
-    sp500Btn.addEventListener('click', () => {
-      const newUrl = `${window.location.pathname}?market=sp500&list=${currentListType}`;
-      window.location.href = newUrl;
-    });
-  }
-  
-  if (chineseBtn) {
-    chineseBtn.addEventListener('click', () => {
-      const newUrl = `${window.location.pathname}?market=chinese_stocks&list=${currentListType}`;
-      window.location.href = newUrl;
-    });
-  }
-}
-
-// 生成右侧榜单导航按钮
-function generateNavigationButtons(currentListType, currentMarket) {
-  const navigationContainer = document.getElementById('navigation-buttons');
-  if (!navigationContainer) return;
-
-  const navigationHTML = TRENDING_LISTS_CONFIG.map(config => {
-    const rankingConfig = RANKING_CONFIG[config.type];
-    if (!rankingConfig) return '';
-    
-    const isActive = config.type === currentListType;
-    const activeClass = isActive ? 'active' : '';
-    
-    // 提取emoji图标
-    const titleParts = rankingConfig.title.split(' ');
-    const icon = titleParts[0];
-    const name = titleParts.slice(1).join(' ');
-    
-    return `
-      <a href="list-detail.html?market=${currentMarket}&list=${config.type}" 
-         class="navigation-button ${activeClass}" 
-         data-list-type="${config.type}">
-        <span class="navigation-button-icon">${icon}</span>
-        <span class="navigation-button-text">${name}</span>
-      </a>
-    `;
-  }).join('');
-
-  navigationContainer.innerHTML = navigationHTML;
-}
-
-// ================================================================
-// == 最终执行模式：将主逻辑封装为独立的、自执行的异步函数 ==
-// ================================================================
-
-// 1. 将所有主逻辑，都放入一个名为 main 的异步函数中
+// 主函数：初始化页面
 async function main() {
-    try {
-        console.log("📊 趋势页面脚本开始执行...");
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const pageType = getCurrentPageType();
-        const market = urlParams.get('market') || getCurrentMarket();
-        const listType = getCurrentListType(); // 使用getCurrentListType函数，它已经处理了list和type参数
-
-        console.log(`🔍 页面类型: ${pageType}, 市场: ${market}, 榜单类型: ${listType || 'N/A'}`);
-
-        if (pageType === 'list-detail' && listType) {
-            console.log(`📋 加载二级榜单页面...`);
-            // 直接 await 调用，确保我们能看到它的完整执行过程
-            await loadAndRenderSingleList(market, listType);
-            
-            // 绑定市场切换事件（如果存在）
-            bindMarketSwitchEvents(listType);
-        } else {
-            // 一级趋势页面逻辑（原有逻辑）
-            console.log('📊 加载一级趋势页面...');
-           
-           // 更新市场导航状态
-           updateMarketNavigation();
-           
-           // 并发地加载所有榜单和汇总数据
-           loadAndRenderSummaryData(); // <-- 新增的调用
-           TRENDING_LISTS_CONFIG.forEach(loadAndRenderList);
-           
-           // 为榜单导航按钮添加点击事件
-           const rankingNavBtns = document.querySelectorAll('.ranking-nav-btn');
-           rankingNavBtns.forEach(btn => {
-             btn.addEventListener('click', () => {
-               const rankingType = btn.getAttribute('data-ranking');
-               if (rankingType) {
-                 navigateToRankingDetail(rankingType);
-               }
-             });
-           });
-           
-           // 为所有"更多"按钮添加事件监听
-           document.addEventListener('click', (e) => {
-             if (e.target.classList.contains('more-btn') || e.target.classList.contains('more-btn-small')) {
-               const type = e.target.getAttribute('data-type');
-               if (type) {
-                 handleMoreButtonClick(type);
-               }
-             }
-             
-             // 处理顶部导航的市场切换按钮
-             if (e.target.classList.contains('market-carousel-btn')) {
-               const targetMarket = e.target.getAttribute('data-market-target');
-               if (targetMarket) {
-                 // 跳转到对应市场的榜单首页
-                 const currentUrl = new URL(window.location);
-                 currentUrl.searchParams.set('market', targetMarket);
-                 window.location.href = currentUrl.toString();
-               }
-             }
-             
-             // 处理榜单右侧的市场切换按钮
-             if (e.target.classList.contains('market-toggle-btn')) {
-               const targetMarket = e.target.getAttribute('data-market-target');
-               if (targetMarket) {
-                 // 跳转到对应市场的榜单首页
-                 const currentUrl = new URL(window.location);
-                 currentUrl.searchParams.set('market', targetMarket);
-                 window.location.href = currentUrl.toString();
-               }
-             }
-             
-             // 处理榜单卡片内的市场切换链接
-             if (e.target.classList.contains('market-link')) {
-               e.preventDefault();
-               const targetMarket = e.target.getAttribute('data-market');
-               if (targetMarket) {
-                 // 跳转到对应市场的榜单首页
-                 const currentUrl = new URL(window.location);
-                 currentUrl.searchParams.set('market', targetMarket);
-                 window.location.href = currentUrl.toString();
-               }
-             }
-             
-             // 处理榜单卡片内的"查看更多"链接
-             if (e.target.classList.contains('more-btn-link')) {
-               e.preventDefault();
-               const type = e.target.getAttribute('data-type');
-               if (type) {
-                 handleMoreButtonClick(type);
-               }
-             }
-           });
-         }
-
-        console.log("✅ 趋势页面脚本执行完成");
-
-    } catch (error) {
-        console.error("❌ 脚本主流程发生致命错误:", error);
-    }
+  console.log('🚀 trending.js 初始化开始 (Desktop-Overview-Only-v1.0)');
+  
+  // 更新市场导航状态
+  updateMarketNavigation();
+  
+  // 加载市场汇总数据
+  await loadAndRenderSummaryData();
+  
+  // 并行加载所有榜单数据
+  const loadPromises = TRENDING_LISTS_CONFIG.map(listConfig => loadAndRenderList(listConfig));
+  await Promise.all(loadPromises);
+  
+  // 绑定所有"查看更多"按钮的点击事件
+  const moreButtons = document.querySelectorAll('.more-btn-link');
+  moreButtons.forEach(button => {
+    button.addEventListener('click', (e) => {
+      e.preventDefault(); // 阻止默认的链接跳转
+      const type = button.getAttribute('data-type');
+      if (type) {
+        handleMoreButtonClick(type);
+      }
+    });
+  });
+  
+  console.log('✅ 所有榜单数据加载完成，事件监听器已绑定');
 }
 
-// 2. 在脚本的最后，直接调用这个 main 函数
-main();
+// 页面加载完成后执行主函数
+document.addEventListener('DOMContentLoaded', main);
 
-// 将函数暴露到全局作用域，供HTML中的onclick使用
-window.navigateToRankingDetail = navigateToRankingDetail;
+// 导出全局函数供HTML调用
+window.handleMoreButtonClick = handleMoreButtonClick;

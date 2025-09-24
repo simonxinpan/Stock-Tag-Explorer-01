@@ -3,45 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>榜单详情</title>
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>榜单详情 - 移动版美股数据应用</title>
     <link rel="stylesheet" href="./styles/mobile.css">
     <link rel="stylesheet" href="./styles/mobile-ranking-detail.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <!-- 移动端应用容器 -->
     <div id="mobile-app" class="mobile-app">
+        <!-- 主内容区域 -->
         <main class="mobile-main">
+            <!-- 榜单详情页面 -->
             <div id="ranking-detail-mobile" class="page-content active">
+                <!-- 固定顶部导航条 -->
                 <div class="fixed-top-nav">
-                    <!-- ... (您提供的所有顶部导航HTML代码保持不变) ... -->
+                    <div class="page-header-card">
+                        <div class="header-content-row">
+                            <div class="back-button-container">
+                                <button class="back-button" onclick="history.back()">
+                                    ← 返回
+                                </button>
+                            </div>
+                            <div class="header-text">
+                                <h2 id="page-title">榜单详情</h2>
+                                <p id="page-subtitle">实时股票排行榜</p>
+                            </div>
+                            <div class="market-carousel">
+                                <button class="market-carousel-btn active" data-market-target="sp500">
+                                    标普500 <span id="sp500-count-mobile" class="market-count">502</span>
+                                </button>
+                                <button class="market-carousel-btn" data-market-target="chinese_stocks">
+                                    中概股 <span id="chinese-count-mobile" class="market-count">55</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="ranking-nav-container">
-                    <!-- ... (您提供的所有榜单导航按钮HTML代码保持不变) ... -->
+                
+                <!-- 市场概览（简化版） -->
+                <div class="market-overview-simple">
+                    <div class="overview-simple-item">
+                        <span class="overview-simple-label">当前榜单</span>
+                        <span id="current-ranking-name" class="overview-simple-value">加载中...</span>
+                    </div>
+                    <div class="overview-simple-item">
+                        <span class="overview-simple-label">更新时间</span>
+                        <span id="last-update-time" class="overview-simple-value">实时</span>
+                    </div>
                 </div>
-                <div id="loading-ranking" class="loading-state">
+                
+                <!-- 加载状态 -->
+                <div id="loading-ranking-detail" class="loading-state hidden">
                     <div class="loading-spinner"></div>
                     <p>正在加载榜单数据...</p>
                 </div>
-                <div id="error-ranking" class="error-state hidden">
-                    <p>加载失败，请下拉刷新重试</p>
+                
+                <!-- 错误状态 -->
+                <div id="error-ranking-detail" class="error-state hidden">
+                    <div class="error-icon">⚠️</div>
+                    <h3 class="error-title">加载失败</h3>
+                    <p class="error-message">请检查网络连接后重试</p>
+                    <button class="retry-btn" onclick="location.reload()">重新加载</button>
                 </div>
-                <div id="ranking-full-list" class="ranking-full-container hidden">
-                    <div class="ranking-list-header">
-                        <h3>完整榜单</h3>
-                        <div class="list-meta">
-                            <span id="update-time">--</span>
+                
+                <!-- 榜单详情内容 -->
+                <div id="ranking-detail-content" class="ranking-detail-content">
+                    <!-- 榜单标题卡片 -->
+                    <div class="ranking-title-card">
+                        <div class="ranking-title-header">
+                            <div class="ranking-icon" id="ranking-icon">📊</div>
+                            <div class="ranking-title-info">
+                                <h3 id="ranking-title">榜单标题</h3>
+                                <p id="ranking-description">榜单描述</p>
+                            </div>
+                        </div>
+                        <div class="ranking-stats-row">
+                            <div class="stat-item">
+                                <span class="stat-value" id="total-stocks-count">-</span>
+                                <span class="stat-label">总数</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value positive" id="rising-count">-</span>
+                                <span class="stat-label">上涨</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value negative" id="falling-count">-</span>
+                                <span class="stat-label">下跌</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="stock-list-container">
-                        <div id="ranking-list" class="stock-list">
-                            <!-- JS将在这里填充内容 -->
-                        </div>
+                    
+                    <!-- 股票列表 -->
+                    <div class="stock-list" id="ranking-list">
+                        <!-- 动态加载股票数据 -->
+                    </div>
+                    
+                    <!-- 加载更多按钮 -->
+                    <div class="load-more-container hidden" id="load-more-container">
+                        <button class="load-more-btn" id="load-more-btn">
+                            <span class="load-more-text">加载更多</span>
+                            <span class="load-more-spinner hidden"></span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 快速导航 -->
+                <div class="quick-nav-container">
+                    <div class="quick-nav-header">
+                        <h4>快速切换榜单</h4>
+                    </div>
+                    <div class="quick-nav-grid" id="quick-nav-grid">
+                        <!-- 动态生成快速导航按钮 -->
                     </div>
                 </div>
             </div>
         </main>
-    </div>
+        
 
-    <!-- 关键变更：引用全新的、专为本页面设计的JS文件 -->
-    <script src="./js/mobile-ranking-detail.js"></script>
+        
+        <!-- Toast 通知 -->
+        <div id="toast" class="toast hidden"></div>
+    </div>
+    
+    <script src="./js/mobile-detail-app.js"></script>
 </body>
 </html>
