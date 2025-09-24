@@ -1227,46 +1227,8 @@ class MobileStockApp {
 
     // 切换榜单类型
     switchRanking(ranking) {
-        // 更新导航按钮状态
-        const rankingButtons = document.querySelectorAll('.ranking-nav-btn');
-        rankingButtons.forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.ranking === ranking);
-        });
-
-        // 显示所有榜单内容（移除隐藏逻辑）
-        document.querySelectorAll('.list-section-preview').forEach(section => {
-            section.style.display = 'block';
-        });
-        
-        // 滚动到选中的榜单
-        const rankingToSectionMap = {
-            'top_gainers': 'top_gainers',
-            'top_market_cap': 'top_market_cap',
-            'new_highs': 'new_highs',
-            'top_turnover': 'top_turnover',
-            'top_volatility': 'top_volatility',
-            'top_gap_up': 'top_gap_up',
-            'top_losers': 'top_losers',
-            'new_lows': 'new_lows',
-            'institutional_focus': 'institutional_focus',
-            'retail_hot': 'retail_hot',
-            'smart_money': 'smart_money',
-            'high_liquidity': 'high_liquidity',
-            'unusual_activity': 'unusual_activity',
-            'momentum_stocks': 'momentum_stocks'
-        };
-        
-        const sectionName = rankingToSectionMap[ranking] || 'top_gainers';
-        const currentSection = document.querySelector(`[data-ranking="${sectionName}"]`);
-        if (currentSection) {
-            currentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-
-        // 根据榜单类型加载对应数据
-        this.loadRankingData(ranking);
-        
-        // 预加载下一个榜单数据（缓存加速）
-        this.preloadNextRankingData(ranking);
+        // 直接跳转到对应的榜单详情页
+        this.navigateToRankingDetail(ranking);
     }
 
     // 通用的榜单数据加载方法

@@ -180,7 +180,7 @@ function navigateToRankingDetail(listType) {
     const currentMarket = activeMarketButton ? activeMarketButton.dataset.marketTarget : 'sp500';
     
     // 跳转到Vercel服务器上的移动版二级详情页面
-    const baseUrl = 'https://stock-tag-explorer-01-kc4r6dgq9-simon-pans-projects.vercel.app';
+    const baseUrl = 'https://stock-tag-explorer-01.vercel.app';
     const detailUrl = `${baseUrl}/mobile-ranking-detail.html?market=${currentMarket}&list=${listType}`;
     window.location.href = detailUrl;
     console.log(`🔗 移动版跳转到Vercel: ${detailUrl}`);

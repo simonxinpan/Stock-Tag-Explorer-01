@@ -20,7 +20,8 @@ class MobileRankingDetailApp {
 
     parseUrlParams() {
         const urlParams = new URLSearchParams(window.location.search);
-        this.rankingType = urlParams.get('type') || 'gainers';
+        // 支持 type 和 list 两种参数名
+        this.rankingType = urlParams.get('list') || urlParams.get('type') || 'top_gainers';
         this.currentMarket = urlParams.get('market') || 'sp500';
         
         // 更新页面标题和UI
@@ -30,11 +31,25 @@ class MobileRankingDetailApp {
 
     updatePageTitle() {
         const rankingConfig = {
+            'top_gainers': { title: '涨幅榜', icon: '📈', subtitle: '实时股票涨幅排行' },
+            'top_losers': { title: '跌幅榜', icon: '📉', subtitle: '实时股票跌幅排行' },
+            'top_market_cap': { title: '市值榜', icon: '💰', subtitle: '按市值规模排序' },
+            'top_turnover': { title: '成交额榜', icon: '💵', subtitle: '按成交额排序' },
+            'new_highs': { title: '创新高榜', icon: '🚀', subtitle: '创年内新高股票' },
+            'new_lows': { title: '创新低榜', icon: '📉', subtitle: '创年内新低股票' },
+            'top_volatility': { title: '振幅榜', icon: '📊', subtitle: '按振幅排序' },
+            'top_gap_up': { title: '高开缺口榜', icon: '⬆️', subtitle: '高开缺口股票' },
+            'institutional_focus': { title: '机构关注榜', icon: '🏛️', subtitle: '机构重点关注股票' },
+            'retail_hot': { title: '散户热门榜', icon: '👥', subtitle: '散户热门股票' },
+            'smart_money': { title: '主力动向榜', icon: '🎯', subtitle: '主力资金动向' },
+            'high_liquidity': { title: '高流动性榜', icon: '💧', subtitle: '高流动性股票' },
+            'unusual_activity': { title: '异动榜', icon: '⚡', subtitle: '异常交易活动股票' },
+            'momentum_stocks': { title: '动量榜', icon: '🚀', subtitle: '强势股票排行' },
+            // 兼容旧的参数名
             'gainers': { title: '涨幅榜', icon: '📈', subtitle: '实时股票涨幅排行' },
             'losers': { title: '跌幅榜', icon: '📉', subtitle: '实时股票跌幅排行' },
             'market-cap': { title: '市值榜', icon: '💰', subtitle: '按市值规模排序' },
             'volume': { title: '成交量榜', icon: '📊', subtitle: '按成交量排序' },
-            'new-highs': { title: '创新高榜', icon: '🚀', subtitle: '创年内新高股票' },
             'momentum': { title: '动量榜', icon: '⚡', subtitle: '强势股票排行' }
         };
 
