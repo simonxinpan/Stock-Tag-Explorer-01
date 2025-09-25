@@ -8,6 +8,7 @@ import 'dotenv/config';
 // --- 从环境变量读取配置 ---
 const DATABASE_URL = process.env.DATABASE_URL;
 const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
+
 const BATCH_SIZE = 50;
 const TOTAL_STOCKS = 530;
 const TOTAL_BATCHES = Math.ceil(TOTAL_STOCKS / BATCH_SIZE); // 11
@@ -37,12 +38,14 @@ function getCurrentBatchNumber() {
     const utcHour = now.getUTCHours();
     const utcMinute = now.getUTCMinutes();
     
+
     // 简化版夏令时判断
     const month = now.getUTCMonth();
     const isDST = month >= 3 && month <= 9;
     
     const marketOpenUTCHour = isDST ? 13 : 14;
     const marketCloseUTCHour = isDST ? 20 : 21;
+
 
     // 1. 开市5分钟后启动
     const openTimeInMinutes = marketOpenUTCHour * 60 + 35; // 13:35 UTC
@@ -174,6 +177,7 @@ async function updateStockInDatabase(client, ticker, mappedData) {
     log(`Database error for ${ticker}: ${error.message}`, 'ERROR');
     return { success: false, reason: 'db_error', error: error.message };
   }
+
 }
 
 // --- 主函数 ---
@@ -199,6 +203,7 @@ async function main() {
   const pool = new Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false } });
   let client;
   
+
   try {
     const allStockObjects = JSON.parse(await fs.readFile('./sp500_stocks.json', 'utf-8'));
     
@@ -266,11 +271,14 @@ async function main() {
   } catch (error) {
     console.error(`❌ Job Failed on Batch ${batchNumber}:`, error.message);
     log(`Fatal error in Batch ${batchNumber}: ${error.message}`, 'ERROR');
+
     process.exit(1);
   } finally {
     if (client) client.release();
     if (pool) pool.end();
+
     log('Database connection closed');
+
   }
 }
 

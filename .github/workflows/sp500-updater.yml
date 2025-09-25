@@ -1,0 +1,30 @@
+# 文件: .github/workflows/sp500-updater.yml
+# 版本: Final Classic - Single Intelligent Runner
+name: S&P 500 Intelligent Batch Updater
+
+on:
+  schedule:
+    # 关键：每15分钟触发一次，覆盖整个美股交易时段
+    - cron: '*/15 13-21 * * 1-5' # 从UTC 13:00 到 21:59，周一至周五
+  workflow_dispatch:
+
+jobs:
+  run_intelligent_batch:
+    name: "🚀 Run S&P 500 Intelligent Batch"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - run: npm ci
+
+      - name: "Run Intelligent Batch Based on Current Time"
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          BATCH_SIZE: 50
+          TOTAL_STOCKS: 503 # 请确保这个数字与您的sp500_stocks.json文件中的数量一致
+        run: node _scripts/update-sp500-prices-by-time.mjs 
