@@ -26,10 +26,14 @@ const NEON_DB_FIELDS = {
   sector_en: 'sector_en',     // 英文行业
   sector_zh: 'sector_zh',     // 中文行业
   
-  // 价格相关字段
+  // 价格相关字段 (高频更新)
   last_price: 'last_price',           // 最新价格
   change_amount: 'change_amount',     // 价格变动金额
   change_percent: 'change_percent',   // 价格变动百分比
+  high_price: 'high_price',           // 当日最高价
+  low_price: 'low_price',             // 当日最低价
+  open_price: 'open_price',           // 开盘价
+  previous_close: 'previous_close',   // 前收盘价
   
   // 财务指标字段
   market_cap: 'market_cap',           // 市值
@@ -129,12 +133,18 @@ function mapDataToNeonFields(ticker, finnhubQuote, finnhubMetrics, finnhubProfil
   // 基础价格数据 (来自Finnhub Quote)
   if (finnhubQuote) {
     mappedData[NEON_DB_FIELDS.last_price] = finnhubQuote.c || null;
+    mappedData[NEON_DB_FIELDS.high_price] = finnhubQuote.h || null;
+    mappedData[NEON_DB_FIELDS.low_price] = finnhubQuote.l || null;
+    mappedData[NEON_DB_FIELDS.open_price] = finnhubQuote.o || null;
+    mappedData[NEON_DB_FIELDS.previous_close] = finnhubQuote.pc || null;
+    
     if (finnhubQuote.c && finnhubQuote.pc) {
       mappedData[NEON_DB_FIELDS.change_amount] = finnhubQuote.c - finnhubQuote.pc;
       mappedData[NEON_DB_FIELDS.change_percent] = ((finnhubQuote.c - finnhubQuote.pc) / finnhubQuote.pc) * 100;
     }
-    mappedData[NEON_DB_FIELDS.week_52_high] = finnhubQuote.h || null;
-    mappedData[NEON_DB_FIELDS.week_52_low] = finnhubQuote.l || null;
+    
+    // 注意：这里的h和l是当日高低价，不是52周高低价
+    // 52周数据需要从Metrics API获取
   }
   
   // 财务指标数据 (来自Finnhub Metrics)
