@@ -1,25 +1,11 @@
-name: S&P 500 Smart Batch Updater
+# 文件: .github/workflows/sp500-updater.yml
+# 版本: Final Classic - Single Intelligent Runner
+name: S&P 500 Intelligent Batch Updater
 
 on:
   schedule:
-    # --- 夏令时 (3月至11月) ---
-    # EDT = UTC-4.  09:30-16:00 EDT -> 13:30-20:00 UTC
-    # 每15分钟触发一次, 从13:35开始
-    - cron: '35,50 13 * * 1-5'
-    - cron: '5,20,35,50 14-19 * * 1-5'
-    - cron: '5,20 20 * * 1-5' # 覆盖到16:20 EDT
-    
-    # --- 冬令时 (11月至3月) ---
-    # EST = UTC-5.  09:30-16:00 EST -> 14:30-21:00 UTC
-    # 每15分钟触发一次, 从14:35开始
-    - cron: '35,50 14 * * 1-5'
-    - cron: '5,20,35,50 15-20 * * 1-5'
-    - cron: '5,20 21 * * 1-5' # 覆盖到16:20 EST
-
-    # --- 闭市后最终运行 (同时兼容夏令时和冬令时) ---
-    - cron: '35 20 * * 1-5' # 夏令时 16:35 EDT
-    - cron: '35 21 * * 1-5' # 冬令时 16:35 EST
-    
+    # 关键：每15分钟触发一次，覆盖整个美股交易时段
+    - cron: '*/15 13-21 * * 1-5' # 从UTC 13:00 到 21:59，周一至周五
   workflow_dispatch:
 
 jobs:
@@ -30,13 +16,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: '18', cache: 'npm' }
+        with:
+          node-version: '18'
+          cache: 'npm'
       - run: npm ci
 
-      - name: "Run Batch Based on Current Time"
+      - name: "Run Intelligent Batch Based on Current Time"
         env:
           DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           BATCH_SIZE: 50
-          TOTAL_STOCKS: 530 # 确保这个数字准确
-        run: node _scripts/update-sp500-prices-by-time.mjs
+          TOTAL_STOCKS: 503 # 请确保这个数字与您的sp500_stocks.json文件中的数量一致
+        run: node _scripts/update-sp500-prices-by-time.mjs 
