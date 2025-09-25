@@ -1,0 +1,33 @@
+# 文件: .github/workflows/sp500-sequential-updater.yml
+# 版本: Final Sequential Rebuild
+# 目的: 精确实现每15分钟运行一个批次的顺序更新策略
+name: S&P 500 Sequential Batch Updater
+
+on:
+  schedule:
+    # 关键：每15分钟触发一次，以驱动批处理脚本
+    # 我们覆盖从 UTC 13:30 (开市) 到 21:00 (闭市后) 的完整时段
+    - cron: '5,20,35,50 13-21 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  run_intelligent_batch:
+    name: "🚀 Run S&P 500 Intelligent Batch"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - run: npm ci
+
+      - name: "Run Intelligent Batch Based on Current Time"
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          BATCH_SIZE: 50
+          TOTAL_STOCKS: 530 # 遵循您的要求
+        # 关键：调用一个能自己计算批次号的智能脚本
+        run: node _scripts/update-sp500-prices-by-time.mjs
