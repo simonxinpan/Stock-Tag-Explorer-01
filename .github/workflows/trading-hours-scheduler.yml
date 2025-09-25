@@ -129,39 +129,38 @@ jobs:
           echo "  Market Type: $market_type"
           echo "  Frequency: $frequency"
           
-          # 根据频率选择不同的更新策略
+          # 根据频率选择不同的更新策略 - 使用统一S&P 500工作流
           if [ "$frequency" = "high" ]; then
-            echo "High frequency mode: Triggering batch updates"
-            # 触发所有批次的标普500更新
-            for batch in {1..11}; do
-              echo "Triggering batch $batch update..."
-              curl -X POST \
-                -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                -H "Accept: application/vnd.github.v3+json" \
-                "https://api.github.com/repos/${{ github.repository }}/actions/workflows/update-market-data-batch-$batch.yml/dispatches" \
-                -d '{"ref":"main"}' || echo "Batch $batch trigger failed"
-              sleep 2  # 避免API限制
-            done
-          elif [ "$frequency" = "medium" ]; then
-            echo "Medium frequency mode: Triggering selective updates"
-            # 触发部分批次更新
-            for batch in 1 3 5 7 9 11; do
-              echo "Triggering batch $batch update..."
-              curl -X POST \
-                -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                -H "Accept: application/vnd.github.v3+json" \
-                "https://api.github.com/repos/${{ github.repository }}/actions/workflows/update-market-data-batch-$batch.yml/dispatches" \
-                -d '{"ref":"main"}' || echo "Batch $batch trigger failed"
-              sleep 3
-            done
-          else
-            echo "Low frequency mode: Triggering basic update"
-            # 只触发第一批次
+            echo "High frequency mode: Triggering unified S&P 500 auto batch processing"
+            # 触发统一S&P 500工作流，自动批次模式
             curl -X POST \
               -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
               -H "Accept: application/vnd.github.v3+json" \
-              "https://api.github.com/repos/${{ github.repository }}/actions/workflows/update-market-data.yml/dispatches" \
-              -d '{"ref":"main"}'
+              "https://api.github.com/repos/${{ github.repository }}/actions/workflows/update-sp500-unified.yml/dispatches" \
+              -d '{"ref":"main","inputs":{"batch_mode":"auto","debug_mode":"false","force_update":"false"}}' \
+              || echo "Unified S&P 500 auto batch trigger failed"
+              
+          elif [ "$frequency" = "medium" ]; then
+            echo "Medium frequency mode: Triggering unified S&P 500 selective batch processing"
+            # 触发统一S&P 500工作流，单批次模式（随机选择一个批次）
+            RANDOM_BATCH=$((1 + RANDOM % 11))
+            echo "Selected random batch: $RANDOM_BATCH"
+            curl -X POST \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/${{ github.repository }}/actions/workflows/update-sp500-unified.yml/dispatches" \
+              -d "{\"ref\":\"main\",\"inputs\":{\"batch_mode\":\"single\",\"batch_number\":\"$RANDOM_BATCH\",\"debug_mode\":\"false\",\"force_update\":\"false\"}}" \
+              || echo "Unified S&P 500 single batch trigger failed"
+              
+          else
+            echo "Low frequency mode: Triggering unified S&P 500 full update"
+            # 触发统一S&P 500工作流，完整更新模式
+            curl -X POST \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/${{ github.repository }}/actions/workflows/update-sp500-unified.yml/dispatches" \
+              -d '{"ref":"main","inputs":{"batch_mode":"full","debug_mode":"false","force_update":"true"}}' \
+              || echo "Unified S&P 500 full update trigger failed"
           fi
 
   trigger-chinese-stocks-update:

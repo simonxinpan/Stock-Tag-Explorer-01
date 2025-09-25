@@ -1,0 +1,231 @@
+# 文件: .github/workflows/update-sp500-unified.yml
+# 版本: Unified S&P 500 Data Update Workflow
+# 功能: 统一的S&P 500数据更新，支持完整Neon数据库字段匹配和智能批次处理
+
+name: S&P 500 Unified Data Update
+
+on:
+  # 交易时段高频更新 (UTC 13:30-20:00, 周一至周五)
+  schedule:
+    # 每10分钟触发一次批次处理
+    - cron: '*/10 13-20 * * 1-5'
+    # 闭市后完整更新
+    - cron: '5 21 * * 1-5'
+    # 开盘前预热更新
+    - cron: '25 13 * * 1-5'
+  
+  # 手动触发支持
+  workflow_dispatch:
+    inputs:
+      batch_mode:
+        description: '批次处理模式'
+        required: true
+        default: 'auto'
+        type: choice
+        options:
+          - 'auto'      # 自动批次处理
+          - 'single'    # 单批次处理
+          - 'full'      # 完整更新
+      batch_number:
+        description: '指定批次号 (1-11, 仅single模式)'
+        required: false
+        default: '1'
+      debug_mode:
+        description: '启用调试模式'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      force_update:
+        description: '强制更新所有字段'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+# 防止并发执行，确保数据一致性
+concurrency:
+  group: sp500-unified-update
+  cancel-in-progress: false
+
+env:
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+  POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+  DEBUG: ${{ github.event.inputs.debug_mode || 'false' }}
+  BATCH_MODE: ${{ github.event.inputs.batch_mode || 'auto' }}
+  FORCE_UPDATE: ${{ github.event.inputs.force_update || 'false' }}
+
+jobs:
+  # 预检查作业
+  pre_check:
+    name: "🔍 Pre-flight Checks"
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      api_status: ${{ steps.api_check.outputs.status }}
+      batch_strategy: ${{ steps.batch_plan.outputs.strategy }}
+      total_batches: ${{ steps.batch_plan.outputs.total_batches }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: API Connectivity Check
+        id: api_check
+        run: |
+          echo "🔍 检查 Finnhub API 连通性..."
+          if curl -f "https://finnhub.io/api/v1/quote?symbol=AAPL&token=$FINNHUB_API_KEY" > /dev/null 2>&1; then
+            echo "✅ Finnhub API 可访问"
+            echo "status=ok" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Finnhub API 不可访问"
+            echo "status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          if [ -n "$POLYGON_API_KEY" ]; then
+            echo "🔍 检查 Polygon API 连通性..."
+            if curl -f "https://api.polygon.io/v2/aggs/ticker/AAPL/prev?apikey=$POLYGON_API_KEY" > /dev/null 2>&1; then
+              echo "✅ Polygon API 可访问"
+            else
+              echo "⚠️ Polygon API 不可访问，将仅使用 Finnhub"
+            fi
+          fi
+          
+      - name: Batch Strategy Planning
+        id: batch_plan
+        run: |
+          if [ "$BATCH_MODE" = "auto" ]; then
+            echo "📋 自动批次模式：将处理所有11个批次"
+            echo "strategy=auto" >> $GITHUB_OUTPUT
+            echo "total_batches=11" >> $GITHUB_OUTPUT
+          elif [ "$BATCH_MODE" = "single" ]; then
+            echo "🎯 单批次模式：处理批次 ${{ github.event.inputs.batch_number }}"
+            echo "strategy=single" >> $GITHUB_OUTPUT
+            echo "total_batches=1" >> $GITHUB_OUTPUT
+          else
+            echo "🔄 完整更新模式：一次性处理所有股票"
+            echo "strategy=full" >> $GITHUB_OUTPUT
+            echo "total_batches=1" >> $GITHUB_OUTPUT
+          fi
+
+  # 批次处理作业
+  batch_update:
+    name: "📊 Batch ${{ matrix.batch }} Update"
+    runs-on: ubuntu-latest
+    needs: pre_check
+    if: needs.pre_check.outputs.api_status == 'ok'
+    timeout-minutes: 12
+    
+    strategy:
+      matrix:
+        batch: ${{ 
+          needs.pre_check.outputs.batch_strategy == 'auto' && fromJson('[1,2,3,4,5,6,7,8,9,10,11]') ||
+          needs.pre_check.outputs.batch_strategy == 'single' && fromJson(format('[{0}]', github.event.inputs.batch_number)) ||
+          fromJson('[0]')
+        }}
+      max-parallel: 1  # 确保批次顺序执行
+      fail-fast: false
+    
+    env:
+      CURRENT_BATCH: ${{ matrix.batch }}
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Calculate Batch Range
+        id: batch_range
+        run: |
+          if [ "$BATCH_MODE" = "full" ]; then
+            echo "BATCH_START=1" >> $GITHUB_ENV
+            echo "BATCH_END=550" >> $GITHUB_ENV
+            echo "📊 完整更新模式：处理所有550只股票"
+          else
+            BATCH_START=$(( ($CURRENT_BATCH - 1) * 50 + 1 ))
+            BATCH_END=$(( $CURRENT_BATCH * 50 ))
+            echo "BATCH_START=$BATCH_START" >> $GITHUB_ENV
+            echo "BATCH_END=$BATCH_END" >> $GITHUB_ENV
+            echo "📊 批次 $CURRENT_BATCH：处理股票 $BATCH_START-$BATCH_END"
+          fi
+          
+      - name: Wait for Batch Interval
+        if: matrix.batch > 1 && needs.pre_check.outputs.batch_strategy == 'auto'
+        run: |
+          WAIT_TIME=$(( ($CURRENT_BATCH - 1) * 600 ))  # 每批次间隔10分钟
+          echo "⏱️ 等待 $WAIT_TIME 秒以维持批次间隔..."
+          sleep $WAIT_TIME
+          
+      - name: Execute S&P 500 Data Update
+        run: |
+          echo "🚀 开始 S&P 500 数据更新 - 批次 $CURRENT_BATCH"
+          echo "📈 股票范围: $BATCH_START-$BATCH_END"
+          echo "🔄 预计运行时间: 3-4分钟"
+          
+          # 使用增强的数据更新脚本
+          node _scripts/update-sp500-enhanced.mjs
+          
+      - name: Batch Completion Report
+        run: |
+          echo "✅ 批次 $CURRENT_BATCH 更新完成"
+          if [ "$BATCH_MODE" = "auto" ] && [ "$CURRENT_BATCH" -lt "11" ]; then
+            NEXT_BATCH=$(( $CURRENT_BATCH + 1 ))
+            echo "⏭️ 下一批次 $NEXT_BATCH 将在10分钟后开始"
+          fi
+
+  # 完成后验证作业
+  post_update_verification:
+    name: "✅ Post-Update Verification"
+    runs-on: ubuntu-latest
+    needs: [pre_check, batch_update]
+    if: always() && needs.pre_check.outputs.api_status == 'ok'
+    timeout-minutes: 5
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Verify Database Updates
+        run: |
+          echo "🔍 验证数据库更新状态..."
+          node _scripts/verify-sp500-updates.mjs
+          
+      - name: Generate Update Report
+        run: |
+          echo "📊 生成更新报告..."
+          echo "🎯 批次模式: $BATCH_MODE"
+          echo "📈 处理批次数: ${{ needs.pre_check.outputs.total_batches }}"
+          echo "⏰ 更新时间: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "✅ S&P 500 统一数据更新流程完成"
