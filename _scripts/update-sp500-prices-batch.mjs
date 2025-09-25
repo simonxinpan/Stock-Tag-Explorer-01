@@ -210,7 +210,7 @@ async function main() {
         const quoteData = await fetchQuoteFromFinnhub(ticker);
         if (!quoteData) {
           errors++;
-          await delay(4000); // 即使失败也等待，避免连锁超限
+          await delay(13000); // 即使失败也等待，避免连锁超限
           continue;
         }
         
@@ -218,7 +218,7 @@ async function main() {
         const mappedData = mapQuoteToDbFields(ticker, quoteData);
         if (!mappedData) {
           errors++;
-          await delay(4000);
+          await delay(13000);
           continue;
         }
         
@@ -232,13 +232,13 @@ async function main() {
           log(`  ❌ Failed to update ${ticker}: ${result.reason}`, 'WARN');
         }
         
-        // 强制4秒延迟，避免API限制
-        await delay(4000);
+        // 强制13秒延迟，避免API限制
+        await delay(13000);
         
       } catch (error) {
         log(`Error processing ${ticker}: ${error.message}`, 'ERROR');
         errors++;
-        await delay(4000);
+        await delay(13000);
       }
     }
     
