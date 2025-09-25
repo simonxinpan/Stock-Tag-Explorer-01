@@ -1,0 +1,41 @@
+name: S&P 500 Matrix Batch Updater
+
+on:
+  schedule:
+    # 关键：每小时触发一次。YML自己会用matrix来分批、顺序执行
+    - cron: '35 13-20 * * 1-5' # 在每个交易小时的第35分钟启动整个序列
+  workflow_dispatch:
+
+jobs:
+  run_matrix_batches:
+    name: "🚀 Run S&P 500 Price Update (Batch ${{ matrix.batch }}/11)"
+    runs-on: ubuntu-latest
+    
+    strategy:
+      # 关键：定义11个批次
+      matrix:
+        batch: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+      # 关键：确保批次按顺序、一次一个地执行
+      max-parallel: 1
+      # 如果一个批次失败，不取消其他批次
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '18', cache: 'npm' }
+      - run: npm ci
+
+      - name: "Run Batch ${{ matrix.batch }}"
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          BATCH_NUMBER: ${{ matrix.batch }} # 将批次号作为环境变量传入
+          BATCH_SIZE: 50
+        run: node _scripts/update-sp500-prices-batch.mjs # 调用一个简单的、只负责执行单个批次的脚本
+      
+      - name: "Wait for 5 minutes before next batch"
+        # 关键：在每个批次（除了最后一个）成功后，强制等待5分钟
+        # 这实现了 "每段约10分钟 + 间隔5分钟 = 15分钟" 的效果
+        if: matrix.batch < 11
+        run: sleep 300
