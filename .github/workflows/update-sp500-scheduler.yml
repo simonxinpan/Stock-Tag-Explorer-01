@@ -1,0 +1,112 @@
+name: Update S&P 500 Data (Unified Scheduler)
+
+on:
+  schedule:
+    - cron: '0,15,30,45 13-20 * * 1-5' # 高频：交易时段每15分钟
+    - cron: '0 5,22 * * 1-5'          # 中频：交易日盘前/盘后
+    - cron: '0 8 * * 0'              # 低频：每周日
+  workflow_dispatch:
+    inputs:
+      run_type:
+        description: 'Which update to run?'
+        required: true
+        default: 'high_frequency'
+        type: choice
+        options: ['high_frequency', 'medium_frequency', 'low_frequency']
+      debug_mode:
+        description: 'Enable debug mode'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: sp500-data-update
+  cancel-in-progress: false
+
+jobs:
+  high_frequency:
+    name: "🚀 High-Frequency (Price, Volume)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: |
+      (github.event.schedule == '0,15,30,45 13-20 * * 1-5') || 
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.run_type == 'high_frequency')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run High-Frequency Update
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+          DEBUG: ${{ github.event.inputs.debug_mode || 'false' }}
+        run: node _scripts/update-sp500-prices.mjs
+
+  medium_frequency:
+    name: "📊 Medium-Frequency (Financials)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    if: |
+      (github.event.schedule == '0 5,22 * * 1-5') || 
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.run_type == 'medium_frequency')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run Medium-Frequency Update
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+          DEBUG: ${{ github.event.inputs.debug_mode || 'false' }}
+        run: node _scripts/update-sp500-financials.mjs
+
+  low_frequency:
+    name: "📁 Low-Frequency (Company Profiles)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    if: |
+      (github.event.schedule == '0 8 * * 0') || 
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.run_type == 'low_frequency')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run Low-Frequency Update
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+          DEBUG: ${{ github.event.inputs.debug_mode || 'false' }}
+        run: node _scripts/update-sp500-profiles.mjs
