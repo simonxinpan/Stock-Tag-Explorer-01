@@ -1,4 +1,4 @@
-name: S&P 500 Matrix Batch Updater
+name: S&P 500 Updater (Part 1 - Batches 1-5)
 
 on:
   schedule:
@@ -8,13 +8,13 @@ on:
 
 jobs:
   run_matrix_batches:
-    name: "🚀 Run S&P 500 Price Update (Batch ${{ matrix.batch }}/11)"
+    name: "🚀 Run S&P 500 Price Update (Batch ${{ matrix.batch }}/5)"
     runs-on: ubuntu-latest
     
     strategy:
-      # 关键：定义11个批次
+      # 关键：定义5个批次
       matrix:
-        batch: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+        batch: [1, 2, 3, 4, 5]
       # 关键：确保批次按顺序、一次一个地执行
       max-parallel: 1
       # 如果一个批次失败，不取消其他批次
@@ -37,5 +37,5 @@ jobs:
       - name: "Wait for 5 minutes before next batch"
         # 关键：在每个批次（除了最后一个）成功后，强制等待5分钟
         # 这实现了 "每段约10分钟 + 间隔5分钟 = 15分钟" 的效果
-        if: matrix.batch < 11
+        if: matrix.batch < 5
         run: sleep 300
