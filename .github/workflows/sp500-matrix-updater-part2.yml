@@ -1,0 +1,44 @@
+# 文件: .github/workflows/sp500-matrix-updater-part2.yml
+# 职责: 专门运行标普500数据更新的后6个批次
+
+name: S&P 500 Matrix Batch Updater (Part 2)
+
+on:
+  schedule:
+    # 关键：设置一个与第一部分错开的、更晚的启动时间
+    - cron: '0 16 * * 1-5' # 每天 UTC 16:00 启动
+  workflow_dispatch:
+
+jobs:
+  run_matrix_batches:
+    name: "🚀 Run S&P 500 Price Update (Batch ${{ matrix.batch }}/11)"
+    runs-on: ubuntu-latest
+    
+    strategy:
+      # 关键：只定义后6个批次
+      matrix:
+        batch: [6, 7, 8, 9, 10, 11]
+      # 关键：确保批次按顺序、一次一个地执行
+      max-parallel: 1
+      # 如果一个批次失败，不取消其他批次
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '18', cache: 'npm' }
+      - run: npm ci
+
+      - name: "Run Batch ${{ matrix.batch }}"
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          BATCH_NUMBER: ${{ matrix.batch }}
+          BATCH_SIZE: 50
+        # 关键：调用与第一部分完全相同的、您已有的JS脚本
+        run: node _scripts/update-sp500-prices-batch.mjs
+      
+      - name: "Wait for 5 minutes before next batch"
+        # 在最后一个批次(11)之后，不再等待
+        if: matrix.batch < 11
+        run: sleep 300
