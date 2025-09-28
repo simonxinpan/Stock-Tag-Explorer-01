@@ -482,8 +482,8 @@ class MobileTagDetailApp {
 
     // 打开股票详情
     openStockDetail(symbol) {
-        // 跳转到外部个股详情页面
-        window.open(`https://stock-details-final.vercel.app/mobile.html?symbol=${encodeURIComponent(symbol)}`, '_blank');
+        // 跳转到本地移动版个股详情页面
+        window.location.href = `mobile-stock-detail.html?symbol=${encodeURIComponent(symbol)}`;
     }
 
     // 显示错误

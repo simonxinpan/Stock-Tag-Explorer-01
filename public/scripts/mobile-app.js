@@ -1023,9 +1023,8 @@ class MobileStockApp {
         // 添加触摸反馈
         this.addTouchFeedback(event.currentTarget);
         
-        // 跳转到外部股票详情页
-        const stockDetailUrl = `https://stock-details-final.vercel.app/mobile.html?symbol=${encodeURIComponent(symbol)}`;
-        window.open(stockDetailUrl, '_blank');
+        // 跳转到本地移动版个股详情页
+        window.location.href = `mobile-stock-detail.html?symbol=${encodeURIComponent(symbol)}`;
         
         console.log(`点击股票: ${symbol}，跳转到详情页`);
     }
