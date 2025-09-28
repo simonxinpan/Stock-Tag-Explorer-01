@@ -284,7 +284,7 @@ function createMobileStockListItemHTML(stock, type, rank, marketType = 'sp500') 
   // 新的移动版HTML结构 - 左右对齐布局
   return `
     <li class="stock-item-mobile">
-      <a href="./mobile-stock-detail.html?symbol=${ticker}" class="stock-link-mobile">
+      <a href="https://stock-details-final.vercel.app/mobile.html?symbol=${ticker}" class="stock-link-mobile" target="_blank">
         
         <!-- 左侧信息区 -->
         <div class="info-section">
