@@ -132,8 +132,8 @@ function createStockListItemHTML(stock, type, rank, marketType = 'sp500') {
   const colorClass = changePercent >= 0 ? 'positive' : 'negative';
   const sign = changePercent >= 0 ? '+' : '';
    
-  // 构建指向正确详情页的链接
-  const detailsPageUrl = `https://stock-details-final.vercel.app/?symbol=${stock.ticker}`;
+  // 构建指向移动版详情页的链接
+  const detailsPageUrl = `https://stock-details-final.vercel.app/mobile.html?symbol=${stock.ticker}`;
 
   // 根据榜单类型决定显示哪个核心数据
   let mainMetricHTML = '';
