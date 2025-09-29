@@ -11,6 +11,19 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
+    <!-- 新增CSS样式，用于美化股票列表的链接 -->
+    <style>
+        .stock-item-link {
+          display: block;         /* 让链接占据整行，从而使整个条目区域都可以点击 */
+          text-decoration: none;  /* 移除链接自带的下划线 */
+          color: inherit;         /* 使链接文字的颜色与普通文字相同，而不是默认的蓝色 */
+        }
+
+        /* (推荐) 增加一个点击时的视觉反馈，提升用户体验 */
+        .stock-item-link:active {
+          background-color: #f5f5f5; /* 点击时，条目背景会闪烁一下浅灰色 */
+        }
+    </style>
 </head>
 <body>
     <!-- 移动端应用容器 -->
@@ -577,6 +590,72 @@
 
     <!-- JavaScript - 使用trending.js作为数据处理引擎 -->
     <script src="js/trending.js"></script>
+
+    <!-- 
+        新增的内联JavaScript代码块。
+        这里定义了修改后的displayStocks函数。
+        如果您的displayStocks函数在trending.js中，请将此函数的逻辑合并到该文件中。
+    -->
+    <script>
+        /**
+         * 显示股票列表，并为每个条目添加指向个股详情页的链接。
+         * @param {Array} stocks - 股票数据数组
+         * @param {string} containerId - 用于显示列表的HTML容器的ID
+         */
+        function displayStocks(stocks, containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            // 定义目标个股详情页的基础URL
+            const detailsPageBaseUrl = 'https://stock-details-final.vercel.app/mobile.html';
+
+            let html = '';
+            stocks.forEach(stock => {
+                const changeClass = stock.change.startsWith('+') ? 'positive' : 'negative';
+                
+                // 为当前股票动态生成完整的详情页链接
+                const stockUrl = `${detailsPageBaseUrl}?symbol=${stock.symbol}`;
+
+                // 使用 <a> 标签将整个条目包裹起来，并设置其 href 属性
+                // 注意：这里使用了 stock-item-link 类，其样式已在 <head> 中定义
+                html += `
+                    <a href="${stockUrl}" class="stock-item-link">
+                        <div class="stock-item">
+                            <div class="stock-info">
+                                <div class="stock-symbol">${stock.symbol}</div>
+                                <div class="stock-name">${stock.name}</div>
+                            </div>
+                            <div class="stock-price">$${stock.price}</div>
+                            <div class="stock-change ${changeClass}">${stock.change} (${stock.percent_change})</div>
+                        </div>
+                    </a>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        /**
+         * 导航到榜单详情页。
+         * @param {string} listName - 榜单名称 (例如 'top_gainers')
+         */
+        function navigateToRankingDetail(listName) {
+            // 这个函数需要知道当前选中的市场（sp500或chinese_stocks）
+            // 我们通过查找当前活跃的市场按钮来确定
+            const activeMarketButton = document.querySelector('.market-carousel-btn.active');
+            const market = activeMarketButton ? activeMarketButton.dataset.marketTarget : 'sp500'; // 默认为sp500
+            window.location.href = `mobile-ranking-detail.html?market=${market}&list=${listName}`;
+        }
+
+        // 注意：以下的事件监听和数据加载逻辑很可能在您的 trending.js 文件中。
+        // 此处提供一个示例性的结构。如果您的页面在修改后无法加载数据，
+        // 请确保 trending.js 中调用的是这里定义的 displayStocks 函数。
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("页面加载完成，准备初始化数据和事件监听。");
+            // 示例：此处应有代码来初始化页面，比如加载默认的榜单数据
+            // mobileApp.init(); // 假设您有一个主应用对象
+        });
+
+    </script>
     
     <!-- 链接修复脚本 - 独立运行，无副作用 -->
     <script src="js/mobile-link-fixer.js"></script>
